@@ -11,6 +11,7 @@
     function init() {
         ranger = document.getElementById("ranger");
         map = mapFactory('mapquest');
+        console.log(map);
 
         ranger.addEventListener("input", function(e) {
             addMarkers(e.target.value);
@@ -22,20 +23,20 @@
     function mapFactory(type) {
         switch(type) {
             case 'mapquest':
-                map = L.map('map', {
+                return L.map('map', {
                     layers: MQ.mapLayer(),
                     center: center,
                     zoom: initialZoom
                 });
                 break;
             default:
-                map = L.map('map').setView(center, initialZoom);
+                var theMap = L.map('map').setView(center, initialZoom);
 
                 L.tileLayer('http://{s}.tiles.mapbox.com/v3/seankennethray.map-zjkq5g6o/{z}/{x}/{y}.png', {
                     attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
                     maxZoom: 18
-                }).addTo(map);        
-                break;
+                }).addTo(theMap);        
+                return theMap;
         }
     }
 
