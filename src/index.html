@@ -4,7 +4,23 @@
     <title>Maps</title>
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
     <style>
-        #map { height:200px; }
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+        #map { 
+            position: absolute;
+            top: 0;
+            bottom: 100px;
+            width: 100%;
+        }
+
+        #ranger {
+            position: absolute;
+            bottom: 30px;
+            width:94%;
+            margin: 0 3% 0 3%;
+        }
     </style>
 </head>
 
@@ -15,43 +31,51 @@
 
 
     <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
-    <!--<script src="http://www.mapquestapi.com/sdk/leaflet/v1.s/mq-map.js?key=Fmjtd%7Cluurn902ll%2Cb0%3Do5-9wt2gz"></script>
-    <script type="text/javascript">
-          window.onload = function() {
-              L.map('map', {
-                  layers: MQ.mapLayer(),
-                  center: [ 40.731701, -73.993411 ],
-                  zoom: 12
-              });
-          };
-    </script>-->
+    <script src="http://www.mapquestapi.com/sdk/leaflet/v1.s/mq-map.js?key=Fmjtd%7Cluurn902ll%2Cb0%3Do5-9wt2gz"></script>
+    
 
     <script>
 
+        var center = [51.505, -0.09];
+        var initialZoom = 11;
         var markerPts = [[51.5, -0.09],[51.505, -0.09],[51.51, -0.09]];
         var markers = [];
-        var map = L.map('map').setView([51.505, -0.09], 13);
+        var map;
+        var ranger = document.getElementById("ranger");
+
+        // mapquest
+        map = L.map('map', {
+            layers: MQ.mapLayer(),
+            center: center,
+            zoom: initialZoom
+        });
+
+        //mapbox
+        // map = L.map('map').setView(center, initialZoom);
+
         L.tileLayer('http://{s}.tiles.mapbox.com/v3/seankennethray.map-zjkq5g6o/{z}/{x}/{y}.png', {
             attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
             maxZoom: 18
         }).addTo(map);
 
-        document.getElementById("ranger").addEventListener("input", function(e) {
-            console.log(e.target.value);
+        ranger.addEventListener("input", function(e) {
+            addMarkers(e.target.value);
+        });
 
+        addMarkers(ranger.value);
+
+        function addMarkers(num) {
             for(var i=0; i < markers.length; i++) {
                 map.removeLayer(markers[i]);
             }
 
             markers = [];
 
-            for(var i=0; i < markerPts.length; i++) {
-                if(e.target.value/33 >= i) {
-                    markers.push(new L.marker(markerPts[i]));
-                    map.addLayer(markers[i]);
-                }
+            for(var i=0; i < num; i++) {
+                markers.push(new L.marker([center[0]+(i*0.005), center[1]+(i*0.005)]));
+                map.addLayer(markers[i]);
             }
-        });
+        }
         
         
     </script>
