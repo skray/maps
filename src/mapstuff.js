@@ -2,55 +2,96 @@
 
     var center = [51.505, -0.09];
     var initialZoom = 11;
-    var markers = [];
+    var layers = [];
     var map;
     var ranger;
+    var updateLayers;
 
     init();
 
     function init() {
+        buildMap('mapquest');
+
         ranger = document.getElementById("ranger");
-        map = mapFactory('mapquest');
-        console.log(map);
 
         ranger.addEventListener("input", function(e) {
-            addMarkers(e.target.value);
+            updateLayers(e.target.value);
         });
+        buildMenu();
 
-        addMarkers(ranger.value);    
+        buildMarkersMap();
     }
 
-    function mapFactory(type) {
+    function buildMap(type) {
         switch(type) {
             case 'mapquest':
-                return L.map('map', {
+                map = L.map('map', {
                     layers: MQ.mapLayer(),
                     center: center,
                     zoom: initialZoom
                 });
                 break;
             default:
-                var theMap = L.map('map').setView(center, initialZoom);
+                map = L.map('map').setView(center, initialZoom);
 
                 L.tileLayer('http://{s}.tiles.mapbox.com/v3/seankennethray.map-zjkq5g6o/{z}/{x}/{y}.png', {
                     attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
                     maxZoom: 18
-                }).addTo(theMap);        
-                return theMap;
+                }).addTo(map);
         }
     }
 
     function addMarkers(num) {
-        for(var i=0; i < markers.length; i++) {
-            map.removeLayer(markers[i]);
-        }
-
-        markers = [];
+        removeLayers();
 
         for(var i=0; i < num; i++) {
-            markers.push(new L.marker([center[0]+(i*0.005), center[1]+(i*0.005)]));
-            map.addLayer(markers[i]);
+            layers.push(new L.marker([center[0]+(i*0.005), center[1]+(i*0.005)]));
+            map.addLayer(layers[i]);
         }
+    }
+
+    function buildMenu() {
+        var addMarkersMenuItem = document.getElementById("add-markers");
+        var moveCirclesMenuItem = document.getElementById("move-circles");
+
+        addMarkersMenuItem.addEventListener("click", function() {
+            buildMarkersMap();
+        });
+
+        moveCirclesMenuItem.addEventListener("click", function() {
+            buildCirclesMap();
+        });
+    }
+
+    function buildMarkersMap() {        
+
+
+        addMarkers(ranger.value); 
+        updateLayers = addMarkers;   
+    }
+
+    function buildCirclesMap() {
+        removeLayers();
+        layers.push(L.circle([51.508, -0.11], 500, {
+            color: 'red',
+            fillColor: '#f03',
+            fillOpacity: 0.5
+        }))
+        map.addLayer(layers[0]);
+        moveCircle(ranger.value);
+        updateLayers = moveCircle;
+    }
+
+    function moveCircle(num) {
+        layers[0].setLatLng([center[0]+(num*.005),center[1]+(num*.005)]);
+    }
+
+    function removeLayers() {
+        for(var i=0; i < layers.length; i++) {
+            map.removeLayer(layers[i]);
+        }
+
+        layers = [];
     }
 
 }(L, MQ));

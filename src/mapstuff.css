@@ -29,3 +29,12 @@ html, body {
     width:94%;
     margin: 0 3% 0 3%;
 }
+
+ul {
+    list-style: none;
+}
+
+li:hover {
+    background-color:#ccc;
+    cursor: pointer;
+}
