@@ -1,0 +1,40 @@
+html, body {
+    margin: 0;
+    padding: 0;
+}
+#map-options {
+    position: absolute;
+    top: 0;
+    width: 20%;
+    height: 100%;
+    margin: 0;
+}
+#map-holder {
+    position: absolute;
+    top: 0;
+    left:20%;
+    bottom: 0;
+    width: 80%;
+}
+#map { 
+    position: absolute;
+    top:0;
+    bottom:100px;
+    width:100%;
+}
+
+#ranger {
+    position: absolute;
+    bottom: 30px;
+    width:94%;
+    margin: 0 3% 0 3%;
+}
+
+ul {
+    list-style: none;
+}
+
+li:hover {
+    background-color:#ccc;
+    cursor: pointer;
+}
