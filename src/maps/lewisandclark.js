@@ -31,13 +31,17 @@
     var initialZoom = 11;
     var layers = [];
     var map;
+    var current = 0;
 
     init();
 
     function init() {
 
         buildMap('mapquest');
-        buildMarkersMap();        
+        buildMarkersMap();  
+
+        var nextBtn = document.getElementById('nextBtn');
+        nextBtn.addEventListener('click', next);      
 
     }
 
@@ -71,7 +75,10 @@
             layers.push(new L.marker(locations[i]));
             map.addLayer(layers[i]);
         }
-        // map.panTo(layers[layers.length-1].getLatLng());
+    }
+
+    function next() {
+        map.panTo(locations[current++]);
     }
 
     function removeLayers() {

@@ -8,3 +8,16 @@ html, body {
     bottom:0;
     width:100%;
 }
+#nextBtn {
+    left: 0;
+    right: 0;
+    margin: auto;
+    bottom: 29px;
+    width: 100px;
+    position: fixed;
+}
+#nextBtn:hover {
+    cursor: pointer;
+    background-color: black;
+    z-index: 1;
+}
