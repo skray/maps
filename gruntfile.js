@@ -5,7 +5,7 @@ module.exports = function(grunt) {
         options: {
             base: 'src'
         },
-        src: ['index.html', 'mapstuff.css', 'mapstuff.js']
+        src: ['**']
     },
   });
 
