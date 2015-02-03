@@ -3,16 +3,26 @@
 <head>
     <title>Lewis and Clark's Grand Expedition</title>
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
-    <link rel="stylesheet" href="lewisandclark.css" />
+    <link rel="stylesheet/less" type="text/css" href="lewisandclark.less" />
+    <link href='http://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css'>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/less.js/2.3.1/less.js"></script>
 </head>
 
 <body>
     <div id="map"></div>
-    <div id="prevBtn">Prev</div>
-    <div id="nextBtn">Next</div>
+
+    <div class="nav">
+        <div class="btns">
+            <div class="btn" id="prevBtn">PREV</div>
+            <div class="btn" id="nextBtn">NEXT</div>
+        </div>
+        <div class="content"></div>
+    </div>
     
     <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
     <script src="http://www.mapquestapi.com/sdk/leaflet/v1.s/mq-map.js?key=Fmjtd%7Cluurn902ll%2Cb0%3Do5-9wt2gz"></script>
+    <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="transparency.min.js"></script>
     <script src="lewisandclark.js"></script>
 </body>
 </html>
