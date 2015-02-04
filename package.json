@@ -1,9 +1,17 @@
 {
     "name": "maps",
     "version": "0.0.1",
-    "dependencies": {},
+    "dependencies": {
+        "transparency": "0.10.0",
+        "leaflet-draw": "0.2.3",
+        "leaflet": "0.7.3"    
+    },
     "devDependencies": {
         "grunt": "0.4.5",
-        "grunt-gh-pages": "0.9.1"
+        "gulp": "3.8.10",
+        "gulp-less": "2.0.1",
+        "gulp-gh-pages": "0.4.0",
+        "gulp-copy":"0.0.2",
+        "gulp-livereload":"3.7.0"
     }
 }
