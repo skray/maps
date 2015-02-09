@@ -6,7 +6,8 @@ var del  = require('del');
 
 var jsdeps = [
     'node_modules/leaflet/dist/leaflet.js',
-    'node_modules/transparency/transparency.min.js'
+    'node_modules/jquery/dist/jquery.min.js',
+    'node_modules/transparency/dist/transparency.min.js'
 ];
 
 var cssdeps = [
@@ -25,10 +26,17 @@ gulp.task('less', ['clean'], function () {
       .pipe(gulp.dest('public'));
 });
 
-gulp.task('copy', ['clean'], function(){
-    return gulp.src(['src/**/*.html', 'src/**/*.js', 'src/app.css'])
+gulp.task('copy-images', ['clean'], function() {
+    return gulp.src(['node_modules/leaflet/dist/images/**'])
+      .pipe(gulp.dest('public/maps/images'));
+});
+
+gulp.task('copy-src', ['clean'], function() {
+    return gulp.src(['src/**/*.html', 'src/**/*.js'])
       .pipe(gulp.dest('public'));
 });
+
+gulp.task('copy', ['copy-images', 'copy-src']);
 
 gulp.task('concat-css', ['clean'], function() {
     return gulp.src(cssdeps)
