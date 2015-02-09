@@ -1,5 +1,7 @@
 (function(L, MQ) {
 
+    L.Icon.Default.imagePath = 'images';
+
     var locations = [
         { pos: [38.804967,-90.113183], content: 'Lewis and Clark (Illinois) State Memorial Park at the confluence of the Mississippi and Missouri Rivers.'},
         { pos: [38.775967,-90.4841], content: 'Lewis and Clark Center - 701 Riverside Drive, St. Charles, MO'},
