@@ -6,7 +6,7 @@ var del  = require('del');
 var deploy = require('gulp-gh-pages');
 var livereload = require('gulp-livereload');
 
-var EXPRESS_PORT = 8000;
+var EXPRESS_PORT = 8001;
 var EXPRESS_ROOT = 'public';
 var LIVERELOAD_PORT = 35729;
  
@@ -95,4 +95,4 @@ gulp.task('publish', ['deploy']);
 gulp.task('dev', ['watch', 'build']);
 gulp.task('build', ['concat', 'less', 'copy'])
 
-gulp.task('default', ['build']);
+gulp.task('default', ['dev']);
