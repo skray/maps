@@ -9,7 +9,7 @@ var livereload = require('gulp-livereload');
 var EXPRESS_PORT = 8001;
 var EXPRESS_ROOT = 'public';
 var LIVERELOAD_PORT = 35729;
- 
+
 // Let's make things more readable by
 // encapsulating each part's setup
 // in its own method
@@ -22,7 +22,7 @@ function startExpress() {
 }
 
 var paths = {
-    html: 'src/**/*.html', 
+    html: 'src/**/*.html',
     js: 'src/**/*.js',
     less: 'src/**/*.less'
 };
@@ -57,7 +57,7 @@ gulp.task('concat', ['concat-css', 'concat-js']);
 
 
 gulp.task('copy-images', ['clean'], function() {
-    return gulp.src(['node_modules/leaflet/dist/images/**'])
+    return gulp.src(['node_modules/leaflet/dist/images/**', 'src/images/**'])
       .pipe(gulp.dest('public/maps/images'));
 });
 
