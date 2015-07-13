@@ -95,7 +95,7 @@ gulp.task('copy-draw-images', ['clean-images'], function() {
 });
 
 gulp.task('copy-images', ['clean-images'], function() {
-    return gulp.src(['node_modules/leaflet/dist/images/**','node_modules/leaflet-draw/dist/images/**'])
+    return gulp.src(['node_modules/leaflet/dist/images/**','node_modules/leaflet-draw/dist/images/**','src/images/**'])
       .pipe(gulp.dest('public/maps/images'));
 });
 
