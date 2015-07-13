@@ -13,31 +13,15 @@
     </header>
     <ul id="maps">
         <li>
-            <a href="maps/map1.html">
+            <a href="maps/viewer.html?id=lewisandclark">
                 <img src="maps/images/london.jpg">
                 <div>
                     <h1 class="name"></h1>
-                    <p>Some awesom demo maps that look great and taste great too!</p>
+                    <p>A map of Lewis and Clark's Expedition</p>
                 </div>
             </a>
         </li>
 
     </ul>
-
-    <script src="deps.js"></script>
-    <script>
-        $(document).ready(function doIt() {
-            var maps = [];
-            $.ajax({
-                type: "GET",
-                url: 'http://localhost:8080/maps',
-                contentType: "application/json; charset=utf-8",
-                dataType: "json"
-            }).then(function gotEm(thoseMaps) {
-                maps = thoseMaps;
-                $('#maps').render(maps);
-            });
-        });
-    </script>
 </body>
 </html>
