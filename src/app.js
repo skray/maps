@@ -13,8 +13,6 @@
 				templateUrl: 'maps/viewer.html',
 				controller: 'MapCtrl'
 			});
-
-		$locationProvider.html5Mode(true);
 	}
 
 })(window.angular);

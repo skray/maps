@@ -17,14 +17,7 @@ var LIVERELOAD_PORT = 35729;
 gulp.task('connect', function(){
   return connect.server({
     root: './public',
-    port: 8000,
-    middleware: function() {
-      return [
-        modRewrite([
-          '!\\.html|\\.js|\\.css|\\.png$ /index.html [L]'
-        ])
-      ];
-    }
+    port: 8000
   });
 });
 
