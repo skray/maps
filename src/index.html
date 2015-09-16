@@ -2,7 +2,8 @@
 <html lang="en" ng-app="maps">
 <head>
     <title>Maps</title>
-    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="/app.css" />
+    <link rel="stylesheet" href="/deps.css" />
     <link href='http://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css'>
     <base href="/">
 </head>
@@ -11,7 +12,12 @@
     <ng-view/>
     <script type="text/javascript" src="angular.js"></script>
     <script type="text/javascript" src="angular-route.js"></script>
+    <script type="text/javascript" src="index.js"></script>
+    <script type="text/javascript" src="leaflet.js"></script>
+    <script type="text/javascript" src="angular-leaflet-directive.js"></script>
+
     <script type="text/javascript" src="app.js"></script>
     <script type="text/javascript" src="ListCtrl.js"></script>
+    <script type="text/javascript" src="maps/MapCtrl.js"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 (function(angular) {
 	angular
-		.module('maps', ['ngRoute'])
+		.module('maps', ['ngRoute', 'leaflet-directive'])
 		.config(configure);
 
 	function configure($routeProvider, $locationProvider) {
@@ -10,7 +10,8 @@
 				controller: 'ListCtrl'
 			})
 			.when('/maps/:id', {
-				templateUrl: 'viewer.html'
+				templateUrl: 'maps/viewer.html',
+				controller: 'MapCtrl'
 			});
 
 		$locationProvider.html5Mode(true);

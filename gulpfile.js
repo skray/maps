@@ -7,26 +7,38 @@ var gutil = require('gulp-util');
 var deploy = require('gulp-gh-pages');
 var livereload = require('gulp-livereload');
 var sourcemaps = require('gulp-sourcemaps');
+var connect = require('gulp-connect');
+var modRewrite = require('connect-modrewrite');
 
 var EXPRESS_PORT = 8001;
 var EXPRESS_ROOT = 'public';
 var LIVERELOAD_PORT = 35729;
  
-// Let's make things more readable by
-// encapsulating each part's setup
-// in its own method
-function startExpress() {
-  var express = require('express');
-  var app = express();
-  app.use(require('connect-livereload')());
-  app.use(express.static(EXPRESS_ROOT));
-  app.listen(EXPRESS_PORT);
-}
+gulp.task('connect', function(){
+  return connect.server({
+    root: './public',
+    port: 8000,
+    middleware: function() {
+      return [
+        modRewrite([
+          '!\\.html|\\.js|\\.css|\\.png$ /index.html [L]'
+        ])
+      ];
+    }
+  });
+});
 
 var paths = {
     html: 'src/**/*.html', 
     less: 'src/**/*.less',
-    js: ['src/**/*.js', 'node_modules/angular/angular.js', 'node_modules/angular-route/angular-route.js']
+    js: [
+      'src/**/*.js', 
+      'node_modules/angular/angular.js', 
+      'node_modules/angular-route/angular-route.js', 
+      'node_modules/angular-simple-logger/dist/index.js',
+      'node_modules/angular-leaflet-directive/dist/angular-leaflet-directive.js',
+      'node_modules/leaflet/dist/leaflet.js'
+    ]
 };
 
 var cssdeps = [
@@ -96,7 +108,6 @@ gulp.task('less', ['clean-css'], function () {
 });
 
 gulp.task('watch', function() {
-    startExpress();
     livereload.listen();
     gulp.watch(paths.html, ['copy-src']);
     gulp.watch(paths.js, ['copy-src']);
@@ -105,7 +116,7 @@ gulp.task('watch', function() {
 
 
 gulp.task('publish', ['deploy']);
-gulp.task('dev', ['watch', 'build']);
+gulp.task('dev', ['connect', 'watch', 'build']);
 gulp.task('build', ['concat', 'less', 'copy'])
 
 gulp.task('default', ['dev']);
