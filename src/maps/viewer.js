@@ -22,7 +22,7 @@ function buildMap(currentMapData) {
     }).addTo(map);
 
     if(currentMapData.line) {
-        map.addLayer(new L.polyline(currentMapData.line));
+        map.addLayer(new L.polyline(currentMapData.line, {smoothFactor:1.0}));
     };
 }
 
