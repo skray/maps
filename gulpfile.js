@@ -5,21 +5,9 @@ var path = require('path');
 var del  = require('del');
 var gutil = require('gulp-util');
 var deploy = require('gulp-gh-pages');
-var livereload = require('gulp-livereload');
 var sourcemaps = require('gulp-sourcemaps');
 var connect = require('gulp-connect');
 var modRewrite = require('connect-modrewrite');
-
-var EXPRESS_PORT = 8001;
-var EXPRESS_ROOT = 'public';
-var LIVERELOAD_PORT = 35729;
- 
-gulp.task('connect', function(){
-  return connect.server({
-    root: './public',
-    port: 8000
-  });
-});
 
 var paths = {
     html: 'src/**/*.html', 
@@ -38,6 +26,14 @@ var cssdeps = [
     'node_modules/leaflet/dist/leaflet.css',
     'node_modules/leaflet-draw/dist/leaflet.draw.css'
 ];
+
+gulp.task('connect', function(){
+  return connect.server({
+    root: './public',
+    port: 8000,
+    livereload: true
+  });
+});
 
 gulp.task('clean-css', function() {
   return del(['public/**/*.css','!public/deps.css']);
@@ -80,7 +76,7 @@ gulp.task('copy-images', ['clean-images'], function() {
 gulp.task('copy-src', ['clean-html'], function() {
     return gulp.src([paths.html].concat(paths.js))
       .pipe(gulp.dest('public'))
-      .pipe(livereload());
+      .pipe(connect.reload());
 });
 
 gulp.task('copy', ['copy-images', 'copy-draw-images', 'copy-src']);
@@ -97,11 +93,10 @@ gulp.task('less', ['clean-css'], function () {
         paths: [ path.join(__dirname, 'less', 'includes') ]
       }))
       .pipe(gulp.dest('public'))
-      .pipe(livereload());
+      .pipe(connect.reload());
 });
 
 gulp.task('watch', function() {
-    livereload.listen();
     gulp.watch(paths.html, ['copy-src']);
     gulp.watch(paths.js, ['copy-src']);
     gulp.watch(paths.less, ['less']);
