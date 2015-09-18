@@ -19,7 +19,9 @@ var paths = {
       'node_modules/angular-route/angular-route.js', 
       'node_modules/angular-simple-logger/dist/index.js',
       'node_modules/angular-leaflet-directive/dist/angular-leaflet-directive.js',
-      'node_modules/leaflet/dist/leaflet.js'
+      'node_modules/leaflet/dist/leaflet.js',
+      'node_modules/firebase/lib/firebase-web.js',
+      'node_modules/angularfire/dist/angularfire.js'
     ]
 };
 
