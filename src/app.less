@@ -5,26 +5,49 @@ body {
 }
 
 header {
+
+    @text-bg: rgba(0,0,0,0.4);
+    @text-color: #bbb;
+
     font-size: 2rem;
     background-color: rgb(25,30,40);
     height: 20rem;
     position: relative;
-    background-image: url('/maps/images/OrteliusWorldMap1570.jpg');
+    background-image: url('/maps/images/OrteliusWorldMap1570_small_lowres.jpg');
+    filter: grayscale(60%);
     background-size: cover;
     text-align: center;
 
     span {
-        top: 12rem;
-        color: #B3B3B3;
-        position: relative;
-        background-color: rgba(0,0,0,0.4);
-        padding: .1rem 1rem;
+
+        color: @text-color;
+        background-color: @text-bg;
+
+        a {
+            color: @text-color;
+        }
+
+        &.title {
+            top: 12rem;
+            position: relative;
+            padding: .1rem 1rem;
+        }
+
+        &.attribution {
+            font-size: 1rem;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            padding: .1rem .5rem;
+        }
     }
+
+    
 }
 
 ul {
     list-style-type: none;
-    padding: 0;
+    padding: 1rem;
     margin: 0;
     display: flex;
     flex-wrap: wrap;
@@ -36,28 +59,32 @@ ul {
 
         a {
             display: flex;
-            padding: 5px;
+            padding: 0;
             text-decoration: none;
             color: #000;
-            min-width: 500px;
+            min-width: 20rem;
             flex-shrink: 0;
+            transition: background-color 250ms;
 
             img {
-                height: 200px;
-                width: 400px;
-                max-width: 400px;
+                height: 6rem;
+                width: 3rem;
+                max-width: 12rem;
                 flex: 1;
+                filter: grayscale(60%);
+                transition: filter 250ms;
             }
 
             div {
                 display: inline-block;
                 vertical-align: top;
                 flex: 1;
-                min-width: 200px;
-                padding:10px;
+                min-width: 15rem;
+                padding: 0 1rem;
 
                 h1 {
-                    margin-top:0;
+                    margin:0;
+                    margin-bottom: 1rem
                 }
             }
         }
@@ -70,6 +97,11 @@ ul {
         a:hover {
             background-color: #ccc;
             cursor: pointer;
+            transition: background-color 250ms;
+            img {
+                filter: grayscale(0);
+                transition: filter 250ms;
+            }
         }
     }
 }

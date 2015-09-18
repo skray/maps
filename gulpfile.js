@@ -7,7 +7,8 @@ var gutil = require('gulp-util');
 var deploy = require('gulp-gh-pages');
 var sourcemaps = require('gulp-sourcemaps');
 var connect = require('gulp-connect');
-var modRewrite = require('connect-modrewrite');
+var postcss = require('gulp-postcss');
+var autoprefixer = require('autoprefixer');
 
 var paths = {
     html: 'src/**/*.html', 
@@ -92,6 +93,11 @@ gulp.task('less', ['clean-css'], function () {
       .pipe(less({
         paths: [ path.join(__dirname, 'less', 'includes') ]
       }))
+      .on('error', function(err) { 
+        gutil.log(gutil.colors.bgRed('Less Error'), err.message);
+        this.emit('end');
+      })
+      .pipe(postcss([autoprefixer({browsers: ['last 1 version']})]))
       .pipe(gulp.dest('public'))
       .pipe(connect.reload());
 });
