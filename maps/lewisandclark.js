@@ -3,7 +3,7 @@
     L.Icon.Default.imagePath = 'images';
 
     var center = [38.804967,-90.113183];
-    var initialZoom = 11;
+    var initialZoom = 14;
     var layers = [];
     var map;
     var current = 0;

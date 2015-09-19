@@ -4,57 +4,96 @@ body {
   font-family: 'PT Sans', sans-serif;
 }
 header {
-  font-size: 35px;
+  font-size: 2rem;
   background-color: #191e28;
-  height: 200px;
+  height: 20rem;
   position: relative;
-}
-header img {
-  height: 200px;
-  width: auto;
+  background-image: url('/maps/images/OrteliusWorldMap1570_small_lowres.jpg');
+  -webkit-filter: grayscale(60%);
+          filter: grayscale(60%);
+  background-size: cover;
+  text-align: center;
 }
 header span {
-  color: #fff;
-  opacity: 0.5;
+  color: #bbbbbb;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+header span a {
+  color: #bbbbbb;
+}
+header span.title {
+  top: 12rem;
   position: relative;
-  bottom: 15px;
+  padding: .1rem 1rem;
+}
+header span.attribution {
+  font-size: 1rem;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: .1rem .5rem;
 }
 ul {
   list-style-type: none;
-  padding: 0;
+  padding: 1rem;
   margin: 0;
+  display: -webkit-flex;
   display: flex;
-  flex-wrap: wrap;
+  -webkit-flex-wrap: wrap;
+          flex-wrap: wrap;
 }
 ul li {
-  flex: 1;
-  flex-shrink: 0;
+  -webkit-flex: 1;
+          flex: 1;
+  -webkit-flex-shrink: 0;
+          flex-shrink: 0;
 }
 ul li a {
+  display: -webkit-flex;
   display: flex;
-  padding: 5px;
+  padding: 0;
   text-decoration: none;
   color: #000;
-  min-width: 500px;
-  flex-shrink: 0;
+  min-width: 20rem;
+  -webkit-flex-shrink: 0;
+          flex-shrink: 0;
+  transition: background-color 250ms;
 }
 ul li a img {
-  height: 200px;
-  width: 400px;
-  max-width: 400px;
-  flex: 1;
+  height: 6rem;
+  width: 3rem;
+  max-width: 12rem;
+  -webkit-flex: 1;
+          flex: 1;
+  -webkit-filter: grayscale(60%);
+          filter: grayscale(60%);
+  transition: -webkit-filter 250ms, filter 250ms;
 }
 ul li a div {
   display: inline-block;
   vertical-align: top;
-  flex: 1;
-  min-width: 200px;
-  padding: 10px;
+  -webkit-flex: 1;
+          flex: 1;
+  min-width: 15rem;
+  padding: 0 1rem;
 }
 ul li a div h1 {
-  margin-top: 0;
+  margin: 0;
+  margin-bottom: 1rem;
 }
 ul li a:hover {
   background-color: #ccc;
   cursor: pointer;
+  transition: background-color 250ms;
+}
+ul li a:hover img {
+  -webkit-filter: grayscale(0);
+          filter: grayscale(0);
+  transition: -webkit-filter 250ms, filter 250ms;
+}
+.angular-leaflet-map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
 }
