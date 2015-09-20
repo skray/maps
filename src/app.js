@@ -6,12 +6,12 @@
 	function configure($routeProvider, $locationProvider) {
 		$routeProvider
 			.when('/', {
-				templateUrl: 'list.html',
+				templateUrl: 'list/list.html',
 				controller: 'ListCtrl',
 				controllerAs: 'vm'
 			})
 			.when('/maps/:id', {
-				templateUrl: 'maps/viewer.html',
+				templateUrl: 'map/map.html',
 				controller: 'MapCtrl',
 				controllerAs: 'vm'
 			});
