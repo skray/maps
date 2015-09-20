@@ -28686,3 +28686,9007 @@ $provide.value("$locale", {
 })(window, document);
 
 !window.angular.$$csp().noInlineStyle && window.angular.element(document.head).prepend('<style type="text/css">@charset "UTF-8";[ng\\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide:not(.ng-hide-animate){display:none !important;}ng\\:form{display:block;}.ng-animate-shim{visibility:hidden;}.ng-anchor{position:absolute;}</style>');
+/**
+ * @license AngularJS v1.4.5
+ * (c) 2010-2015 Google, Inc. http://angularjs.org
+ * License: MIT
+ */
+(function(window, angular, undefined) {'use strict';
+
+/**
+ * @ngdoc module
+ * @name ngRoute
+ * @description
+ *
+ * # ngRoute
+ *
+ * The `ngRoute` module provides routing and deeplinking services and directives for angular apps.
+ *
+ * ## Example
+ * See {@link ngRoute.$route#example $route} for an example of configuring and using `ngRoute`.
+ *
+ *
+ * <div doc-module-components="ngRoute"></div>
+ */
+ /* global -ngRouteModule */
+var ngRouteModule = angular.module('ngRoute', ['ng']).
+                        provider('$route', $RouteProvider),
+    $routeMinErr = angular.$$minErr('ngRoute');
+
+/**
+ * @ngdoc provider
+ * @name $routeProvider
+ *
+ * @description
+ *
+ * Used for configuring routes.
+ *
+ * ## Example
+ * See {@link ngRoute.$route#example $route} for an example of configuring and using `ngRoute`.
+ *
+ * ## Dependencies
+ * Requires the {@link ngRoute `ngRoute`} module to be installed.
+ */
+function $RouteProvider() {
+  function inherit(parent, extra) {
+    return angular.extend(Object.create(parent), extra);
+  }
+
+  var routes = {};
+
+  /**
+   * @ngdoc method
+   * @name $routeProvider#when
+   *
+   * @param {string} path Route path (matched against `$location.path`). If `$location.path`
+   *    contains redundant trailing slash or is missing one, the route will still match and the
+   *    `$location.path` will be updated to add or drop the trailing slash to exactly match the
+   *    route definition.
+   *
+   *    * `path` can contain named groups starting with a colon: e.g. `:name`. All characters up
+   *        to the next slash are matched and stored in `$routeParams` under the given `name`
+   *        when the route matches.
+   *    * `path` can contain named groups starting with a colon and ending with a star:
+   *        e.g.`:name*`. All characters are eagerly stored in `$routeParams` under the given `name`
+   *        when the route matches.
+   *    * `path` can contain optional named groups with a question mark: e.g.`:name?`.
+   *
+   *    For example, routes like `/color/:color/largecode/:largecode*\/edit` will match
+   *    `/color/brown/largecode/code/with/slashes/edit` and extract:
+   *
+   *    * `color: brown`
+   *    * `largecode: code/with/slashes`.
+   *
+   *
+   * @param {Object} route Mapping information to be assigned to `$route.current` on route
+   *    match.
+   *
+   *    Object properties:
+   *
+   *    - `controller` – `{(string|function()=}` – Controller fn that should be associated with
+   *      newly created scope or the name of a {@link angular.Module#controller registered
+   *      controller} if passed as a string.
+   *    - `controllerAs` – `{string=}` – An identifier name for a reference to the controller.
+   *      If present, the controller will be published to scope under the `controllerAs` name.
+   *    - `template` – `{string=|function()=}` – html template as a string or a function that
+   *      returns an html template as a string which should be used by {@link
+   *      ngRoute.directive:ngView ngView} or {@link ng.directive:ngInclude ngInclude} directives.
+   *      This property takes precedence over `templateUrl`.
+   *
+   *      If `template` is a function, it will be called with the following parameters:
+   *
+   *      - `{Array.<Object>}` - route parameters extracted from the current
+   *        `$location.path()` by applying the current route
+   *
+   *    - `templateUrl` – `{string=|function()=}` – path or function that returns a path to an html
+   *      template that should be used by {@link ngRoute.directive:ngView ngView}.
+   *
+   *      If `templateUrl` is a function, it will be called with the following parameters:
+   *
+   *      - `{Array.<Object>}` - route parameters extracted from the current
+   *        `$location.path()` by applying the current route
+   *
+   *    - `resolve` - `{Object.<string, function>=}` - An optional map of dependencies which should
+   *      be injected into the controller. If any of these dependencies are promises, the router
+   *      will wait for them all to be resolved or one to be rejected before the controller is
+   *      instantiated.
+   *      If all the promises are resolved successfully, the values of the resolved promises are
+   *      injected and {@link ngRoute.$route#$routeChangeSuccess $routeChangeSuccess} event is
+   *      fired. If any of the promises are rejected the
+   *      {@link ngRoute.$route#$routeChangeError $routeChangeError} event is fired. The map object
+   *      is:
+   *
+   *      - `key` – `{string}`: a name of a dependency to be injected into the controller.
+   *      - `factory` - `{string|function}`: If `string` then it is an alias for a service.
+   *        Otherwise if function, then it is {@link auto.$injector#invoke injected}
+   *        and the return value is treated as the dependency. If the result is a promise, it is
+   *        resolved before its value is injected into the controller. Be aware that
+   *        `ngRoute.$routeParams` will still refer to the previous route within these resolve
+   *        functions.  Use `$route.current.params` to access the new route parameters, instead.
+   *
+   *    - `redirectTo` – {(string|function())=} – value to update
+   *      {@link ng.$location $location} path with and trigger route redirection.
+   *
+   *      If `redirectTo` is a function, it will be called with the following parameters:
+   *
+   *      - `{Object.<string>}` - route parameters extracted from the current
+   *        `$location.path()` by applying the current route templateUrl.
+   *      - `{string}` - current `$location.path()`
+   *      - `{Object}` - current `$location.search()`
+   *
+   *      The custom `redirectTo` function is expected to return a string which will be used
+   *      to update `$location.path()` and `$location.search()`.
+   *
+   *    - `[reloadOnSearch=true]` - {boolean=} - reload route when only `$location.search()`
+   *      or `$location.hash()` changes.
+   *
+   *      If the option is set to `false` and url in the browser changes, then
+   *      `$routeUpdate` event is broadcasted on the root scope.
+   *
+   *    - `[caseInsensitiveMatch=false]` - {boolean=} - match routes without being case sensitive
+   *
+   *      If the option is set to `true`, then the particular route can be matched without being
+   *      case sensitive
+   *
+   * @returns {Object} self
+   *
+   * @description
+   * Adds a new route definition to the `$route` service.
+   */
+  this.when = function(path, route) {
+    //copy original route object to preserve params inherited from proto chain
+    var routeCopy = angular.copy(route);
+    if (angular.isUndefined(routeCopy.reloadOnSearch)) {
+      routeCopy.reloadOnSearch = true;
+    }
+    if (angular.isUndefined(routeCopy.caseInsensitiveMatch)) {
+      routeCopy.caseInsensitiveMatch = this.caseInsensitiveMatch;
+    }
+    routes[path] = angular.extend(
+      routeCopy,
+      path && pathRegExp(path, routeCopy)
+    );
+
+    // create redirection for trailing slashes
+    if (path) {
+      var redirectPath = (path[path.length - 1] == '/')
+            ? path.substr(0, path.length - 1)
+            : path + '/';
+
+      routes[redirectPath] = angular.extend(
+        {redirectTo: path},
+        pathRegExp(redirectPath, routeCopy)
+      );
+    }
+
+    return this;
+  };
+
+  /**
+   * @ngdoc property
+   * @name $routeProvider#caseInsensitiveMatch
+   * @description
+   *
+   * A boolean property indicating if routes defined
+   * using this provider should be matched using a case insensitive
+   * algorithm. Defaults to `false`.
+   */
+  this.caseInsensitiveMatch = false;
+
+   /**
+    * @param path {string} path
+    * @param opts {Object} options
+    * @return {?Object}
+    *
+    * @description
+    * Normalizes the given path, returning a regular expression
+    * and the original path.
+    *
+    * Inspired by pathRexp in visionmedia/express/lib/utils.js.
+    */
+  function pathRegExp(path, opts) {
+    var insensitive = opts.caseInsensitiveMatch,
+        ret = {
+          originalPath: path,
+          regexp: path
+        },
+        keys = ret.keys = [];
+
+    path = path
+      .replace(/([().])/g, '\\$1')
+      .replace(/(\/)?:(\w+)([\?\*])?/g, function(_, slash, key, option) {
+        var optional = option === '?' ? option : null;
+        var star = option === '*' ? option : null;
+        keys.push({ name: key, optional: !!optional });
+        slash = slash || '';
+        return ''
+          + (optional ? '' : slash)
+          + '(?:'
+          + (optional ? slash : '')
+          + (star && '(.+?)' || '([^/]+)')
+          + (optional || '')
+          + ')'
+          + (optional || '');
+      })
+      .replace(/([\/$\*])/g, '\\$1');
+
+    ret.regexp = new RegExp('^' + path + '$', insensitive ? 'i' : '');
+    return ret;
+  }
+
+  /**
+   * @ngdoc method
+   * @name $routeProvider#otherwise
+   *
+   * @description
+   * Sets route definition that will be used on route change when no other route definition
+   * is matched.
+   *
+   * @param {Object|string} params Mapping information to be assigned to `$route.current`.
+   * If called with a string, the value maps to `redirectTo`.
+   * @returns {Object} self
+   */
+  this.otherwise = function(params) {
+    if (typeof params === 'string') {
+      params = {redirectTo: params};
+    }
+    this.when(null, params);
+    return this;
+  };
+
+
+  this.$get = ['$rootScope',
+               '$location',
+               '$routeParams',
+               '$q',
+               '$injector',
+               '$templateRequest',
+               '$sce',
+      function($rootScope, $location, $routeParams, $q, $injector, $templateRequest, $sce) {
+
+    /**
+     * @ngdoc service
+     * @name $route
+     * @requires $location
+     * @requires $routeParams
+     *
+     * @property {Object} current Reference to the current route definition.
+     * The route definition contains:
+     *
+     *   - `controller`: The controller constructor as define in route definition.
+     *   - `locals`: A map of locals which is used by {@link ng.$controller $controller} service for
+     *     controller instantiation. The `locals` contain
+     *     the resolved values of the `resolve` map. Additionally the `locals` also contain:
+     *
+     *     - `$scope` - The current route scope.
+     *     - `$template` - The current route template HTML.
+     *
+     * @property {Object} routes Object with all route configuration Objects as its properties.
+     *
+     * @description
+     * `$route` is used for deep-linking URLs to controllers and views (HTML partials).
+     * It watches `$location.url()` and tries to map the path to an existing route definition.
+     *
+     * Requires the {@link ngRoute `ngRoute`} module to be installed.
+     *
+     * You can define routes through {@link ngRoute.$routeProvider $routeProvider}'s API.
+     *
+     * The `$route` service is typically used in conjunction with the
+     * {@link ngRoute.directive:ngView `ngView`} directive and the
+     * {@link ngRoute.$routeParams `$routeParams`} service.
+     *
+     * @example
+     * This example shows how changing the URL hash causes the `$route` to match a route against the
+     * URL, and the `ngView` pulls in the partial.
+     *
+     * <example name="$route-service" module="ngRouteExample"
+     *          deps="angular-route.js" fixBase="true">
+     *   <file name="index.html">
+     *     <div ng-controller="MainController">
+     *       Choose:
+     *       <a href="Book/Moby">Moby</a> |
+     *       <a href="Book/Moby/ch/1">Moby: Ch1</a> |
+     *       <a href="Book/Gatsby">Gatsby</a> |
+     *       <a href="Book/Gatsby/ch/4?key=value">Gatsby: Ch4</a> |
+     *       <a href="Book/Scarlet">Scarlet Letter</a><br/>
+     *
+     *       <div ng-view></div>
+     *
+     *       <hr />
+     *
+     *       <pre>$location.path() = {{$location.path()}}</pre>
+     *       <pre>$route.current.templateUrl = {{$route.current.templateUrl}}</pre>
+     *       <pre>$route.current.params = {{$route.current.params}}</pre>
+     *       <pre>$route.current.scope.name = {{$route.current.scope.name}}</pre>
+     *       <pre>$routeParams = {{$routeParams}}</pre>
+     *     </div>
+     *   </file>
+     *
+     *   <file name="book.html">
+     *     controller: {{name}}<br />
+     *     Book Id: {{params.bookId}}<br />
+     *   </file>
+     *
+     *   <file name="chapter.html">
+     *     controller: {{name}}<br />
+     *     Book Id: {{params.bookId}}<br />
+     *     Chapter Id: {{params.chapterId}}
+     *   </file>
+     *
+     *   <file name="script.js">
+     *     angular.module('ngRouteExample', ['ngRoute'])
+     *
+     *      .controller('MainController', function($scope, $route, $routeParams, $location) {
+     *          $scope.$route = $route;
+     *          $scope.$location = $location;
+     *          $scope.$routeParams = $routeParams;
+     *      })
+     *
+     *      .controller('BookController', function($scope, $routeParams) {
+     *          $scope.name = "BookController";
+     *          $scope.params = $routeParams;
+     *      })
+     *
+     *      .controller('ChapterController', function($scope, $routeParams) {
+     *          $scope.name = "ChapterController";
+     *          $scope.params = $routeParams;
+     *      })
+     *
+     *     .config(function($routeProvider, $locationProvider) {
+     *       $routeProvider
+     *        .when('/Book/:bookId', {
+     *         templateUrl: 'book.html',
+     *         controller: 'BookController',
+     *         resolve: {
+     *           // I will cause a 1 second delay
+     *           delay: function($q, $timeout) {
+     *             var delay = $q.defer();
+     *             $timeout(delay.resolve, 1000);
+     *             return delay.promise;
+     *           }
+     *         }
+     *       })
+     *       .when('/Book/:bookId/ch/:chapterId', {
+     *         templateUrl: 'chapter.html',
+     *         controller: 'ChapterController'
+     *       });
+     *
+     *       // configure html5 to get links working on jsfiddle
+     *       $locationProvider.html5Mode(true);
+     *     });
+     *
+     *   </file>
+     *
+     *   <file name="protractor.js" type="protractor">
+     *     it('should load and compile correct template', function() {
+     *       element(by.linkText('Moby: Ch1')).click();
+     *       var content = element(by.css('[ng-view]')).getText();
+     *       expect(content).toMatch(/controller\: ChapterController/);
+     *       expect(content).toMatch(/Book Id\: Moby/);
+     *       expect(content).toMatch(/Chapter Id\: 1/);
+     *
+     *       element(by.partialLinkText('Scarlet')).click();
+     *
+     *       content = element(by.css('[ng-view]')).getText();
+     *       expect(content).toMatch(/controller\: BookController/);
+     *       expect(content).toMatch(/Book Id\: Scarlet/);
+     *     });
+     *   </file>
+     * </example>
+     */
+
+    /**
+     * @ngdoc event
+     * @name $route#$routeChangeStart
+     * @eventType broadcast on root scope
+     * @description
+     * Broadcasted before a route change. At this  point the route services starts
+     * resolving all of the dependencies needed for the route change to occur.
+     * Typically this involves fetching the view template as well as any dependencies
+     * defined in `resolve` route property. Once  all of the dependencies are resolved
+     * `$routeChangeSuccess` is fired.
+     *
+     * The route change (and the `$location` change that triggered it) can be prevented
+     * by calling `preventDefault` method of the event. See {@link ng.$rootScope.Scope#$on}
+     * for more details about event object.
+     *
+     * @param {Object} angularEvent Synthetic event object.
+     * @param {Route} next Future route information.
+     * @param {Route} current Current route information.
+     */
+
+    /**
+     * @ngdoc event
+     * @name $route#$routeChangeSuccess
+     * @eventType broadcast on root scope
+     * @description
+     * Broadcasted after a route change has happened successfully.
+     * The `resolve` dependencies are now available in the `current.locals` property.
+     *
+     * {@link ngRoute.directive:ngView ngView} listens for the directive
+     * to instantiate the controller and render the view.
+     *
+     * @param {Object} angularEvent Synthetic event object.
+     * @param {Route} current Current route information.
+     * @param {Route|Undefined} previous Previous route information, or undefined if current is
+     * first route entered.
+     */
+
+    /**
+     * @ngdoc event
+     * @name $route#$routeChangeError
+     * @eventType broadcast on root scope
+     * @description
+     * Broadcasted if any of the resolve promises are rejected.
+     *
+     * @param {Object} angularEvent Synthetic event object
+     * @param {Route} current Current route information.
+     * @param {Route} previous Previous route information.
+     * @param {Route} rejection Rejection of the promise. Usually the error of the failed promise.
+     */
+
+    /**
+     * @ngdoc event
+     * @name $route#$routeUpdate
+     * @eventType broadcast on root scope
+     * @description
+     * The `reloadOnSearch` property has been set to false, and we are reusing the same
+     * instance of the Controller.
+     *
+     * @param {Object} angularEvent Synthetic event object
+     * @param {Route} current Current/previous route information.
+     */
+
+    var forceReload = false,
+        preparedRoute,
+        preparedRouteIsUpdateOnly,
+        $route = {
+          routes: routes,
+
+          /**
+           * @ngdoc method
+           * @name $route#reload
+           *
+           * @description
+           * Causes `$route` service to reload the current route even if
+           * {@link ng.$location $location} hasn't changed.
+           *
+           * As a result of that, {@link ngRoute.directive:ngView ngView}
+           * creates new scope and reinstantiates the controller.
+           */
+          reload: function() {
+            forceReload = true;
+            $rootScope.$evalAsync(function() {
+              // Don't support cancellation of a reload for now...
+              prepareRoute();
+              commitRoute();
+            });
+          },
+
+          /**
+           * @ngdoc method
+           * @name $route#updateParams
+           *
+           * @description
+           * Causes `$route` service to update the current URL, replacing
+           * current route parameters with those specified in `newParams`.
+           * Provided property names that match the route's path segment
+           * definitions will be interpolated into the location's path, while
+           * remaining properties will be treated as query params.
+           *
+           * @param {!Object<string, string>} newParams mapping of URL parameter names to values
+           */
+          updateParams: function(newParams) {
+            if (this.current && this.current.$$route) {
+              newParams = angular.extend({}, this.current.params, newParams);
+              $location.path(interpolate(this.current.$$route.originalPath, newParams));
+              // interpolate modifies newParams, only query params are left
+              $location.search(newParams);
+            } else {
+              throw $routeMinErr('norout', 'Tried updating route when with no current route');
+            }
+          }
+        };
+
+    $rootScope.$on('$locationChangeStart', prepareRoute);
+    $rootScope.$on('$locationChangeSuccess', commitRoute);
+
+    return $route;
+
+    /////////////////////////////////////////////////////
+
+    /**
+     * @param on {string} current url
+     * @param route {Object} route regexp to match the url against
+     * @return {?Object}
+     *
+     * @description
+     * Check if the route matches the current url.
+     *
+     * Inspired by match in
+     * visionmedia/express/lib/router/router.js.
+     */
+    function switchRouteMatcher(on, route) {
+      var keys = route.keys,
+          params = {};
+
+      if (!route.regexp) return null;
+
+      var m = route.regexp.exec(on);
+      if (!m) return null;
+
+      for (var i = 1, len = m.length; i < len; ++i) {
+        var key = keys[i - 1];
+
+        var val = m[i];
+
+        if (key && val) {
+          params[key.name] = val;
+        }
+      }
+      return params;
+    }
+
+    function prepareRoute($locationEvent) {
+      var lastRoute = $route.current;
+
+      preparedRoute = parseRoute();
+      preparedRouteIsUpdateOnly = preparedRoute && lastRoute && preparedRoute.$$route === lastRoute.$$route
+          && angular.equals(preparedRoute.pathParams, lastRoute.pathParams)
+          && !preparedRoute.reloadOnSearch && !forceReload;
+
+      if (!preparedRouteIsUpdateOnly && (lastRoute || preparedRoute)) {
+        if ($rootScope.$broadcast('$routeChangeStart', preparedRoute, lastRoute).defaultPrevented) {
+          if ($locationEvent) {
+            $locationEvent.preventDefault();
+          }
+        }
+      }
+    }
+
+    function commitRoute() {
+      var lastRoute = $route.current;
+      var nextRoute = preparedRoute;
+
+      if (preparedRouteIsUpdateOnly) {
+        lastRoute.params = nextRoute.params;
+        angular.copy(lastRoute.params, $routeParams);
+        $rootScope.$broadcast('$routeUpdate', lastRoute);
+      } else if (nextRoute || lastRoute) {
+        forceReload = false;
+        $route.current = nextRoute;
+        if (nextRoute) {
+          if (nextRoute.redirectTo) {
+            if (angular.isString(nextRoute.redirectTo)) {
+              $location.path(interpolate(nextRoute.redirectTo, nextRoute.params)).search(nextRoute.params)
+                       .replace();
+            } else {
+              $location.url(nextRoute.redirectTo(nextRoute.pathParams, $location.path(), $location.search()))
+                       .replace();
+            }
+          }
+        }
+
+        $q.when(nextRoute).
+          then(function() {
+            if (nextRoute) {
+              var locals = angular.extend({}, nextRoute.resolve),
+                  template, templateUrl;
+
+              angular.forEach(locals, function(value, key) {
+                locals[key] = angular.isString(value) ?
+                    $injector.get(value) : $injector.invoke(value, null, null, key);
+              });
+
+              if (angular.isDefined(template = nextRoute.template)) {
+                if (angular.isFunction(template)) {
+                  template = template(nextRoute.params);
+                }
+              } else if (angular.isDefined(templateUrl = nextRoute.templateUrl)) {
+                if (angular.isFunction(templateUrl)) {
+                  templateUrl = templateUrl(nextRoute.params);
+                }
+                if (angular.isDefined(templateUrl)) {
+                  nextRoute.loadedTemplateUrl = $sce.valueOf(templateUrl);
+                  template = $templateRequest(templateUrl);
+                }
+              }
+              if (angular.isDefined(template)) {
+                locals['$template'] = template;
+              }
+              return $q.all(locals);
+            }
+          }).
+          then(function(locals) {
+            // after route change
+            if (nextRoute == $route.current) {
+              if (nextRoute) {
+                nextRoute.locals = locals;
+                angular.copy(nextRoute.params, $routeParams);
+              }
+              $rootScope.$broadcast('$routeChangeSuccess', nextRoute, lastRoute);
+            }
+          }, function(error) {
+            if (nextRoute == $route.current) {
+              $rootScope.$broadcast('$routeChangeError', nextRoute, lastRoute, error);
+            }
+          });
+      }
+    }
+
+
+    /**
+     * @returns {Object} the current active route, by matching it against the URL
+     */
+    function parseRoute() {
+      // Match a route
+      var params, match;
+      angular.forEach(routes, function(route, path) {
+        if (!match && (params = switchRouteMatcher($location.path(), route))) {
+          match = inherit(route, {
+            params: angular.extend({}, $location.search(), params),
+            pathParams: params});
+          match.$$route = route;
+        }
+      });
+      // No route matched; fallback to "otherwise" route
+      return match || routes[null] && inherit(routes[null], {params: {}, pathParams:{}});
+    }
+
+    /**
+     * @returns {string} interpolation of the redirect path with the parameters
+     */
+    function interpolate(string, params) {
+      var result = [];
+      angular.forEach((string || '').split(':'), function(segment, i) {
+        if (i === 0) {
+          result.push(segment);
+        } else {
+          var segmentMatch = segment.match(/(\w+)(?:[?*])?(.*)/);
+          var key = segmentMatch[1];
+          result.push(params[key]);
+          result.push(segmentMatch[2] || '');
+          delete params[key];
+        }
+      });
+      return result.join('');
+    }
+  }];
+}
+
+ngRouteModule.provider('$routeParams', $RouteParamsProvider);
+
+
+/**
+ * @ngdoc service
+ * @name $routeParams
+ * @requires $route
+ *
+ * @description
+ * The `$routeParams` service allows you to retrieve the current set of route parameters.
+ *
+ * Requires the {@link ngRoute `ngRoute`} module to be installed.
+ *
+ * The route parameters are a combination of {@link ng.$location `$location`}'s
+ * {@link ng.$location#search `search()`} and {@link ng.$location#path `path()`}.
+ * The `path` parameters are extracted when the {@link ngRoute.$route `$route`} path is matched.
+ *
+ * In case of parameter name collision, `path` params take precedence over `search` params.
+ *
+ * The service guarantees that the identity of the `$routeParams` object will remain unchanged
+ * (but its properties will likely change) even when a route change occurs.
+ *
+ * Note that the `$routeParams` are only updated *after* a route change completes successfully.
+ * This means that you cannot rely on `$routeParams` being correct in route resolve functions.
+ * Instead you can use `$route.current.params` to access the new route's parameters.
+ *
+ * @example
+ * ```js
+ *  // Given:
+ *  // URL: http://server.com/index.html#/Chapter/1/Section/2?search=moby
+ *  // Route: /Chapter/:chapterId/Section/:sectionId
+ *  //
+ *  // Then
+ *  $routeParams ==> {chapterId:'1', sectionId:'2', search:'moby'}
+ * ```
+ */
+function $RouteParamsProvider() {
+  this.$get = function() { return {}; };
+}
+
+ngRouteModule.directive('ngView', ngViewFactory);
+ngRouteModule.directive('ngView', ngViewFillContentFactory);
+
+
+/**
+ * @ngdoc directive
+ * @name ngView
+ * @restrict ECA
+ *
+ * @description
+ * # Overview
+ * `ngView` is a directive that complements the {@link ngRoute.$route $route} service by
+ * including the rendered template of the current route into the main layout (`index.html`) file.
+ * Every time the current route changes, the included view changes with it according to the
+ * configuration of the `$route` service.
+ *
+ * Requires the {@link ngRoute `ngRoute`} module to be installed.
+ *
+ * @animations
+ * enter - animation is used to bring new content into the browser.
+ * leave - animation is used to animate existing content away.
+ *
+ * The enter and leave animation occur concurrently.
+ *
+ * @scope
+ * @priority 400
+ * @param {string=} onload Expression to evaluate whenever the view updates.
+ *
+ * @param {string=} autoscroll Whether `ngView` should call {@link ng.$anchorScroll
+ *                  $anchorScroll} to scroll the viewport after the view is updated.
+ *
+ *                  - If the attribute is not set, disable scrolling.
+ *                  - If the attribute is set without value, enable scrolling.
+ *                  - Otherwise enable scrolling only if the `autoscroll` attribute value evaluated
+ *                    as an expression yields a truthy value.
+ * @example
+    <example name="ngView-directive" module="ngViewExample"
+             deps="angular-route.js;angular-animate.js"
+             animations="true" fixBase="true">
+      <file name="index.html">
+        <div ng-controller="MainCtrl as main">
+          Choose:
+          <a href="Book/Moby">Moby</a> |
+          <a href="Book/Moby/ch/1">Moby: Ch1</a> |
+          <a href="Book/Gatsby">Gatsby</a> |
+          <a href="Book/Gatsby/ch/4?key=value">Gatsby: Ch4</a> |
+          <a href="Book/Scarlet">Scarlet Letter</a><br/>
+
+          <div class="view-animate-container">
+            <div ng-view class="view-animate"></div>
+          </div>
+          <hr />
+
+          <pre>$location.path() = {{main.$location.path()}}</pre>
+          <pre>$route.current.templateUrl = {{main.$route.current.templateUrl}}</pre>
+          <pre>$route.current.params = {{main.$route.current.params}}</pre>
+          <pre>$routeParams = {{main.$routeParams}}</pre>
+        </div>
+      </file>
+
+      <file name="book.html">
+        <div>
+          controller: {{book.name}}<br />
+          Book Id: {{book.params.bookId}}<br />
+        </div>
+      </file>
+
+      <file name="chapter.html">
+        <div>
+          controller: {{chapter.name}}<br />
+          Book Id: {{chapter.params.bookId}}<br />
+          Chapter Id: {{chapter.params.chapterId}}
+        </div>
+      </file>
+
+      <file name="animations.css">
+        .view-animate-container {
+          position:relative;
+          height:100px!important;
+          background:white;
+          border:1px solid black;
+          height:40px;
+          overflow:hidden;
+        }
+
+        .view-animate {
+          padding:10px;
+        }
+
+        .view-animate.ng-enter, .view-animate.ng-leave {
+          transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 1.5s;
+
+          display:block;
+          width:100%;
+          border-left:1px solid black;
+
+          position:absolute;
+          top:0;
+          left:0;
+          right:0;
+          bottom:0;
+          padding:10px;
+        }
+
+        .view-animate.ng-enter {
+          left:100%;
+        }
+        .view-animate.ng-enter.ng-enter-active {
+          left:0;
+        }
+        .view-animate.ng-leave.ng-leave-active {
+          left:-100%;
+        }
+      </file>
+
+      <file name="script.js">
+        angular.module('ngViewExample', ['ngRoute', 'ngAnimate'])
+          .config(['$routeProvider', '$locationProvider',
+            function($routeProvider, $locationProvider) {
+              $routeProvider
+                .when('/Book/:bookId', {
+                  templateUrl: 'book.html',
+                  controller: 'BookCtrl',
+                  controllerAs: 'book'
+                })
+                .when('/Book/:bookId/ch/:chapterId', {
+                  templateUrl: 'chapter.html',
+                  controller: 'ChapterCtrl',
+                  controllerAs: 'chapter'
+                });
+
+              $locationProvider.html5Mode(true);
+          }])
+          .controller('MainCtrl', ['$route', '$routeParams', '$location',
+            function($route, $routeParams, $location) {
+              this.$route = $route;
+              this.$location = $location;
+              this.$routeParams = $routeParams;
+          }])
+          .controller('BookCtrl', ['$routeParams', function($routeParams) {
+            this.name = "BookCtrl";
+            this.params = $routeParams;
+          }])
+          .controller('ChapterCtrl', ['$routeParams', function($routeParams) {
+            this.name = "ChapterCtrl";
+            this.params = $routeParams;
+          }]);
+
+      </file>
+
+      <file name="protractor.js" type="protractor">
+        it('should load and compile correct template', function() {
+          element(by.linkText('Moby: Ch1')).click();
+          var content = element(by.css('[ng-view]')).getText();
+          expect(content).toMatch(/controller\: ChapterCtrl/);
+          expect(content).toMatch(/Book Id\: Moby/);
+          expect(content).toMatch(/Chapter Id\: 1/);
+
+          element(by.partialLinkText('Scarlet')).click();
+
+          content = element(by.css('[ng-view]')).getText();
+          expect(content).toMatch(/controller\: BookCtrl/);
+          expect(content).toMatch(/Book Id\: Scarlet/);
+        });
+      </file>
+    </example>
+ */
+
+
+/**
+ * @ngdoc event
+ * @name ngView#$viewContentLoaded
+ * @eventType emit on the current ngView scope
+ * @description
+ * Emitted every time the ngView content is reloaded.
+ */
+ngViewFactory.$inject = ['$route', '$anchorScroll', '$animate'];
+function ngViewFactory($route, $anchorScroll, $animate) {
+  return {
+    restrict: 'ECA',
+    terminal: true,
+    priority: 400,
+    transclude: 'element',
+    link: function(scope, $element, attr, ctrl, $transclude) {
+        var currentScope,
+            currentElement,
+            previousLeaveAnimation,
+            autoScrollExp = attr.autoscroll,
+            onloadExp = attr.onload || '';
+
+        scope.$on('$routeChangeSuccess', update);
+        update();
+
+        function cleanupLastView() {
+          if (previousLeaveAnimation) {
+            $animate.cancel(previousLeaveAnimation);
+            previousLeaveAnimation = null;
+          }
+
+          if (currentScope) {
+            currentScope.$destroy();
+            currentScope = null;
+          }
+          if (currentElement) {
+            previousLeaveAnimation = $animate.leave(currentElement);
+            previousLeaveAnimation.then(function() {
+              previousLeaveAnimation = null;
+            });
+            currentElement = null;
+          }
+        }
+
+        function update() {
+          var locals = $route.current && $route.current.locals,
+              template = locals && locals.$template;
+
+          if (angular.isDefined(template)) {
+            var newScope = scope.$new();
+            var current = $route.current;
+
+            // Note: This will also link all children of ng-view that were contained in the original
+            // html. If that content contains controllers, ... they could pollute/change the scope.
+            // However, using ng-view on an element with additional content does not make sense...
+            // Note: We can't remove them in the cloneAttchFn of $transclude as that
+            // function is called before linking the content, which would apply child
+            // directives to non existing elements.
+            var clone = $transclude(newScope, function(clone) {
+              $animate.enter(clone, null, currentElement || $element).then(function onNgViewEnter() {
+                if (angular.isDefined(autoScrollExp)
+                  && (!autoScrollExp || scope.$eval(autoScrollExp))) {
+                  $anchorScroll();
+                }
+              });
+              cleanupLastView();
+            });
+
+            currentElement = clone;
+            currentScope = current.scope = newScope;
+            currentScope.$emit('$viewContentLoaded');
+            currentScope.$eval(onloadExp);
+          } else {
+            cleanupLastView();
+          }
+        }
+    }
+  };
+}
+
+// This directive is called during the $transclude call of the first `ngView` directive.
+// It will replace and compile the content of the element with the loaded template.
+// We need this directive so that the element content is already filled when
+// the link function of another directive on the same element as ngView
+// is called.
+ngViewFillContentFactory.$inject = ['$compile', '$controller', '$route'];
+function ngViewFillContentFactory($compile, $controller, $route) {
+  return {
+    restrict: 'ECA',
+    priority: -400,
+    link: function(scope, $element) {
+      var current = $route.current,
+          locals = current.locals;
+
+      $element.html(locals.$template);
+
+      var link = $compile($element.contents());
+
+      if (current.controller) {
+        locals.$scope = scope;
+        var controller = $controller(current.controller, locals);
+        if (current.controllerAs) {
+          scope[current.controllerAs] = controller;
+        }
+        $element.data('$ngControllerController', controller);
+        $element.children().data('$ngControllerController', controller);
+      }
+
+      link(scope);
+    }
+  };
+}
+
+
+})(window, window.angular);
+
+/**
+ *  angular-simple-logger
+ *
+ * @version: 0.0.1
+ * @author: Nicholas McCready
+ * @date: Thu Sep 03 2015 03:19:15 GMT-0400 (EDT)
+ * @license: MIT
+ */angular.module('nemLogging', []).service('nemSimpleLogger', [
+  '$log', function($log) {
+    var LEVELS, Logger, _fns, log, maybeExecLevel;
+    _fns = ['log', 'info', 'debug', 'warn', 'error'];
+    LEVELS = {
+      log: 1,
+      info: 2,
+      debug: 3,
+      warn: 4,
+      error: 5
+    };
+    maybeExecLevel = function(level, current, fn) {
+      if (level >= current) {
+        return fn();
+      }
+    };
+    log = function(logLevelFnName, msg) {
+      if ($log != null) {
+        return $log[logLevelFnName](msg);
+      } else {
+        return console[logLevelFnName](msg);
+      }
+    };
+    Logger = (function() {
+      function Logger() {
+        var logFns;
+        this.doLog = true;
+        logFns = {};
+        _fns.forEach((function(_this) {
+          return function(level) {
+            return logFns[level] = function(msg) {
+              if (_this.doLog) {
+                return maybeExecLevel(LEVELS[level], _this.currentLevel, function() {
+                  return log(level, msg);
+                });
+              }
+            };
+          };
+        })(this));
+        this.LEVELS = LEVELS;
+        this.currentLevel = LEVELS.error;
+        _fns.forEach((function(_this) {
+          return function(fnName) {
+            return _this[fnName] = logFns[fnName];
+          };
+        })(this));
+      }
+
+      Logger.prototype.spawn = function() {
+        return new Logger();
+      };
+
+      Logger.prototype.setLog = function(someLogger) {
+        return $log = someLogger;
+      };
+
+      return Logger;
+
+    })();
+    return new Logger();
+  }
+]);
+
+/*
+ Leaflet, a JavaScript library for mobile-friendly interactive maps. http://leafletjs.com
+ (c) 2010-2013, Vladimir Agafonkin
+ (c) 2010-2011, CloudMade
+*/
+!function(t,e,i){var n=t.L,o={};o.version="0.7.5","object"==typeof module&&"object"==typeof module.exports?module.exports=o:"function"==typeof define&&define.amd&&define(o),o.noConflict=function(){return t.L=n,this},t.L=o,o.Util={extend:function(t){var e,i,n,o,s=Array.prototype.slice.call(arguments,1);for(i=0,n=s.length;n>i;i++){o=s[i]||{};for(e in o)o.hasOwnProperty(e)&&(t[e]=o[e])}return t},bind:function(t,e){var i=arguments.length>2?Array.prototype.slice.call(arguments,2):null;return function(){return t.apply(e,i||arguments)}},stamp:function(){var t=0,e="_leaflet_id";return function(i){return i[e]=i[e]||++t,i[e]}}(),invokeEach:function(t,e,i){var n,o;if("object"==typeof t){o=Array.prototype.slice.call(arguments,3);for(n in t)e.apply(i,[n,t[n]].concat(o));return!0}return!1},limitExecByInterval:function(t,e,i){var n,o;return function s(){var a=arguments;return n?void(o=!0):(n=!0,setTimeout(function(){n=!1,o&&(s.apply(i,a),o=!1)},e),void t.apply(i,a))}},falseFn:function(){return!1},formatNum:function(t,e){var i=Math.pow(10,e||5);return Math.round(t*i)/i},trim:function(t){return t.trim?t.trim():t.replace(/^\s+|\s+$/g,"")},splitWords:function(t){return o.Util.trim(t).split(/\s+/)},setOptions:function(t,e){return t.options=o.extend({},t.options,e),t.options},getParamString:function(t,e,i){var n=[];for(var o in t)n.push(encodeURIComponent(i?o.toUpperCase():o)+"="+encodeURIComponent(t[o]));return(e&&-1!==e.indexOf("?")?"&":"?")+n.join("&")},template:function(t,e){return t.replace(/\{ *([\w_]+) *\}/g,function(t,n){var o=e[n];if(o===i)throw new Error("No value provided for variable "+t);return"function"==typeof o&&(o=o(e)),o})},isArray:Array.isArray||function(t){return"[object Array]"===Object.prototype.toString.call(t)},emptyImageUrl:"data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="},function(){function e(e){var i,n,o=["webkit","moz","o","ms"];for(i=0;i<o.length&&!n;i++)n=t[o[i]+e];return n}function i(e){var i=+new Date,o=Math.max(0,16-(i-n));return n=i+o,t.setTimeout(e,o)}var n=0,s=t.requestAnimationFrame||e("RequestAnimationFrame")||i,a=t.cancelAnimationFrame||e("CancelAnimationFrame")||e("CancelRequestAnimationFrame")||function(e){t.clearTimeout(e)};o.Util.requestAnimFrame=function(e,n,a,r){return e=o.bind(e,n),a&&s===i?void e():s.call(t,e,r)},o.Util.cancelAnimFrame=function(e){e&&a.call(t,e)}}(),o.extend=o.Util.extend,o.bind=o.Util.bind,o.stamp=o.Util.stamp,o.setOptions=o.Util.setOptions,o.Class=function(){},o.Class.extend=function(t){var e=function(){this.initialize&&this.initialize.apply(this,arguments),this._initHooks&&this.callInitHooks()},i=function(){};i.prototype=this.prototype;var n=new i;n.constructor=e,e.prototype=n;for(var s in this)this.hasOwnProperty(s)&&"prototype"!==s&&(e[s]=this[s]);t.statics&&(o.extend(e,t.statics),delete t.statics),t.includes&&(o.Util.extend.apply(null,[n].concat(t.includes)),delete t.includes),t.options&&n.options&&(t.options=o.extend({},n.options,t.options)),o.extend(n,t),n._initHooks=[];var a=this;return e.__super__=a.prototype,n.callInitHooks=function(){if(!this._initHooksCalled){a.prototype.callInitHooks&&a.prototype.callInitHooks.call(this),this._initHooksCalled=!0;for(var t=0,e=n._initHooks.length;e>t;t++)n._initHooks[t].call(this)}},e},o.Class.include=function(t){o.extend(this.prototype,t)},o.Class.mergeOptions=function(t){o.extend(this.prototype.options,t)},o.Class.addInitHook=function(t){var e=Array.prototype.slice.call(arguments,1),i="function"==typeof t?t:function(){this[t].apply(this,e)};this.prototype._initHooks=this.prototype._initHooks||[],this.prototype._initHooks.push(i)};var s="_leaflet_events";o.Mixin={},o.Mixin.Events={addEventListener:function(t,e,i){if(o.Util.invokeEach(t,this.addEventListener,this,e,i))return this;var n,a,r,h,l,u,c,d=this[s]=this[s]||{},p=i&&i!==this&&o.stamp(i);for(t=o.Util.splitWords(t),n=0,a=t.length;a>n;n++)r={action:e,context:i||this},h=t[n],p?(l=h+"_idx",u=l+"_len",c=d[l]=d[l]||{},c[p]||(c[p]=[],d[u]=(d[u]||0)+1),c[p].push(r)):(d[h]=d[h]||[],d[h].push(r));return this},hasEventListeners:function(t){var e=this[s];return!!e&&(t in e&&e[t].length>0||t+"_idx"in e&&e[t+"_idx_len"]>0)},removeEventListener:function(t,e,i){if(!this[s])return this;if(!t)return this.clearAllEventListeners();if(o.Util.invokeEach(t,this.removeEventListener,this,e,i))return this;var n,a,r,h,l,u,c,d,p,_=this[s],m=i&&i!==this&&o.stamp(i);for(t=o.Util.splitWords(t),n=0,a=t.length;a>n;n++)if(r=t[n],u=r+"_idx",c=u+"_len",d=_[u],e){if(h=m&&d?d[m]:_[r]){for(l=h.length-1;l>=0;l--)h[l].action!==e||i&&h[l].context!==i||(p=h.splice(l,1),p[0].action=o.Util.falseFn);i&&d&&0===h.length&&(delete d[m],_[c]--)}}else delete _[r],delete _[u],delete _[c];return this},clearAllEventListeners:function(){return delete this[s],this},fireEvent:function(t,e){if(!this.hasEventListeners(t))return this;var i,n,a,r,h,l=o.Util.extend({},e,{type:t,target:this}),u=this[s];if(u[t])for(i=u[t].slice(),n=0,a=i.length;a>n;n++)i[n].action.call(i[n].context,l);r=u[t+"_idx"];for(h in r)if(i=r[h].slice())for(n=0,a=i.length;a>n;n++)i[n].action.call(i[n].context,l);return this},addOneTimeEventListener:function(t,e,i){if(o.Util.invokeEach(t,this.addOneTimeEventListener,this,e,i))return this;var n=o.bind(function(){this.removeEventListener(t,e,i).removeEventListener(t,n,i)},this);return this.addEventListener(t,e,i).addEventListener(t,n,i)}},o.Mixin.Events.on=o.Mixin.Events.addEventListener,o.Mixin.Events.off=o.Mixin.Events.removeEventListener,o.Mixin.Events.once=o.Mixin.Events.addOneTimeEventListener,o.Mixin.Events.fire=o.Mixin.Events.fireEvent,function(){var n="ActiveXObject"in t,s=n&&!e.addEventListener,a=navigator.userAgent.toLowerCase(),r=-1!==a.indexOf("webkit"),h=-1!==a.indexOf("chrome"),l=-1!==a.indexOf("phantom"),u=-1!==a.indexOf("android"),c=-1!==a.search("android [23]"),d=-1!==a.indexOf("gecko"),p=typeof orientation!=i+"",_=!t.PointerEvent&&t.MSPointerEvent,m=t.PointerEvent&&t.navigator.pointerEnabled&&t.navigator.maxTouchPoints||_,f="devicePixelRatio"in t&&t.devicePixelRatio>1||"matchMedia"in t&&t.matchMedia("(min-resolution:144dpi)")&&t.matchMedia("(min-resolution:144dpi)").matches,g=e.documentElement,v=n&&"transition"in g.style,y="WebKitCSSMatrix"in t&&"m11"in new t.WebKitCSSMatrix&&!c,P="MozPerspective"in g.style,L="OTransition"in g.style,x=!t.L_DISABLE_3D&&(v||y||P||L)&&!l,w=!t.L_NO_TOUCH&&!l&&(m||"ontouchstart"in t||t.DocumentTouch&&e instanceof t.DocumentTouch);o.Browser={ie:n,ielt9:s,webkit:r,gecko:d&&!r&&!t.opera&&!n,android:u,android23:c,chrome:h,ie3d:v,webkit3d:y,gecko3d:P,opera3d:L,any3d:x,mobile:p,mobileWebkit:p&&r,mobileWebkit3d:p&&y,mobileOpera:p&&t.opera,touch:w,msPointer:_,pointer:m,retina:f}}(),o.Point=function(t,e,i){this.x=i?Math.round(t):t,this.y=i?Math.round(e):e},o.Point.prototype={clone:function(){return new o.Point(this.x,this.y)},add:function(t){return this.clone()._add(o.point(t))},_add:function(t){return this.x+=t.x,this.y+=t.y,this},subtract:function(t){return this.clone()._subtract(o.point(t))},_subtract:function(t){return this.x-=t.x,this.y-=t.y,this},divideBy:function(t){return this.clone()._divideBy(t)},_divideBy:function(t){return this.x/=t,this.y/=t,this},multiplyBy:function(t){return this.clone()._multiplyBy(t)},_multiplyBy:function(t){return this.x*=t,this.y*=t,this},round:function(){return this.clone()._round()},_round:function(){return this.x=Math.round(this.x),this.y=Math.round(this.y),this},floor:function(){return this.clone()._floor()},_floor:function(){return this.x=Math.floor(this.x),this.y=Math.floor(this.y),this},distanceTo:function(t){t=o.point(t);var e=t.x-this.x,i=t.y-this.y;return Math.sqrt(e*e+i*i)},equals:function(t){return t=o.point(t),t.x===this.x&&t.y===this.y},contains:function(t){return t=o.point(t),Math.abs(t.x)<=Math.abs(this.x)&&Math.abs(t.y)<=Math.abs(this.y)},toString:function(){return"Point("+o.Util.formatNum(this.x)+", "+o.Util.formatNum(this.y)+")"}},o.point=function(t,e,n){return t instanceof o.Point?t:o.Util.isArray(t)?new o.Point(t[0],t[1]):t===i||null===t?t:new o.Point(t,e,n)},o.Bounds=function(t,e){if(t)for(var i=e?[t,e]:t,n=0,o=i.length;o>n;n++)this.extend(i[n])},o.Bounds.prototype={extend:function(t){return t=o.point(t),this.min||this.max?(this.min.x=Math.min(t.x,this.min.x),this.max.x=Math.max(t.x,this.max.x),this.min.y=Math.min(t.y,this.min.y),this.max.y=Math.max(t.y,this.max.y)):(this.min=t.clone(),this.max=t.clone()),this},getCenter:function(t){return new o.Point((this.min.x+this.max.x)/2,(this.min.y+this.max.y)/2,t)},getBottomLeft:function(){return new o.Point(this.min.x,this.max.y)},getTopRight:function(){return new o.Point(this.max.x,this.min.y)},getSize:function(){return this.max.subtract(this.min)},contains:function(t){var e,i;return t="number"==typeof t[0]||t instanceof o.Point?o.point(t):o.bounds(t),t instanceof o.Bounds?(e=t.min,i=t.max):e=i=t,e.x>=this.min.x&&i.x<=this.max.x&&e.y>=this.min.y&&i.y<=this.max.y},intersects:function(t){t=o.bounds(t);var e=this.min,i=this.max,n=t.min,s=t.max,a=s.x>=e.x&&n.x<=i.x,r=s.y>=e.y&&n.y<=i.y;return a&&r},isValid:function(){return!(!this.min||!this.max)}},o.bounds=function(t,e){return!t||t instanceof o.Bounds?t:new o.Bounds(t,e)},o.Transformation=function(t,e,i,n){this._a=t,this._b=e,this._c=i,this._d=n},o.Transformation.prototype={transform:function(t,e){return this._transform(t.clone(),e)},_transform:function(t,e){return e=e||1,t.x=e*(this._a*t.x+this._b),t.y=e*(this._c*t.y+this._d),t},untransform:function(t,e){return e=e||1,new o.Point((t.x/e-this._b)/this._a,(t.y/e-this._d)/this._c)}},o.DomUtil={get:function(t){return"string"==typeof t?e.getElementById(t):t},getStyle:function(t,i){var n=t.style[i];if(!n&&t.currentStyle&&(n=t.currentStyle[i]),(!n||"auto"===n)&&e.defaultView){var o=e.defaultView.getComputedStyle(t,null);n=o?o[i]:null}return"auto"===n?null:n},getViewportOffset:function(t){var i,n=0,s=0,a=t,r=e.body,h=e.documentElement;do{if(n+=a.offsetTop||0,s+=a.offsetLeft||0,n+=parseInt(o.DomUtil.getStyle(a,"borderTopWidth"),10)||0,s+=parseInt(o.DomUtil.getStyle(a,"borderLeftWidth"),10)||0,i=o.DomUtil.getStyle(a,"position"),a.offsetParent===r&&"absolute"===i)break;if("fixed"===i){n+=r.scrollTop||h.scrollTop||0,s+=r.scrollLeft||h.scrollLeft||0;break}if("relative"===i&&!a.offsetLeft){var l=o.DomUtil.getStyle(a,"width"),u=o.DomUtil.getStyle(a,"max-width"),c=a.getBoundingClientRect();("none"!==l||"none"!==u)&&(s+=c.left+a.clientLeft),n+=c.top+(r.scrollTop||h.scrollTop||0);break}a=a.offsetParent}while(a);a=t;do{if(a===r)break;n-=a.scrollTop||0,s-=a.scrollLeft||0,a=a.parentNode}while(a);return new o.Point(s,n)},documentIsLtr:function(){return o.DomUtil._docIsLtrCached||(o.DomUtil._docIsLtrCached=!0,o.DomUtil._docIsLtr="ltr"===o.DomUtil.getStyle(e.body,"direction")),o.DomUtil._docIsLtr},create:function(t,i,n){var o=e.createElement(t);return o.className=i,n&&n.appendChild(o),o},hasClass:function(t,e){if(t.classList!==i)return t.classList.contains(e);var n=o.DomUtil._getClass(t);return n.length>0&&new RegExp("(^|\\s)"+e+"(\\s|$)").test(n)},addClass:function(t,e){if(t.classList!==i)for(var n=o.Util.splitWords(e),s=0,a=n.length;a>s;s++)t.classList.add(n[s]);else if(!o.DomUtil.hasClass(t,e)){var r=o.DomUtil._getClass(t);o.DomUtil._setClass(t,(r?r+" ":"")+e)}},removeClass:function(t,e){t.classList!==i?t.classList.remove(e):o.DomUtil._setClass(t,o.Util.trim((" "+o.DomUtil._getClass(t)+" ").replace(" "+e+" "," ")))},_setClass:function(t,e){t.className.baseVal===i?t.className=e:t.className.baseVal=e},_getClass:function(t){return t.className.baseVal===i?t.className:t.className.baseVal},setOpacity:function(t,e){if("opacity"in t.style)t.style.opacity=e;else if("filter"in t.style){var i=!1,n="DXImageTransform.Microsoft.Alpha";try{i=t.filters.item(n)}catch(o){if(1===e)return}e=Math.round(100*e),i?(i.Enabled=100!==e,i.Opacity=e):t.style.filter+=" progid:"+n+"(opacity="+e+")"}},testProp:function(t){for(var i=e.documentElement.style,n=0;n<t.length;n++)if(t[n]in i)return t[n];return!1},getTranslateString:function(t){var e=o.Browser.webkit3d,i="translate"+(e?"3d":"")+"(",n=(e?",0":"")+")";return i+t.x+"px,"+t.y+"px"+n},getScaleString:function(t,e){var i=o.DomUtil.getTranslateString(e.add(e.multiplyBy(-1*t))),n=" scale("+t+") ";return i+n},setPosition:function(t,e,i){t._leaflet_pos=e,!i&&o.Browser.any3d?t.style[o.DomUtil.TRANSFORM]=o.DomUtil.getTranslateString(e):(t.style.left=e.x+"px",t.style.top=e.y+"px")},getPosition:function(t){return t._leaflet_pos}},o.DomUtil.TRANSFORM=o.DomUtil.testProp(["transform","WebkitTransform","OTransform","MozTransform","msTransform"]),o.DomUtil.TRANSITION=o.DomUtil.testProp(["webkitTransition","transition","OTransition","MozTransition","msTransition"]),o.DomUtil.TRANSITION_END="webkitTransition"===o.DomUtil.TRANSITION||"OTransition"===o.DomUtil.TRANSITION?o.DomUtil.TRANSITION+"End":"transitionend",function(){if("onselectstart"in e)o.extend(o.DomUtil,{disableTextSelection:function(){o.DomEvent.on(t,"selectstart",o.DomEvent.preventDefault)},enableTextSelection:function(){o.DomEvent.off(t,"selectstart",o.DomEvent.preventDefault)}});else{var i=o.DomUtil.testProp(["userSelect","WebkitUserSelect","OUserSelect","MozUserSelect","msUserSelect"]);o.extend(o.DomUtil,{disableTextSelection:function(){if(i){var t=e.documentElement.style;this._userSelect=t[i],t[i]="none"}},enableTextSelection:function(){i&&(e.documentElement.style[i]=this._userSelect,delete this._userSelect)}})}o.extend(o.DomUtil,{disableImageDrag:function(){o.DomEvent.on(t,"dragstart",o.DomEvent.preventDefault)},enableImageDrag:function(){o.DomEvent.off(t,"dragstart",o.DomEvent.preventDefault)}})}(),o.LatLng=function(t,e,n){if(t=parseFloat(t),e=parseFloat(e),isNaN(t)||isNaN(e))throw new Error("Invalid LatLng object: ("+t+", "+e+")");this.lat=t,this.lng=e,n!==i&&(this.alt=parseFloat(n))},o.extend(o.LatLng,{DEG_TO_RAD:Math.PI/180,RAD_TO_DEG:180/Math.PI,MAX_MARGIN:1e-9}),o.LatLng.prototype={equals:function(t){if(!t)return!1;t=o.latLng(t);var e=Math.max(Math.abs(this.lat-t.lat),Math.abs(this.lng-t.lng));return e<=o.LatLng.MAX_MARGIN},toString:function(t){return"LatLng("+o.Util.formatNum(this.lat,t)+", "+o.Util.formatNum(this.lng,t)+")"},distanceTo:function(t){t=o.latLng(t);var e=6378137,i=o.LatLng.DEG_TO_RAD,n=(t.lat-this.lat)*i,s=(t.lng-this.lng)*i,a=this.lat*i,r=t.lat*i,h=Math.sin(n/2),l=Math.sin(s/2),u=h*h+l*l*Math.cos(a)*Math.cos(r);return 2*e*Math.atan2(Math.sqrt(u),Math.sqrt(1-u))},wrap:function(t,e){var i=this.lng;return t=t||-180,e=e||180,i=(i+e)%(e-t)+(t>i||i===e?e:t),new o.LatLng(this.lat,i)}},o.latLng=function(t,e){return t instanceof o.LatLng?t:o.Util.isArray(t)?"number"==typeof t[0]||"string"==typeof t[0]?new o.LatLng(t[0],t[1],t[2]):null:t===i||null===t?t:"object"==typeof t&&"lat"in t?new o.LatLng(t.lat,"lng"in t?t.lng:t.lon):e===i?null:new o.LatLng(t,e)},o.LatLngBounds=function(t,e){if(t)for(var i=e?[t,e]:t,n=0,o=i.length;o>n;n++)this.extend(i[n])},o.LatLngBounds.prototype={extend:function(t){if(!t)return this;var e=o.latLng(t);return t=null!==e?e:o.latLngBounds(t),t instanceof o.LatLng?this._southWest||this._northEast?(this._southWest.lat=Math.min(t.lat,this._southWest.lat),this._southWest.lng=Math.min(t.lng,this._southWest.lng),this._northEast.lat=Math.max(t.lat,this._northEast.lat),this._northEast.lng=Math.max(t.lng,this._northEast.lng)):(this._southWest=new o.LatLng(t.lat,t.lng),this._northEast=new o.LatLng(t.lat,t.lng)):t instanceof o.LatLngBounds&&(this.extend(t._southWest),this.extend(t._northEast)),this},pad:function(t){var e=this._southWest,i=this._northEast,n=Math.abs(e.lat-i.lat)*t,s=Math.abs(e.lng-i.lng)*t;return new o.LatLngBounds(new o.LatLng(e.lat-n,e.lng-s),new o.LatLng(i.lat+n,i.lng+s))},getCenter:function(){return new o.LatLng((this._southWest.lat+this._northEast.lat)/2,(this._southWest.lng+this._northEast.lng)/2)},getSouthWest:function(){return this._southWest},getNorthEast:function(){return this._northEast},getNorthWest:function(){return new o.LatLng(this.getNorth(),this.getWest())},getSouthEast:function(){return new o.LatLng(this.getSouth(),this.getEast())},getWest:function(){return this._southWest.lng},getSouth:function(){return this._southWest.lat},getEast:function(){return this._northEast.lng},getNorth:function(){return this._northEast.lat},contains:function(t){t="number"==typeof t[0]||t instanceof o.LatLng?o.latLng(t):o.latLngBounds(t);var e,i,n=this._southWest,s=this._northEast;return t instanceof o.LatLngBounds?(e=t.getSouthWest(),i=t.getNorthEast()):e=i=t,e.lat>=n.lat&&i.lat<=s.lat&&e.lng>=n.lng&&i.lng<=s.lng},intersects:function(t){t=o.latLngBounds(t);var e=this._southWest,i=this._northEast,n=t.getSouthWest(),s=t.getNorthEast(),a=s.lat>=e.lat&&n.lat<=i.lat,r=s.lng>=e.lng&&n.lng<=i.lng;return a&&r},toBBoxString:function(){return[this.getWest(),this.getSouth(),this.getEast(),this.getNorth()].join(",")},equals:function(t){return t?(t=o.latLngBounds(t),this._southWest.equals(t.getSouthWest())&&this._northEast.equals(t.getNorthEast())):!1},isValid:function(){return!(!this._southWest||!this._northEast)}},o.latLngBounds=function(t,e){return!t||t instanceof o.LatLngBounds?t:new o.LatLngBounds(t,e)},o.Projection={},o.Projection.SphericalMercator={MAX_LATITUDE:85.0511287798,project:function(t){var e=o.LatLng.DEG_TO_RAD,i=this.MAX_LATITUDE,n=Math.max(Math.min(i,t.lat),-i),s=t.lng*e,a=n*e;return a=Math.log(Math.tan(Math.PI/4+a/2)),new o.Point(s,a)},unproject:function(t){var e=o.LatLng.RAD_TO_DEG,i=t.x*e,n=(2*Math.atan(Math.exp(t.y))-Math.PI/2)*e;return new o.LatLng(n,i)}},o.Projection.LonLat={project:function(t){return new o.Point(t.lng,t.lat)},unproject:function(t){return new o.LatLng(t.y,t.x)}},o.CRS={latLngToPoint:function(t,e){var i=this.projection.project(t),n=this.scale(e);return this.transformation._transform(i,n)},pointToLatLng:function(t,e){var i=this.scale(e),n=this.transformation.untransform(t,i);return this.projection.unproject(n)},project:function(t){return this.projection.project(t)},scale:function(t){return 256*Math.pow(2,t)},getSize:function(t){var e=this.scale(t);return o.point(e,e)}},o.CRS.Simple=o.extend({},o.CRS,{projection:o.Projection.LonLat,transformation:new o.Transformation(1,0,-1,0),scale:function(t){return Math.pow(2,t)}}),o.CRS.EPSG3857=o.extend({},o.CRS,{code:"EPSG:3857",projection:o.Projection.SphericalMercator,transformation:new o.Transformation(.5/Math.PI,.5,-.5/Math.PI,.5),project:function(t){var e=this.projection.project(t),i=6378137;return e.multiplyBy(i)}}),o.CRS.EPSG900913=o.extend({},o.CRS.EPSG3857,{code:"EPSG:900913"}),o.CRS.EPSG4326=o.extend({},o.CRS,{code:"EPSG:4326",projection:o.Projection.LonLat,transformation:new o.Transformation(1/360,.5,-1/360,.5)}),o.Map=o.Class.extend({includes:o.Mixin.Events,options:{crs:o.CRS.EPSG3857,fadeAnimation:o.DomUtil.TRANSITION&&!o.Browser.android23,trackResize:!0,markerZoomAnimation:o.DomUtil.TRANSITION&&o.Browser.any3d},initialize:function(t,e){e=o.setOptions(this,e),this._initContainer(t),this._initLayout(),this._onResize=o.bind(this._onResize,this),this._initEvents(),e.maxBounds&&this.setMaxBounds(e.maxBounds),e.center&&e.zoom!==i&&this.setView(o.latLng(e.center),e.zoom,{reset:!0}),this._handlers=[],this._layers={},this._zoomBoundLayers={},this._tileLayersNum=0,this.callInitHooks(),this._addLayers(e.layers)},setView:function(t,e){return e=e===i?this.getZoom():e,this._resetView(o.latLng(t),this._limitZoom(e)),this},setZoom:function(t,e){return this._loaded?this.setView(this.getCenter(),t,{zoom:e}):(this._zoom=this._limitZoom(t),this)},zoomIn:function(t,e){return this.setZoom(this._zoom+(t||1),e)},zoomOut:function(t,e){return this.setZoom(this._zoom-(t||1),e)},setZoomAround:function(t,e,i){var n=this.getZoomScale(e),s=this.getSize().divideBy(2),a=t instanceof o.Point?t:this.latLngToContainerPoint(t),r=a.subtract(s).multiplyBy(1-1/n),h=this.containerPointToLatLng(s.add(r));return this.setView(h,e,{zoom:i})},fitBounds:function(t,e){e=e||{},t=t.getBounds?t.getBounds():o.latLngBounds(t);var i=o.point(e.paddingTopLeft||e.padding||[0,0]),n=o.point(e.paddingBottomRight||e.padding||[0,0]),s=this.getBoundsZoom(t,!1,i.add(n));s=e.maxZoom?Math.min(e.maxZoom,s):s;var a=n.subtract(i).divideBy(2),r=this.project(t.getSouthWest(),s),h=this.project(t.getNorthEast(),s),l=this.unproject(r.add(h).divideBy(2).add(a),s);return this.setView(l,s,e)},fitWorld:function(t){return this.fitBounds([[-90,-180],[90,180]],t)},panTo:function(t,e){return this.setView(t,this._zoom,{pan:e})},panBy:function(t){return this.fire("movestart"),this._rawPanBy(o.point(t)),this.fire("move"),this.fire("moveend")},setMaxBounds:function(t){return t=o.latLngBounds(t),this.options.maxBounds=t,t?(this._loaded&&this._panInsideMaxBounds(),this.on("moveend",this._panInsideMaxBounds,this)):this.off("moveend",this._panInsideMaxBounds,this)},panInsideBounds:function(t,e){var i=this.getCenter(),n=this._limitCenter(i,this._zoom,t);return i.equals(n)?this:this.panTo(n,e)},addLayer:function(t){var e=o.stamp(t);return this._layers[e]?this:(this._layers[e]=t,!t.options||isNaN(t.options.maxZoom)&&isNaN(t.options.minZoom)||(this._zoomBoundLayers[e]=t,this._updateZoomLevels()),this.options.zoomAnimation&&o.TileLayer&&t instanceof o.TileLayer&&(this._tileLayersNum++,this._tileLayersToLoad++,t.on("load",this._onTileLayerLoad,this)),this._loaded&&this._layerAdd(t),this)},removeLayer:function(t){var e=o.stamp(t);return this._layers[e]?(this._loaded&&t.onRemove(this),delete this._layers[e],this._loaded&&this.fire("layerremove",{layer:t}),this._zoomBoundLayers[e]&&(delete this._zoomBoundLayers[e],this._updateZoomLevels()),this.options.zoomAnimation&&o.TileLayer&&t instanceof o.TileLayer&&(this._tileLayersNum--,this._tileLayersToLoad--,t.off("load",this._onTileLayerLoad,this)),this):this},hasLayer:function(t){return t?o.stamp(t)in this._layers:!1},eachLayer:function(t,e){for(var i in this._layers)t.call(e,this._layers[i]);return this},invalidateSize:function(t){if(!this._loaded)return this;t=o.extend({animate:!1,pan:!0},t===!0?{animate:!0}:t);var e=this.getSize();this._sizeChanged=!0,this._initialCenter=null;var i=this.getSize(),n=e.divideBy(2).round(),s=i.divideBy(2).round(),a=n.subtract(s);return a.x||a.y?(t.animate&&t.pan?this.panBy(a):(t.pan&&this._rawPanBy(a),this.fire("move"),t.debounceMoveend?(clearTimeout(this._sizeTimer),this._sizeTimer=setTimeout(o.bind(this.fire,this,"moveend"),200)):this.fire("moveend")),this.fire("resize",{oldSize:e,newSize:i})):this},addHandler:function(t,e){if(!e)return this;var i=this[t]=new e(this);return this._handlers.push(i),this.options[t]&&i.enable(),this},remove:function(){this._loaded&&this.fire("unload"),this._initEvents("off");try{delete this._container._leaflet}catch(t){this._container._leaflet=i}return this._clearPanes(),this._clearControlPos&&this._clearControlPos(),this._clearHandlers(),this},getCenter:function(){return this._checkIfLoaded(),this._initialCenter&&!this._moved()?this._initialCenter:this.layerPointToLatLng(this._getCenterLayerPoint())},getZoom:function(){return this._zoom},getBounds:function(){var t=this.getPixelBounds(),e=this.unproject(t.getBottomLeft()),i=this.unproject(t.getTopRight());return new o.LatLngBounds(e,i)},getMinZoom:function(){return this.options.minZoom===i?this._layersMinZoom===i?0:this._layersMinZoom:this.options.minZoom},getMaxZoom:function(){return this.options.maxZoom===i?this._layersMaxZoom===i?1/0:this._layersMaxZoom:this.options.maxZoom},getBoundsZoom:function(t,e,i){t=o.latLngBounds(t);var n,s=this.getMinZoom()-(e?1:0),a=this.getMaxZoom(),r=this.getSize(),h=t.getNorthWest(),l=t.getSouthEast(),u=!0;i=o.point(i||[0,0]);do s++,n=this.project(l,s).subtract(this.project(h,s)).add(i),u=e?n.x<r.x||n.y<r.y:r.contains(n);while(u&&a>=s);return u&&e?null:e?s:s-1},getSize:function(){return(!this._size||this._sizeChanged)&&(this._size=new o.Point(this._container.clientWidth,this._container.clientHeight),this._sizeChanged=!1),this._size.clone()},getPixelBounds:function(){var t=this._getTopLeftPoint();return new o.Bounds(t,t.add(this.getSize()))},getPixelOrigin:function(){return this._checkIfLoaded(),this._initialTopLeftPoint},getPanes:function(){return this._panes},getContainer:function(){return this._container},getZoomScale:function(t){var e=this.options.crs;return e.scale(t)/e.scale(this._zoom)},getScaleZoom:function(t){return this._zoom+Math.log(t)/Math.LN2},project:function(t,e){return e=e===i?this._zoom:e,this.options.crs.latLngToPoint(o.latLng(t),e)},unproject:function(t,e){return e=e===i?this._zoom:e,this.options.crs.pointToLatLng(o.point(t),e)},layerPointToLatLng:function(t){var e=o.point(t).add(this.getPixelOrigin());return this.unproject(e)},latLngToLayerPoint:function(t){var e=this.project(o.latLng(t))._round();return e._subtract(this.getPixelOrigin())},containerPointToLayerPoint:function(t){return o.point(t).subtract(this._getMapPanePos())},layerPointToContainerPoint:function(t){return o.point(t).add(this._getMapPanePos())},containerPointToLatLng:function(t){var e=this.containerPointToLayerPoint(o.point(t));return this.layerPointToLatLng(e)},latLngToContainerPoint:function(t){return this.layerPointToContainerPoint(this.latLngToLayerPoint(o.latLng(t)))},mouseEventToContainerPoint:function(t){return o.DomEvent.getMousePosition(t,this._container)},mouseEventToLayerPoint:function(t){return this.containerPointToLayerPoint(this.mouseEventToContainerPoint(t))},mouseEventToLatLng:function(t){return this.layerPointToLatLng(this.mouseEventToLayerPoint(t))},_initContainer:function(t){var e=this._container=o.DomUtil.get(t);if(!e)throw new Error("Map container not found.");if(e._leaflet)throw new Error("Map container is already initialized.");e._leaflet=!0},_initLayout:function(){var t=this._container;o.DomUtil.addClass(t,"leaflet-container"+(o.Browser.touch?" leaflet-touch":"")+(o.Browser.retina?" leaflet-retina":"")+(o.Browser.ielt9?" leaflet-oldie":"")+(this.options.fadeAnimation?" leaflet-fade-anim":""));var e=o.DomUtil.getStyle(t,"position");"absolute"!==e&&"relative"!==e&&"fixed"!==e&&(t.style.position="relative"),this._initPanes(),this._initControlPos&&this._initControlPos()},_initPanes:function(){var t=this._panes={};this._mapPane=t.mapPane=this._createPane("leaflet-map-pane",this._container),this._tilePane=t.tilePane=this._createPane("leaflet-tile-pane",this._mapPane),t.objectsPane=this._createPane("leaflet-objects-pane",this._mapPane),t.shadowPane=this._createPane("leaflet-shadow-pane"),t.overlayPane=this._createPane("leaflet-overlay-pane"),t.markerPane=this._createPane("leaflet-marker-pane"),t.popupPane=this._createPane("leaflet-popup-pane");var e=" leaflet-zoom-hide";this.options.markerZoomAnimation||(o.DomUtil.addClass(t.markerPane,e),o.DomUtil.addClass(t.shadowPane,e),o.DomUtil.addClass(t.popupPane,e))},_createPane:function(t,e){return o.DomUtil.create("div",t,e||this._panes.objectsPane)},_clearPanes:function(){this._container.removeChild(this._mapPane)},_addLayers:function(t){t=t?o.Util.isArray(t)?t:[t]:[];for(var e=0,i=t.length;i>e;e++)this.addLayer(t[e])},_resetView:function(t,e,i,n){var s=this._zoom!==e;n||(this.fire("movestart"),s&&this.fire("zoomstart")),this._zoom=e,this._initialCenter=t,this._initialTopLeftPoint=this._getNewTopLeftPoint(t),i?this._initialTopLeftPoint._add(this._getMapPanePos()):o.DomUtil.setPosition(this._mapPane,new o.Point(0,0)),this._tileLayersToLoad=this._tileLayersNum;var a=!this._loaded;this._loaded=!0,this.fire("viewreset",{hard:!i}),a&&(this.fire("load"),this.eachLayer(this._layerAdd,this)),this.fire("move"),(s||n)&&this.fire("zoomend"),this.fire("moveend",{hard:!i})},_rawPanBy:function(t){o.DomUtil.setPosition(this._mapPane,this._getMapPanePos().subtract(t))},_getZoomSpan:function(){return this.getMaxZoom()-this.getMinZoom()},_updateZoomLevels:function(){var t,e=1/0,n=-(1/0),o=this._getZoomSpan();for(t in this._zoomBoundLayers){var s=this._zoomBoundLayers[t];isNaN(s.options.minZoom)||(e=Math.min(e,s.options.minZoom)),isNaN(s.options.maxZoom)||(n=Math.max(n,s.options.maxZoom))}t===i?this._layersMaxZoom=this._layersMinZoom=i:(this._layersMaxZoom=n,this._layersMinZoom=e),o!==this._getZoomSpan()&&this.fire("zoomlevelschange")},_panInsideMaxBounds:function(){this.panInsideBounds(this.options.maxBounds)},_checkIfLoaded:function(){if(!this._loaded)throw new Error("Set map center and zoom first.")},_initEvents:function(e){if(o.DomEvent){e=e||"on",o.DomEvent[e](this._container,"click",this._onMouseClick,this);var i,n,s=["dblclick","mousedown","mouseup","mouseenter","mouseleave","mousemove","contextmenu"];for(i=0,n=s.length;n>i;i++)o.DomEvent[e](this._container,s[i],this._fireMouseEvent,this);this.options.trackResize&&o.DomEvent[e](t,"resize",this._onResize,this)}},_onResize:function(){o.Util.cancelAnimFrame(this._resizeRequest),this._resizeRequest=o.Util.requestAnimFrame(function(){this.invalidateSize({debounceMoveend:!0})},this,!1,this._container)},_onMouseClick:function(t){!this._loaded||!t._simulated&&(this.dragging&&this.dragging.moved()||this.boxZoom&&this.boxZoom.moved())||o.DomEvent._skipped(t)||(this.fire("preclick"),this._fireMouseEvent(t))},_fireMouseEvent:function(t){if(this._loaded&&!o.DomEvent._skipped(t)){var e=t.type;if(e="mouseenter"===e?"mouseover":"mouseleave"===e?"mouseout":e,this.hasEventListeners(e)){"contextmenu"===e&&o.DomEvent.preventDefault(t);var i=this.mouseEventToContainerPoint(t),n=this.containerPointToLayerPoint(i),s=this.layerPointToLatLng(n);this.fire(e,{latlng:s,layerPoint:n,containerPoint:i,originalEvent:t})}}},_onTileLayerLoad:function(){this._tileLayersToLoad--,this._tileLayersNum&&!this._tileLayersToLoad&&this.fire("tilelayersload")},_clearHandlers:function(){for(var t=0,e=this._handlers.length;e>t;t++)this._handlers[t].disable()},whenReady:function(t,e){return this._loaded?t.call(e||this,this):this.on("load",t,e),this},_layerAdd:function(t){t.onAdd(this),this.fire("layeradd",{layer:t})},_getMapPanePos:function(){return o.DomUtil.getPosition(this._mapPane)},_moved:function(){var t=this._getMapPanePos();return t&&!t.equals([0,0])},_getTopLeftPoint:function(){return this.getPixelOrigin().subtract(this._getMapPanePos())},_getNewTopLeftPoint:function(t,e){var i=this.getSize()._divideBy(2);return this.project(t,e)._subtract(i)._round()},_latLngToNewLayerPoint:function(t,e,i){var n=this._getNewTopLeftPoint(i,e).add(this._getMapPanePos());return this.project(t,e)._subtract(n)},_getCenterLayerPoint:function(){return this.containerPointToLayerPoint(this.getSize()._divideBy(2))},_getCenterOffset:function(t){return this.latLngToLayerPoint(t).subtract(this._getCenterLayerPoint())},_limitCenter:function(t,e,i){if(!i)return t;var n=this.project(t,e),s=this.getSize().divideBy(2),a=new o.Bounds(n.subtract(s),n.add(s)),r=this._getBoundsOffset(a,i,e);return this.unproject(n.add(r),e)},_limitOffset:function(t,e){if(!e)return t;var i=this.getPixelBounds(),n=new o.Bounds(i.min.add(t),i.max.add(t));return t.add(this._getBoundsOffset(n,e))},_getBoundsOffset:function(t,e,i){var n=this.project(e.getNorthWest(),i).subtract(t.min),s=this.project(e.getSouthEast(),i).subtract(t.max),a=this._rebound(n.x,-s.x),r=this._rebound(n.y,-s.y);return new o.Point(a,r)},_rebound:function(t,e){return t+e>0?Math.round(t-e)/2:Math.max(0,Math.ceil(t))-Math.max(0,Math.floor(e))},_limitZoom:function(t){var e=this.getMinZoom(),i=this.getMaxZoom();return Math.max(e,Math.min(i,t))}}),o.map=function(t,e){return new o.Map(t,e)},o.Projection.Mercator={MAX_LATITUDE:85.0840591556,R_MINOR:6356752.314245179,R_MAJOR:6378137,project:function(t){var e=o.LatLng.DEG_TO_RAD,i=this.MAX_LATITUDE,n=Math.max(Math.min(i,t.lat),-i),s=this.R_MAJOR,a=this.R_MINOR,r=t.lng*e*s,h=n*e,l=a/s,u=Math.sqrt(1-l*l),c=u*Math.sin(h);c=Math.pow((1-c)/(1+c),.5*u);var d=Math.tan(.5*(.5*Math.PI-h))/c;return h=-s*Math.log(d),new o.Point(r,h)},unproject:function(t){for(var e,i=o.LatLng.RAD_TO_DEG,n=this.R_MAJOR,s=this.R_MINOR,a=t.x*i/n,r=s/n,h=Math.sqrt(1-r*r),l=Math.exp(-t.y/n),u=Math.PI/2-2*Math.atan(l),c=15,d=1e-7,p=c,_=.1;Math.abs(_)>d&&--p>0;)e=h*Math.sin(u),_=Math.PI/2-2*Math.atan(l*Math.pow((1-e)/(1+e),.5*h))-u,u+=_;return new o.LatLng(u*i,a)}},o.CRS.EPSG3395=o.extend({},o.CRS,{code:"EPSG:3395",
+projection:o.Projection.Mercator,transformation:function(){var t=o.Projection.Mercator,e=t.R_MAJOR,i=.5/(Math.PI*e);return new o.Transformation(i,.5,-i,.5)}()}),o.TileLayer=o.Class.extend({includes:o.Mixin.Events,options:{minZoom:0,maxZoom:18,tileSize:256,subdomains:"abc",errorTileUrl:"",attribution:"",zoomOffset:0,opacity:1,unloadInvisibleTiles:o.Browser.mobile,updateWhenIdle:o.Browser.mobile},initialize:function(t,e){e=o.setOptions(this,e),e.detectRetina&&o.Browser.retina&&e.maxZoom>0&&(e.tileSize=Math.floor(e.tileSize/2),e.zoomOffset++,e.minZoom>0&&e.minZoom--,this.options.maxZoom--),e.bounds&&(e.bounds=o.latLngBounds(e.bounds)),this._url=t;var i=this.options.subdomains;"string"==typeof i&&(this.options.subdomains=i.split(""))},onAdd:function(t){this._map=t,this._animated=t._zoomAnimated,this._initContainer(),t.on({viewreset:this._reset,moveend:this._update},this),this._animated&&t.on({zoomanim:this._animateZoom,zoomend:this._endZoomAnim},this),this.options.updateWhenIdle||(this._limitedUpdate=o.Util.limitExecByInterval(this._update,150,this),t.on("move",this._limitedUpdate,this)),this._reset(),this._update()},addTo:function(t){return t.addLayer(this),this},onRemove:function(t){this._container.parentNode.removeChild(this._container),t.off({viewreset:this._reset,moveend:this._update},this),this._animated&&t.off({zoomanim:this._animateZoom,zoomend:this._endZoomAnim},this),this.options.updateWhenIdle||t.off("move",this._limitedUpdate,this),this._container=null,this._map=null},bringToFront:function(){var t=this._map._panes.tilePane;return this._container&&(t.appendChild(this._container),this._setAutoZIndex(t,Math.max)),this},bringToBack:function(){var t=this._map._panes.tilePane;return this._container&&(t.insertBefore(this._container,t.firstChild),this._setAutoZIndex(t,Math.min)),this},getAttribution:function(){return this.options.attribution},getContainer:function(){return this._container},setOpacity:function(t){return this.options.opacity=t,this._map&&this._updateOpacity(),this},setZIndex:function(t){return this.options.zIndex=t,this._updateZIndex(),this},setUrl:function(t,e){return this._url=t,e||this.redraw(),this},redraw:function(){return this._map&&(this._reset({hard:!0}),this._update()),this},_updateZIndex:function(){this._container&&this.options.zIndex!==i&&(this._container.style.zIndex=this.options.zIndex)},_setAutoZIndex:function(t,e){var i,n,o,s=t.children,a=-e(1/0,-(1/0));for(n=0,o=s.length;o>n;n++)s[n]!==this._container&&(i=parseInt(s[n].style.zIndex,10),isNaN(i)||(a=e(a,i)));this.options.zIndex=this._container.style.zIndex=(isFinite(a)?a:0)+e(1,-1)},_updateOpacity:function(){var t,e=this._tiles;if(o.Browser.ielt9)for(t in e)o.DomUtil.setOpacity(e[t],this.options.opacity);else o.DomUtil.setOpacity(this._container,this.options.opacity)},_initContainer:function(){var t=this._map._panes.tilePane;if(!this._container){if(this._container=o.DomUtil.create("div","leaflet-layer"),this._updateZIndex(),this._animated){var e="leaflet-tile-container";this._bgBuffer=o.DomUtil.create("div",e,this._container),this._tileContainer=o.DomUtil.create("div",e,this._container)}else this._tileContainer=this._container;t.appendChild(this._container),this.options.opacity<1&&this._updateOpacity()}},_reset:function(t){for(var e in this._tiles)this.fire("tileunload",{tile:this._tiles[e]});this._tiles={},this._tilesToLoad=0,this.options.reuseTiles&&(this._unusedTiles=[]),this._tileContainer.innerHTML="",this._animated&&t&&t.hard&&this._clearBgBuffer(),this._initContainer()},_getTileSize:function(){var t=this._map,e=t.getZoom()+this.options.zoomOffset,i=this.options.maxNativeZoom,n=this.options.tileSize;return i&&e>i&&(n=Math.round(t.getZoomScale(e)/t.getZoomScale(i)*n)),n},_update:function(){if(this._map){var t=this._map,e=t.getPixelBounds(),i=t.getZoom(),n=this._getTileSize();if(!(i>this.options.maxZoom||i<this.options.minZoom)){var s=o.bounds(e.min.divideBy(n)._floor(),e.max.divideBy(n)._floor());this._addTilesFromCenterOut(s),(this.options.unloadInvisibleTiles||this.options.reuseTiles)&&this._removeOtherTiles(s)}}},_addTilesFromCenterOut:function(t){var i,n,s,a=[],r=t.getCenter();for(i=t.min.y;i<=t.max.y;i++)for(n=t.min.x;n<=t.max.x;n++)s=new o.Point(n,i),this._tileShouldBeLoaded(s)&&a.push(s);var h=a.length;if(0!==h){a.sort(function(t,e){return t.distanceTo(r)-e.distanceTo(r)});var l=e.createDocumentFragment();for(this._tilesToLoad||this.fire("loading"),this._tilesToLoad+=h,n=0;h>n;n++)this._addTile(a[n],l);this._tileContainer.appendChild(l)}},_tileShouldBeLoaded:function(t){if(t.x+":"+t.y in this._tiles)return!1;var e=this.options;if(!e.continuousWorld){var i=this._getWrapTileNum();if(e.noWrap&&(t.x<0||t.x>=i.x)||t.y<0||t.y>=i.y)return!1}if(e.bounds){var n=this._getTileSize(),o=t.multiplyBy(n),s=o.add([n,n]),a=this._map.unproject(o),r=this._map.unproject(s);if(e.continuousWorld||e.noWrap||(a=a.wrap(),r=r.wrap()),!e.bounds.intersects([a,r]))return!1}return!0},_removeOtherTiles:function(t){var e,i,n,o;for(o in this._tiles)e=o.split(":"),i=parseInt(e[0],10),n=parseInt(e[1],10),(i<t.min.x||i>t.max.x||n<t.min.y||n>t.max.y)&&this._removeTile(o)},_removeTile:function(t){var e=this._tiles[t];this.fire("tileunload",{tile:e,url:e.src}),this.options.reuseTiles?(o.DomUtil.removeClass(e,"leaflet-tile-loaded"),this._unusedTiles.push(e)):e.parentNode===this._tileContainer&&this._tileContainer.removeChild(e),o.Browser.android||(e.onload=null,e.src=o.Util.emptyImageUrl),delete this._tiles[t]},_addTile:function(t,e){var i=this._getTilePos(t),n=this._getTile();o.DomUtil.setPosition(n,i,o.Browser.chrome),this._tiles[t.x+":"+t.y]=n,this._loadTile(n,t),n.parentNode!==this._tileContainer&&e.appendChild(n)},_getZoomForUrl:function(){var t=this.options,e=this._map.getZoom();return t.zoomReverse&&(e=t.maxZoom-e),e+=t.zoomOffset,t.maxNativeZoom?Math.min(e,t.maxNativeZoom):e},_getTilePos:function(t){var e=this._map.getPixelOrigin(),i=this._getTileSize();return t.multiplyBy(i).subtract(e)},getTileUrl:function(t){return o.Util.template(this._url,o.extend({s:this._getSubdomain(t),z:t.z,x:t.x,y:t.y},this.options))},_getWrapTileNum:function(){var t=this._map.options.crs,e=t.getSize(this._map.getZoom());return e.divideBy(this._getTileSize())._floor()},_adjustTilePoint:function(t){var e=this._getWrapTileNum();this.options.continuousWorld||this.options.noWrap||(t.x=(t.x%e.x+e.x)%e.x),this.options.tms&&(t.y=e.y-t.y-1),t.z=this._getZoomForUrl()},_getSubdomain:function(t){var e=Math.abs(t.x+t.y)%this.options.subdomains.length;return this.options.subdomains[e]},_getTile:function(){if(this.options.reuseTiles&&this._unusedTiles.length>0){var t=this._unusedTiles.pop();return this._resetTile(t),t}return this._createTile()},_resetTile:function(){},_createTile:function(){var t=o.DomUtil.create("img","leaflet-tile");return t.style.width=t.style.height=this._getTileSize()+"px",t.galleryimg="no",t.onselectstart=t.onmousemove=o.Util.falseFn,o.Browser.ielt9&&this.options.opacity!==i&&o.DomUtil.setOpacity(t,this.options.opacity),o.Browser.mobileWebkit3d&&(t.style.WebkitBackfaceVisibility="hidden"),t},_loadTile:function(t,e){t._layer=this,t.onload=this._tileOnLoad,t.onerror=this._tileOnError,this._adjustTilePoint(e),t.src=this.getTileUrl(e),this.fire("tileloadstart",{tile:t,url:t.src})},_tileLoaded:function(){this._tilesToLoad--,this._animated&&o.DomUtil.addClass(this._tileContainer,"leaflet-zoom-animated"),this._tilesToLoad||(this.fire("load"),this._animated&&(clearTimeout(this._clearBgBufferTimer),this._clearBgBufferTimer=setTimeout(o.bind(this._clearBgBuffer,this),500)))},_tileOnLoad:function(){var t=this._layer;this.src!==o.Util.emptyImageUrl&&(o.DomUtil.addClass(this,"leaflet-tile-loaded"),t.fire("tileload",{tile:this,url:this.src})),t._tileLoaded()},_tileOnError:function(){var t=this._layer;t.fire("tileerror",{tile:this,url:this.src});var e=t.options.errorTileUrl;e&&(this.src=e),t._tileLoaded()}}),o.tileLayer=function(t,e){return new o.TileLayer(t,e)},o.TileLayer.WMS=o.TileLayer.extend({defaultWmsParams:{service:"WMS",request:"GetMap",version:"1.1.1",layers:"",styles:"",format:"image/jpeg",transparent:!1},initialize:function(t,e){this._url=t;var i=o.extend({},this.defaultWmsParams),n=e.tileSize||this.options.tileSize;e.detectRetina&&o.Browser.retina?i.width=i.height=2*n:i.width=i.height=n;for(var s in e)this.options.hasOwnProperty(s)||"crs"===s||(i[s]=e[s]);this.wmsParams=i,o.setOptions(this,e)},onAdd:function(t){this._crs=this.options.crs||t.options.crs,this._wmsVersion=parseFloat(this.wmsParams.version);var e=this._wmsVersion>=1.3?"crs":"srs";this.wmsParams[e]=this._crs.code,o.TileLayer.prototype.onAdd.call(this,t)},getTileUrl:function(t){var e=this._map,i=this.options.tileSize,n=t.multiplyBy(i),s=n.add([i,i]),a=this._crs.project(e.unproject(n,t.z)),r=this._crs.project(e.unproject(s,t.z)),h=this._wmsVersion>=1.3&&this._crs===o.CRS.EPSG4326?[r.y,a.x,a.y,r.x].join(","):[a.x,r.y,r.x,a.y].join(","),l=o.Util.template(this._url,{s:this._getSubdomain(t)});return l+o.Util.getParamString(this.wmsParams,l,!0)+"&BBOX="+h},setParams:function(t,e){return o.extend(this.wmsParams,t),e||this.redraw(),this}}),o.tileLayer.wms=function(t,e){return new o.TileLayer.WMS(t,e)},o.TileLayer.Canvas=o.TileLayer.extend({options:{async:!1},initialize:function(t){o.setOptions(this,t)},redraw:function(){this._map&&(this._reset({hard:!0}),this._update());for(var t in this._tiles)this._redrawTile(this._tiles[t]);return this},_redrawTile:function(t){this.drawTile(t,t._tilePoint,this._map._zoom)},_createTile:function(){var t=o.DomUtil.create("canvas","leaflet-tile");return t.width=t.height=this.options.tileSize,t.onselectstart=t.onmousemove=o.Util.falseFn,t},_loadTile:function(t,e){t._layer=this,t._tilePoint=e,this._redrawTile(t),this.options.async||this.tileDrawn(t)},drawTile:function(){},tileDrawn:function(t){this._tileOnLoad.call(t)}}),o.tileLayer.canvas=function(t){return new o.TileLayer.Canvas(t)},o.ImageOverlay=o.Class.extend({includes:o.Mixin.Events,options:{opacity:1},initialize:function(t,e,i){this._url=t,this._bounds=o.latLngBounds(e),o.setOptions(this,i)},onAdd:function(t){this._map=t,this._image||this._initImage(),t._panes.overlayPane.appendChild(this._image),t.on("viewreset",this._reset,this),t.options.zoomAnimation&&o.Browser.any3d&&t.on("zoomanim",this._animateZoom,this),this._reset()},onRemove:function(t){t.getPanes().overlayPane.removeChild(this._image),t.off("viewreset",this._reset,this),t.options.zoomAnimation&&t.off("zoomanim",this._animateZoom,this)},addTo:function(t){return t.addLayer(this),this},setOpacity:function(t){return this.options.opacity=t,this._updateOpacity(),this},bringToFront:function(){return this._image&&this._map._panes.overlayPane.appendChild(this._image),this},bringToBack:function(){var t=this._map._panes.overlayPane;return this._image&&t.insertBefore(this._image,t.firstChild),this},setUrl:function(t){this._url=t,this._image.src=this._url},getAttribution:function(){return this.options.attribution},_initImage:function(){this._image=o.DomUtil.create("img","leaflet-image-layer"),this._map.options.zoomAnimation&&o.Browser.any3d?o.DomUtil.addClass(this._image,"leaflet-zoom-animated"):o.DomUtil.addClass(this._image,"leaflet-zoom-hide"),this._updateOpacity(),o.extend(this._image,{galleryimg:"no",onselectstart:o.Util.falseFn,onmousemove:o.Util.falseFn,onload:o.bind(this._onImageLoad,this),src:this._url})},_animateZoom:function(t){var e=this._map,i=this._image,n=e.getZoomScale(t.zoom),s=this._bounds.getNorthWest(),a=this._bounds.getSouthEast(),r=e._latLngToNewLayerPoint(s,t.zoom,t.center),h=e._latLngToNewLayerPoint(a,t.zoom,t.center)._subtract(r),l=r._add(h._multiplyBy(.5*(1-1/n)));i.style[o.DomUtil.TRANSFORM]=o.DomUtil.getTranslateString(l)+" scale("+n+") "},_reset:function(){var t=this._image,e=this._map.latLngToLayerPoint(this._bounds.getNorthWest()),i=this._map.latLngToLayerPoint(this._bounds.getSouthEast())._subtract(e);o.DomUtil.setPosition(t,e),t.style.width=i.x+"px",t.style.height=i.y+"px"},_onImageLoad:function(){this.fire("load")},_updateOpacity:function(){o.DomUtil.setOpacity(this._image,this.options.opacity)}}),o.imageOverlay=function(t,e,i){return new o.ImageOverlay(t,e,i)},o.Icon=o.Class.extend({options:{className:""},initialize:function(t){o.setOptions(this,t)},createIcon:function(t){return this._createIcon("icon",t)},createShadow:function(t){return this._createIcon("shadow",t)},_createIcon:function(t,e){var i=this._getIconUrl(t);if(!i){if("icon"===t)throw new Error("iconUrl not set in Icon options (see the docs).");return null}var n;return n=e&&"IMG"===e.tagName?this._createImg(i,e):this._createImg(i),this._setIconStyles(n,t),n},_setIconStyles:function(t,e){var i,n=this.options,s=o.point(n[e+"Size"]);i="shadow"===e?o.point(n.shadowAnchor||n.iconAnchor):o.point(n.iconAnchor),!i&&s&&(i=s.divideBy(2,!0)),t.className="leaflet-marker-"+e+" "+n.className,i&&(t.style.marginLeft=-i.x+"px",t.style.marginTop=-i.y+"px"),s&&(t.style.width=s.x+"px",t.style.height=s.y+"px")},_createImg:function(t,i){return i=i||e.createElement("img"),i.src=t,i},_getIconUrl:function(t){return o.Browser.retina&&this.options[t+"RetinaUrl"]?this.options[t+"RetinaUrl"]:this.options[t+"Url"]}}),o.icon=function(t){return new o.Icon(t)},o.Icon.Default=o.Icon.extend({options:{iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34],shadowSize:[41,41]},_getIconUrl:function(t){var e=t+"Url";if(this.options[e])return this.options[e];o.Browser.retina&&"icon"===t&&(t+="-2x");var i=o.Icon.Default.imagePath;if(!i)throw new Error("Couldn't autodetect L.Icon.Default.imagePath, set it manually.");return i+"/marker-"+t+".png"}}),o.Icon.Default.imagePath=function(){var t,i,n,o,s,a=e.getElementsByTagName("script"),r=/[\/^]leaflet[\-\._]?([\w\-\._]*)\.js\??/;for(t=0,i=a.length;i>t;t++)if(n=a[t].src,o=n.match(r))return s=n.split(r)[0],(s?s+"/":"")+"images"}(),o.Marker=o.Class.extend({includes:o.Mixin.Events,options:{icon:new o.Icon.Default,title:"",alt:"",clickable:!0,draggable:!1,keyboard:!0,zIndexOffset:0,opacity:1,riseOnHover:!1,riseOffset:250},initialize:function(t,e){o.setOptions(this,e),this._latlng=o.latLng(t)},onAdd:function(t){this._map=t,t.on("viewreset",this.update,this),this._initIcon(),this.update(),this.fire("add"),t.options.zoomAnimation&&t.options.markerZoomAnimation&&t.on("zoomanim",this._animateZoom,this)},addTo:function(t){return t.addLayer(this),this},onRemove:function(t){this.dragging&&this.dragging.disable(),this._removeIcon(),this._removeShadow(),this.fire("remove"),t.off({viewreset:this.update,zoomanim:this._animateZoom},this),this._map=null},getLatLng:function(){return this._latlng},setLatLng:function(t){return this._latlng=o.latLng(t),this.update(),this.fire("move",{latlng:this._latlng})},setZIndexOffset:function(t){return this.options.zIndexOffset=t,this.update(),this},setIcon:function(t){return this.options.icon=t,this._map&&(this._initIcon(),this.update()),this._popup&&this.bindPopup(this._popup),this},update:function(){return this._icon&&this._setPos(this._map.latLngToLayerPoint(this._latlng).round()),this},_initIcon:function(){var t=this.options,e=this._map,i=e.options.zoomAnimation&&e.options.markerZoomAnimation,n=i?"leaflet-zoom-animated":"leaflet-zoom-hide",s=t.icon.createIcon(this._icon),a=!1;s!==this._icon&&(this._icon&&this._removeIcon(),a=!0,t.title&&(s.title=t.title),t.alt&&(s.alt=t.alt)),o.DomUtil.addClass(s,n),t.keyboard&&(s.tabIndex="0"),this._icon=s,this._initInteraction(),t.riseOnHover&&o.DomEvent.on(s,"mouseover",this._bringToFront,this).on(s,"mouseout",this._resetZIndex,this);var r=t.icon.createShadow(this._shadow),h=!1;r!==this._shadow&&(this._removeShadow(),h=!0),r&&o.DomUtil.addClass(r,n),this._shadow=r,t.opacity<1&&this._updateOpacity();var l=this._map._panes;a&&l.markerPane.appendChild(this._icon),r&&h&&l.shadowPane.appendChild(this._shadow)},_removeIcon:function(){this.options.riseOnHover&&o.DomEvent.off(this._icon,"mouseover",this._bringToFront).off(this._icon,"mouseout",this._resetZIndex),this._map._panes.markerPane.removeChild(this._icon),this._icon=null},_removeShadow:function(){this._shadow&&this._map._panes.shadowPane.removeChild(this._shadow),this._shadow=null},_setPos:function(t){o.DomUtil.setPosition(this._icon,t),this._shadow&&o.DomUtil.setPosition(this._shadow,t),this._zIndex=t.y+this.options.zIndexOffset,this._resetZIndex()},_updateZIndex:function(t){this._icon.style.zIndex=this._zIndex+t},_animateZoom:function(t){var e=this._map._latLngToNewLayerPoint(this._latlng,t.zoom,t.center).round();this._setPos(e)},_initInteraction:function(){if(this.options.clickable){var t=this._icon,e=["dblclick","mousedown","mouseover","mouseout","contextmenu"];o.DomUtil.addClass(t,"leaflet-clickable"),o.DomEvent.on(t,"click",this._onMouseClick,this),o.DomEvent.on(t,"keypress",this._onKeyPress,this);for(var i=0;i<e.length;i++)o.DomEvent.on(t,e[i],this._fireMouseEvent,this);o.Handler.MarkerDrag&&(this.dragging=new o.Handler.MarkerDrag(this),this.options.draggable&&this.dragging.enable())}},_onMouseClick:function(t){var e=this.dragging&&this.dragging.moved();(this.hasEventListeners(t.type)||e)&&o.DomEvent.stopPropagation(t),e||(this.dragging&&this.dragging._enabled||!this._map.dragging||!this._map.dragging.moved())&&this.fire(t.type,{originalEvent:t,latlng:this._latlng})},_onKeyPress:function(t){13===t.keyCode&&this.fire("click",{originalEvent:t,latlng:this._latlng})},_fireMouseEvent:function(t){this.fire(t.type,{originalEvent:t,latlng:this._latlng}),"contextmenu"===t.type&&this.hasEventListeners(t.type)&&o.DomEvent.preventDefault(t),"mousedown"!==t.type?o.DomEvent.stopPropagation(t):o.DomEvent.preventDefault(t)},setOpacity:function(t){return this.options.opacity=t,this._map&&this._updateOpacity(),this},_updateOpacity:function(){o.DomUtil.setOpacity(this._icon,this.options.opacity),this._shadow&&o.DomUtil.setOpacity(this._shadow,this.options.opacity)},_bringToFront:function(){this._updateZIndex(this.options.riseOffset)},_resetZIndex:function(){this._updateZIndex(0)}}),o.marker=function(t,e){return new o.Marker(t,e)},o.DivIcon=o.Icon.extend({options:{iconSize:[12,12],className:"leaflet-div-icon",html:!1},createIcon:function(t){var i=t&&"DIV"===t.tagName?t:e.createElement("div"),n=this.options;return n.html!==!1?i.innerHTML=n.html:i.innerHTML="",n.bgPos&&(i.style.backgroundPosition=-n.bgPos.x+"px "+-n.bgPos.y+"px"),this._setIconStyles(i,"icon"),i},createShadow:function(){return null}}),o.divIcon=function(t){return new o.DivIcon(t)},o.Map.mergeOptions({closePopupOnClick:!0}),o.Popup=o.Class.extend({includes:o.Mixin.Events,options:{minWidth:50,maxWidth:300,autoPan:!0,closeButton:!0,offset:[0,7],autoPanPadding:[5,5],keepInView:!1,className:"",zoomAnimation:!0},initialize:function(t,e){o.setOptions(this,t),this._source=e,this._animated=o.Browser.any3d&&this.options.zoomAnimation,this._isOpen=!1},onAdd:function(t){this._map=t,this._container||this._initLayout();var e=t.options.fadeAnimation;e&&o.DomUtil.setOpacity(this._container,0),t._panes.popupPane.appendChild(this._container),t.on(this._getEvents(),this),this.update(),e&&o.DomUtil.setOpacity(this._container,1),this.fire("open"),t.fire("popupopen",{popup:this}),this._source&&this._source.fire("popupopen",{popup:this})},addTo:function(t){return t.addLayer(this),this},openOn:function(t){return t.openPopup(this),this},onRemove:function(t){t._panes.popupPane.removeChild(this._container),o.Util.falseFn(this._container.offsetWidth),t.off(this._getEvents(),this),t.options.fadeAnimation&&o.DomUtil.setOpacity(this._container,0),this._map=null,this.fire("close"),t.fire("popupclose",{popup:this}),this._source&&this._source.fire("popupclose",{popup:this})},getLatLng:function(){return this._latlng},setLatLng:function(t){return this._latlng=o.latLng(t),this._map&&(this._updatePosition(),this._adjustPan()),this},getContent:function(){return this._content},setContent:function(t){return this._content=t,this.update(),this},update:function(){this._map&&(this._container.style.visibility="hidden",this._updateContent(),this._updateLayout(),this._updatePosition(),this._container.style.visibility="",this._adjustPan())},_getEvents:function(){var t={viewreset:this._updatePosition};return this._animated&&(t.zoomanim=this._zoomAnimation),("closeOnClick"in this.options?this.options.closeOnClick:this._map.options.closePopupOnClick)&&(t.preclick=this._close),this.options.keepInView&&(t.moveend=this._adjustPan),t},_close:function(){this._map&&this._map.closePopup(this)},_initLayout:function(){var t,e="leaflet-popup",i=e+" "+this.options.className+" leaflet-zoom-"+(this._animated?"animated":"hide"),n=this._container=o.DomUtil.create("div",i);this.options.closeButton&&(t=this._closeButton=o.DomUtil.create("a",e+"-close-button",n),t.href="#close",t.innerHTML="&#215;",o.DomEvent.disableClickPropagation(t),o.DomEvent.on(t,"click",this._onCloseButtonClick,this));var s=this._wrapper=o.DomUtil.create("div",e+"-content-wrapper",n);o.DomEvent.disableClickPropagation(s),this._contentNode=o.DomUtil.create("div",e+"-content",s),o.DomEvent.disableScrollPropagation(this._contentNode),o.DomEvent.on(s,"contextmenu",o.DomEvent.stopPropagation),this._tipContainer=o.DomUtil.create("div",e+"-tip-container",n),this._tip=o.DomUtil.create("div",e+"-tip",this._tipContainer)},_updateContent:function(){if(this._content){if("string"==typeof this._content)this._contentNode.innerHTML=this._content;else{for(;this._contentNode.hasChildNodes();)this._contentNode.removeChild(this._contentNode.firstChild);this._contentNode.appendChild(this._content)}this.fire("contentupdate")}},_updateLayout:function(){var t=this._contentNode,e=t.style;e.width="",e.whiteSpace="nowrap";var i=t.offsetWidth;i=Math.min(i,this.options.maxWidth),i=Math.max(i,this.options.minWidth),e.width=i+1+"px",e.whiteSpace="",e.height="";var n=t.offsetHeight,s=this.options.maxHeight,a="leaflet-popup-scrolled";s&&n>s?(e.height=s+"px",o.DomUtil.addClass(t,a)):o.DomUtil.removeClass(t,a),this._containerWidth=this._container.offsetWidth},_updatePosition:function(){if(this._map){var t=this._map.latLngToLayerPoint(this._latlng),e=this._animated,i=o.point(this.options.offset);e&&o.DomUtil.setPosition(this._container,t),this._containerBottom=-i.y-(e?0:t.y),this._containerLeft=-Math.round(this._containerWidth/2)+i.x+(e?0:t.x),this._container.style.bottom=this._containerBottom+"px",this._container.style.left=this._containerLeft+"px"}},_zoomAnimation:function(t){var e=this._map._latLngToNewLayerPoint(this._latlng,t.zoom,t.center);o.DomUtil.setPosition(this._container,e)},_adjustPan:function(){if(this.options.autoPan){var t=this._map,e=this._container.offsetHeight,i=this._containerWidth,n=new o.Point(this._containerLeft,-e-this._containerBottom);this._animated&&n._add(o.DomUtil.getPosition(this._container));var s=t.layerPointToContainerPoint(n),a=o.point(this.options.autoPanPadding),r=o.point(this.options.autoPanPaddingTopLeft||a),h=o.point(this.options.autoPanPaddingBottomRight||a),l=t.getSize(),u=0,c=0;s.x+i+h.x>l.x&&(u=s.x+i-l.x+h.x),s.x-u-r.x<0&&(u=s.x-r.x),s.y+e+h.y>l.y&&(c=s.y+e-l.y+h.y),s.y-c-r.y<0&&(c=s.y-r.y),(u||c)&&t.fire("autopanstart").panBy([u,c])}},_onCloseButtonClick:function(t){this._close(),o.DomEvent.stop(t)}}),o.popup=function(t,e){return new o.Popup(t,e)},o.Map.include({openPopup:function(t,e,i){if(this.closePopup(),!(t instanceof o.Popup)){var n=t;t=new o.Popup(i).setLatLng(e).setContent(n)}return t._isOpen=!0,this._popup=t,this.addLayer(t)},closePopup:function(t){return t&&t!==this._popup||(t=this._popup,this._popup=null),t&&(this.removeLayer(t),t._isOpen=!1),this}}),o.Marker.include({openPopup:function(){return this._popup&&this._map&&!this._map.hasLayer(this._popup)&&(this._popup.setLatLng(this._latlng),this._map.openPopup(this._popup)),this},closePopup:function(){return this._popup&&this._popup._close(),this},togglePopup:function(){return this._popup&&(this._popup._isOpen?this.closePopup():this.openPopup()),this},bindPopup:function(t,e){var i=o.point(this.options.icon.options.popupAnchor||[0,0]);return i=i.add(o.Popup.prototype.options.offset),e&&e.offset&&(i=i.add(e.offset)),e=o.extend({offset:i},e),this._popupHandlersAdded||(this.on("click",this.togglePopup,this).on("remove",this.closePopup,this).on("move",this._movePopup,this),this._popupHandlersAdded=!0),t instanceof o.Popup?(o.setOptions(t,e),this._popup=t,t._source=this):this._popup=new o.Popup(e,this).setContent(t),this},setPopupContent:function(t){return this._popup&&this._popup.setContent(t),this},unbindPopup:function(){return this._popup&&(this._popup=null,this.off("click",this.togglePopup,this).off("remove",this.closePopup,this).off("move",this._movePopup,this),this._popupHandlersAdded=!1),this},getPopup:function(){return this._popup},_movePopup:function(t){this._popup.setLatLng(t.latlng)}}),o.LayerGroup=o.Class.extend({initialize:function(t){this._layers={};var e,i;if(t)for(e=0,i=t.length;i>e;e++)this.addLayer(t[e])},addLayer:function(t){var e=this.getLayerId(t);return this._layers[e]=t,this._map&&this._map.addLayer(t),this},removeLayer:function(t){var e=t in this._layers?t:this.getLayerId(t);return this._map&&this._layers[e]&&this._map.removeLayer(this._layers[e]),delete this._layers[e],this},hasLayer:function(t){return t?t in this._layers||this.getLayerId(t)in this._layers:!1},clearLayers:function(){return this.eachLayer(this.removeLayer,this),this},invoke:function(t){var e,i,n=Array.prototype.slice.call(arguments,1);for(e in this._layers)i=this._layers[e],i[t]&&i[t].apply(i,n);return this},onAdd:function(t){this._map=t,this.eachLayer(t.addLayer,t)},onRemove:function(t){this.eachLayer(t.removeLayer,t),this._map=null},addTo:function(t){return t.addLayer(this),this},eachLayer:function(t,e){for(var i in this._layers)t.call(e,this._layers[i]);return this},getLayer:function(t){return this._layers[t]},getLayers:function(){var t=[];for(var e in this._layers)t.push(this._layers[e]);return t},setZIndex:function(t){return this.invoke("setZIndex",t)},getLayerId:function(t){return o.stamp(t)}}),o.layerGroup=function(t){return new o.LayerGroup(t)},o.FeatureGroup=o.LayerGroup.extend({includes:o.Mixin.Events,statics:{EVENTS:"click dblclick mouseover mouseout mousemove contextmenu popupopen popupclose"},addLayer:function(t){return this.hasLayer(t)?this:("on"in t&&t.on(o.FeatureGroup.EVENTS,this._propagateEvent,this),o.LayerGroup.prototype.addLayer.call(this,t),this._popupContent&&t.bindPopup&&t.bindPopup(this._popupContent,this._popupOptions),this.fire("layeradd",{layer:t}))},removeLayer:function(t){return this.hasLayer(t)?(t in this._layers&&(t=this._layers[t]),t.off(o.FeatureGroup.EVENTS,this._propagateEvent,this),o.LayerGroup.prototype.removeLayer.call(this,t),this._popupContent&&this.invoke("unbindPopup"),this.fire("layerremove",{layer:t})):this},bindPopup:function(t,e){return this._popupContent=t,this._popupOptions=e,this.invoke("bindPopup",t,e)},openPopup:function(t){for(var e in this._layers){this._layers[e].openPopup(t);break}return this},setStyle:function(t){return this.invoke("setStyle",t)},bringToFront:function(){return this.invoke("bringToFront")},bringToBack:function(){return this.invoke("bringToBack")},getBounds:function(){var t=new o.LatLngBounds;return this.eachLayer(function(e){t.extend(e instanceof o.Marker?e.getLatLng():e.getBounds())}),t},_propagateEvent:function(t){t=o.extend({layer:t.target,target:this},t),this.fire(t.type,t)}}),o.featureGroup=function(t){return new o.FeatureGroup(t)},o.Path=o.Class.extend({includes:[o.Mixin.Events],statics:{CLIP_PADDING:function(){var e=o.Browser.mobile?1280:2e3,i=(e/Math.max(t.outerWidth,t.outerHeight)-1)/2;return Math.max(0,Math.min(.5,i))}()},options:{stroke:!0,color:"#0033ff",dashArray:null,lineCap:null,lineJoin:null,weight:5,opacity:.5,fill:!1,fillColor:null,fillOpacity:.2,clickable:!0},initialize:function(t){o.setOptions(this,t)},onAdd:function(t){this._map=t,this._container||(this._initElements(),this._initEvents()),this.projectLatlngs(),this._updatePath(),this._container&&this._map._pathRoot.appendChild(this._container),this.fire("add"),t.on({viewreset:this.projectLatlngs,moveend:this._updatePath},this)},addTo:function(t){return t.addLayer(this),this},onRemove:function(t){t._pathRoot.removeChild(this._container),this.fire("remove"),this._map=null,o.Browser.vml&&(this._container=null,this._stroke=null,this._fill=null),t.off({viewreset:this.projectLatlngs,moveend:this._updatePath},this)},projectLatlngs:function(){},setStyle:function(t){return o.setOptions(this,t),this._container&&this._updateStyle(),this},redraw:function(){return this._map&&(this.projectLatlngs(),this._updatePath()),this}}),o.Map.include({_updatePathViewport:function(){var t=o.Path.CLIP_PADDING,e=this.getSize(),i=o.DomUtil.getPosition(this._mapPane),n=i.multiplyBy(-1)._subtract(e.multiplyBy(t)._round()),s=n.add(e.multiplyBy(1+2*t)._round());this._pathViewport=new o.Bounds(n,s)}}),o.Path.SVG_NS="http://www.w3.org/2000/svg",o.Browser.svg=!(!e.createElementNS||!e.createElementNS(o.Path.SVG_NS,"svg").createSVGRect),o.Path=o.Path.extend({statics:{SVG:o.Browser.svg},bringToFront:function(){var t=this._map._pathRoot,e=this._container;return e&&t.lastChild!==e&&t.appendChild(e),this},bringToBack:function(){var t=this._map._pathRoot,e=this._container,i=t.firstChild;return e&&i!==e&&t.insertBefore(e,i),this},getPathString:function(){},_createElement:function(t){return e.createElementNS(o.Path.SVG_NS,t)},_initElements:function(){this._map._initPathRoot(),this._initPath(),this._initStyle()},_initPath:function(){this._container=this._createElement("g"),this._path=this._createElement("path"),this.options.className&&o.DomUtil.addClass(this._path,this.options.className),this._container.appendChild(this._path)},_initStyle:function(){this.options.stroke&&(this._path.setAttribute("stroke-linejoin","round"),this._path.setAttribute("stroke-linecap","round")),this.options.fill&&this._path.setAttribute("fill-rule","evenodd"),this.options.pointerEvents&&this._path.setAttribute("pointer-events",this.options.pointerEvents),this.options.clickable||this.options.pointerEvents||this._path.setAttribute("pointer-events","none"),this._updateStyle()},_updateStyle:function(){this.options.stroke?(this._path.setAttribute("stroke",this.options.color),this._path.setAttribute("stroke-opacity",this.options.opacity),this._path.setAttribute("stroke-width",this.options.weight),this.options.dashArray?this._path.setAttribute("stroke-dasharray",this.options.dashArray):this._path.removeAttribute("stroke-dasharray"),this.options.lineCap&&this._path.setAttribute("stroke-linecap",this.options.lineCap),this.options.lineJoin&&this._path.setAttribute("stroke-linejoin",this.options.lineJoin)):this._path.setAttribute("stroke","none"),this.options.fill?(this._path.setAttribute("fill",this.options.fillColor||this.options.color),this._path.setAttribute("fill-opacity",this.options.fillOpacity)):this._path.setAttribute("fill","none")},_updatePath:function(){var t=this.getPathString();t||(t="M0 0"),this._path.setAttribute("d",t)},_initEvents:function(){if(this.options.clickable){(o.Browser.svg||!o.Browser.vml)&&o.DomUtil.addClass(this._path,"leaflet-clickable"),o.DomEvent.on(this._container,"click",this._onMouseClick,this);for(var t=["dblclick","mousedown","mouseover","mouseout","mousemove","contextmenu"],e=0;e<t.length;e++)o.DomEvent.on(this._container,t[e],this._fireMouseEvent,this)}},_onMouseClick:function(t){this._map.dragging&&this._map.dragging.moved()||this._fireMouseEvent(t)},_fireMouseEvent:function(t){if(this.hasEventListeners(t.type)){var e=this._map,i=e.mouseEventToContainerPoint(t),n=e.containerPointToLayerPoint(i),s=e.layerPointToLatLng(n);this.fire(t.type,{latlng:s,layerPoint:n,containerPoint:i,originalEvent:t}),"contextmenu"===t.type&&o.DomEvent.preventDefault(t),"mousemove"!==t.type&&o.DomEvent.stopPropagation(t)}}}),o.Map.include({_initPathRoot:function(){this._pathRoot||(this._pathRoot=o.Path.prototype._createElement("svg"),this._panes.overlayPane.appendChild(this._pathRoot),this.options.zoomAnimation&&o.Browser.any3d?(o.DomUtil.addClass(this._pathRoot,"leaflet-zoom-animated"),
+this.on({zoomanim:this._animatePathZoom,zoomend:this._endPathZoom})):o.DomUtil.addClass(this._pathRoot,"leaflet-zoom-hide"),this.on("moveend",this._updateSvgViewport),this._updateSvgViewport())},_animatePathZoom:function(t){var e=this.getZoomScale(t.zoom),i=this._getCenterOffset(t.center)._multiplyBy(-e)._add(this._pathViewport.min);this._pathRoot.style[o.DomUtil.TRANSFORM]=o.DomUtil.getTranslateString(i)+" scale("+e+") ",this._pathZooming=!0},_endPathZoom:function(){this._pathZooming=!1},_updateSvgViewport:function(){if(!this._pathZooming){this._updatePathViewport();var t=this._pathViewport,e=t.min,i=t.max,n=i.x-e.x,s=i.y-e.y,a=this._pathRoot,r=this._panes.overlayPane;o.Browser.mobileWebkit&&r.removeChild(a),o.DomUtil.setPosition(a,e),a.setAttribute("width",n),a.setAttribute("height",s),a.setAttribute("viewBox",[e.x,e.y,n,s].join(" ")),o.Browser.mobileWebkit&&r.appendChild(a)}}}),o.Path.include({bindPopup:function(t,e){return t instanceof o.Popup?this._popup=t:((!this._popup||e)&&(this._popup=new o.Popup(e,this)),this._popup.setContent(t)),this._popupHandlersAdded||(this.on("click",this._openPopup,this).on("remove",this.closePopup,this),this._popupHandlersAdded=!0),this},unbindPopup:function(){return this._popup&&(this._popup=null,this.off("click",this._openPopup).off("remove",this.closePopup),this._popupHandlersAdded=!1),this},openPopup:function(t){return this._popup&&(t=t||this._latlng||this._latlngs[Math.floor(this._latlngs.length/2)],this._openPopup({latlng:t})),this},closePopup:function(){return this._popup&&this._popup._close(),this},_openPopup:function(t){this._popup.setLatLng(t.latlng),this._map.openPopup(this._popup)}}),o.Browser.vml=!o.Browser.svg&&function(){try{var t=e.createElement("div");t.innerHTML='<v:shape adj="1"/>';var i=t.firstChild;return i.style.behavior="url(#default#VML)",i&&"object"==typeof i.adj}catch(n){return!1}}(),o.Path=o.Browser.svg||!o.Browser.vml?o.Path:o.Path.extend({statics:{VML:!0,CLIP_PADDING:.02},_createElement:function(){try{return e.namespaces.add("lvml","urn:schemas-microsoft-com:vml"),function(t){return e.createElement("<lvml:"+t+' class="lvml">')}}catch(t){return function(t){return e.createElement("<"+t+' xmlns="urn:schemas-microsoft.com:vml" class="lvml">')}}}(),_initPath:function(){var t=this._container=this._createElement("shape");o.DomUtil.addClass(t,"leaflet-vml-shape"+(this.options.className?" "+this.options.className:"")),this.options.clickable&&o.DomUtil.addClass(t,"leaflet-clickable"),t.coordsize="1 1",this._path=this._createElement("path"),t.appendChild(this._path),this._map._pathRoot.appendChild(t)},_initStyle:function(){this._updateStyle()},_updateStyle:function(){var t=this._stroke,e=this._fill,i=this.options,n=this._container;n.stroked=i.stroke,n.filled=i.fill,i.stroke?(t||(t=this._stroke=this._createElement("stroke"),t.endcap="round",n.appendChild(t)),t.weight=i.weight+"px",t.color=i.color,t.opacity=i.opacity,i.dashArray?t.dashStyle=o.Util.isArray(i.dashArray)?i.dashArray.join(" "):i.dashArray.replace(/( *, *)/g," "):t.dashStyle="",i.lineCap&&(t.endcap=i.lineCap.replace("butt","flat")),i.lineJoin&&(t.joinstyle=i.lineJoin)):t&&(n.removeChild(t),this._stroke=null),i.fill?(e||(e=this._fill=this._createElement("fill"),n.appendChild(e)),e.color=i.fillColor||i.color,e.opacity=i.fillOpacity):e&&(n.removeChild(e),this._fill=null)},_updatePath:function(){var t=this._container.style;t.display="none",this._path.v=this.getPathString()+" ",t.display=""}}),o.Map.include(o.Browser.svg||!o.Browser.vml?{}:{_initPathRoot:function(){if(!this._pathRoot){var t=this._pathRoot=e.createElement("div");t.className="leaflet-vml-container",this._panes.overlayPane.appendChild(t),this.on("moveend",this._updatePathViewport),this._updatePathViewport()}}}),o.Browser.canvas=function(){return!!e.createElement("canvas").getContext}(),o.Path=o.Path.SVG&&!t.L_PREFER_CANVAS||!o.Browser.canvas?o.Path:o.Path.extend({statics:{CANVAS:!0,SVG:!1},redraw:function(){return this._map&&(this.projectLatlngs(),this._requestUpdate()),this},setStyle:function(t){return o.setOptions(this,t),this._map&&(this._updateStyle(),this._requestUpdate()),this},onRemove:function(t){t.off("viewreset",this.projectLatlngs,this).off("moveend",this._updatePath,this),this.options.clickable&&(this._map.off("click",this._onClick,this),this._map.off("mousemove",this._onMouseMove,this)),this._requestUpdate(),this.fire("remove"),this._map=null},_requestUpdate:function(){this._map&&!o.Path._updateRequest&&(o.Path._updateRequest=o.Util.requestAnimFrame(this._fireMapMoveEnd,this._map))},_fireMapMoveEnd:function(){o.Path._updateRequest=null,this.fire("moveend")},_initElements:function(){this._map._initPathRoot(),this._ctx=this._map._canvasCtx},_updateStyle:function(){var t=this.options;t.stroke&&(this._ctx.lineWidth=t.weight,this._ctx.strokeStyle=t.color),t.fill&&(this._ctx.fillStyle=t.fillColor||t.color),t.lineCap&&(this._ctx.lineCap=t.lineCap),t.lineJoin&&(this._ctx.lineJoin=t.lineJoin)},_drawPath:function(){var t,e,i,n,s,a;for(this._ctx.beginPath(),t=0,i=this._parts.length;i>t;t++){for(e=0,n=this._parts[t].length;n>e;e++)s=this._parts[t][e],a=(0===e?"move":"line")+"To",this._ctx[a](s.x,s.y);this instanceof o.Polygon&&this._ctx.closePath()}},_checkIfEmpty:function(){return!this._parts.length},_updatePath:function(){if(!this._checkIfEmpty()){var t=this._ctx,e=this.options;this._drawPath(),t.save(),this._updateStyle(),e.fill&&(t.globalAlpha=e.fillOpacity,t.fill(e.fillRule||"evenodd")),e.stroke&&(t.globalAlpha=e.opacity,t.stroke()),t.restore()}},_initEvents:function(){this.options.clickable&&(this._map.on("mousemove",this._onMouseMove,this),this._map.on("click dblclick contextmenu",this._fireMouseEvent,this))},_fireMouseEvent:function(t){this._containsPoint(t.layerPoint)&&this.fire(t.type,t)},_onMouseMove:function(t){this._map&&!this._map._animatingZoom&&(this._containsPoint(t.layerPoint)?(this._ctx.canvas.style.cursor="pointer",this._mouseInside=!0,this.fire("mouseover",t)):this._mouseInside&&(this._ctx.canvas.style.cursor="",this._mouseInside=!1,this.fire("mouseout",t)))}}),o.Map.include(o.Path.SVG&&!t.L_PREFER_CANVAS||!o.Browser.canvas?{}:{_initPathRoot:function(){var t,i=this._pathRoot;i||(i=this._pathRoot=e.createElement("canvas"),i.style.position="absolute",t=this._canvasCtx=i.getContext("2d"),t.lineCap="round",t.lineJoin="round",this._panes.overlayPane.appendChild(i),this.options.zoomAnimation&&(this._pathRoot.className="leaflet-zoom-animated",this.on("zoomanim",this._animatePathZoom),this.on("zoomend",this._endPathZoom)),this.on("moveend",this._updateCanvasViewport),this._updateCanvasViewport())},_updateCanvasViewport:function(){if(!this._pathZooming){this._updatePathViewport();var t=this._pathViewport,e=t.min,i=t.max.subtract(e),n=this._pathRoot;o.DomUtil.setPosition(n,e),n.width=i.x,n.height=i.y,n.getContext("2d").translate(-e.x,-e.y)}}}),o.LineUtil={simplify:function(t,e){if(!e||!t.length)return t.slice();var i=e*e;return t=this._reducePoints(t,i),t=this._simplifyDP(t,i)},pointToSegmentDistance:function(t,e,i){return Math.sqrt(this._sqClosestPointOnSegment(t,e,i,!0))},closestPointOnSegment:function(t,e,i){return this._sqClosestPointOnSegment(t,e,i)},_simplifyDP:function(t,e){var n=t.length,o=typeof Uint8Array!=i+""?Uint8Array:Array,s=new o(n);s[0]=s[n-1]=1,this._simplifyDPStep(t,s,e,0,n-1);var a,r=[];for(a=0;n>a;a++)s[a]&&r.push(t[a]);return r},_simplifyDPStep:function(t,e,i,n,o){var s,a,r,h=0;for(a=n+1;o-1>=a;a++)r=this._sqClosestPointOnSegment(t[a],t[n],t[o],!0),r>h&&(s=a,h=r);h>i&&(e[s]=1,this._simplifyDPStep(t,e,i,n,s),this._simplifyDPStep(t,e,i,s,o))},_reducePoints:function(t,e){for(var i=[t[0]],n=1,o=0,s=t.length;s>n;n++)this._sqDist(t[n],t[o])>e&&(i.push(t[n]),o=n);return s-1>o&&i.push(t[s-1]),i},clipSegment:function(t,e,i,n){var o,s,a,r=n?this._lastCode:this._getBitCode(t,i),h=this._getBitCode(e,i);for(this._lastCode=h;;){if(!(r|h))return[t,e];if(r&h)return!1;o=r||h,s=this._getEdgeIntersection(t,e,o,i),a=this._getBitCode(s,i),o===r?(t=s,r=a):(e=s,h=a)}},_getEdgeIntersection:function(t,e,i,n){var s=e.x-t.x,a=e.y-t.y,r=n.min,h=n.max;return 8&i?new o.Point(t.x+s*(h.y-t.y)/a,h.y):4&i?new o.Point(t.x+s*(r.y-t.y)/a,r.y):2&i?new o.Point(h.x,t.y+a*(h.x-t.x)/s):1&i?new o.Point(r.x,t.y+a*(r.x-t.x)/s):void 0},_getBitCode:function(t,e){var i=0;return t.x<e.min.x?i|=1:t.x>e.max.x&&(i|=2),t.y<e.min.y?i|=4:t.y>e.max.y&&(i|=8),i},_sqDist:function(t,e){var i=e.x-t.x,n=e.y-t.y;return i*i+n*n},_sqClosestPointOnSegment:function(t,e,i,n){var s,a=e.x,r=e.y,h=i.x-a,l=i.y-r,u=h*h+l*l;return u>0&&(s=((t.x-a)*h+(t.y-r)*l)/u,s>1?(a=i.x,r=i.y):s>0&&(a+=h*s,r+=l*s)),h=t.x-a,l=t.y-r,n?h*h+l*l:new o.Point(a,r)}},o.Polyline=o.Path.extend({initialize:function(t,e){o.Path.prototype.initialize.call(this,e),this._latlngs=this._convertLatLngs(t)},options:{smoothFactor:1,noClip:!1},projectLatlngs:function(){this._originalPoints=[];for(var t=0,e=this._latlngs.length;e>t;t++)this._originalPoints[t]=this._map.latLngToLayerPoint(this._latlngs[t])},getPathString:function(){for(var t=0,e=this._parts.length,i="";e>t;t++)i+=this._getPathPartStr(this._parts[t]);return i},getLatLngs:function(){return this._latlngs},setLatLngs:function(t){return this._latlngs=this._convertLatLngs(t),this.redraw()},addLatLng:function(t){return this._latlngs.push(o.latLng(t)),this.redraw()},spliceLatLngs:function(){var t=[].splice.apply(this._latlngs,arguments);return this._convertLatLngs(this._latlngs,!0),this.redraw(),t},closestLayerPoint:function(t){for(var e,i,n=1/0,s=this._parts,a=null,r=0,h=s.length;h>r;r++)for(var l=s[r],u=1,c=l.length;c>u;u++){e=l[u-1],i=l[u];var d=o.LineUtil._sqClosestPointOnSegment(t,e,i,!0);n>d&&(n=d,a=o.LineUtil._sqClosestPointOnSegment(t,e,i))}return a&&(a.distance=Math.sqrt(n)),a},getBounds:function(){return new o.LatLngBounds(this.getLatLngs())},_convertLatLngs:function(t,e){var i,n,s=e?t:[];for(i=0,n=t.length;n>i;i++){if(o.Util.isArray(t[i])&&"number"!=typeof t[i][0])return;s[i]=o.latLng(t[i])}return s},_initEvents:function(){o.Path.prototype._initEvents.call(this)},_getPathPartStr:function(t){for(var e,i=o.Path.VML,n=0,s=t.length,a="";s>n;n++)e=t[n],i&&e._round(),a+=(n?"L":"M")+e.x+" "+e.y;return a},_clipPoints:function(){var t,e,i,n=this._originalPoints,s=n.length;if(this.options.noClip)return void(this._parts=[n]);this._parts=[];var a=this._parts,r=this._map._pathViewport,h=o.LineUtil;for(t=0,e=0;s-1>t;t++)i=h.clipSegment(n[t],n[t+1],r,t),i&&(a[e]=a[e]||[],a[e].push(i[0]),(i[1]!==n[t+1]||t===s-2)&&(a[e].push(i[1]),e++))},_simplifyPoints:function(){for(var t=this._parts,e=o.LineUtil,i=0,n=t.length;n>i;i++)t[i]=e.simplify(t[i],this.options.smoothFactor)},_updatePath:function(){this._map&&(this._clipPoints(),this._simplifyPoints(),o.Path.prototype._updatePath.call(this))}}),o.polyline=function(t,e){return new o.Polyline(t,e)},o.PolyUtil={},o.PolyUtil.clipPolygon=function(t,e){var i,n,s,a,r,h,l,u,c,d=[1,4,2,8],p=o.LineUtil;for(n=0,l=t.length;l>n;n++)t[n]._code=p._getBitCode(t[n],e);for(a=0;4>a;a++){for(u=d[a],i=[],n=0,l=t.length,s=l-1;l>n;s=n++)r=t[n],h=t[s],r._code&u?h._code&u||(c=p._getEdgeIntersection(h,r,u,e),c._code=p._getBitCode(c,e),i.push(c)):(h._code&u&&(c=p._getEdgeIntersection(h,r,u,e),c._code=p._getBitCode(c,e),i.push(c)),i.push(r));t=i}return t},o.Polygon=o.Polyline.extend({options:{fill:!0},initialize:function(t,e){o.Polyline.prototype.initialize.call(this,t,e),this._initWithHoles(t)},_initWithHoles:function(t){var e,i,n;if(t&&o.Util.isArray(t[0])&&"number"!=typeof t[0][0])for(this._latlngs=this._convertLatLngs(t[0]),this._holes=t.slice(1),e=0,i=this._holes.length;i>e;e++)n=this._holes[e]=this._convertLatLngs(this._holes[e]),n[0].equals(n[n.length-1])&&n.pop();t=this._latlngs,t.length>=2&&t[0].equals(t[t.length-1])&&t.pop()},projectLatlngs:function(){if(o.Polyline.prototype.projectLatlngs.call(this),this._holePoints=[],this._holes){var t,e,i,n;for(t=0,i=this._holes.length;i>t;t++)for(this._holePoints[t]=[],e=0,n=this._holes[t].length;n>e;e++)this._holePoints[t][e]=this._map.latLngToLayerPoint(this._holes[t][e])}},setLatLngs:function(t){return t&&o.Util.isArray(t[0])&&"number"!=typeof t[0][0]?(this._initWithHoles(t),this.redraw()):o.Polyline.prototype.setLatLngs.call(this,t)},_clipPoints:function(){var t=this._originalPoints,e=[];if(this._parts=[t].concat(this._holePoints),!this.options.noClip){for(var i=0,n=this._parts.length;n>i;i++){var s=o.PolyUtil.clipPolygon(this._parts[i],this._map._pathViewport);s.length&&e.push(s)}this._parts=e}},_getPathPartStr:function(t){var e=o.Polyline.prototype._getPathPartStr.call(this,t);return e+(o.Browser.svg?"z":"x")}}),o.polygon=function(t,e){return new o.Polygon(t,e)},function(){function t(t){return o.FeatureGroup.extend({initialize:function(t,e){this._layers={},this._options=e,this.setLatLngs(t)},setLatLngs:function(e){var i=0,n=e.length;for(this.eachLayer(function(t){n>i?t.setLatLngs(e[i++]):this.removeLayer(t)},this);n>i;)this.addLayer(new t(e[i++],this._options));return this},getLatLngs:function(){var t=[];return this.eachLayer(function(e){t.push(e.getLatLngs())}),t}})}o.MultiPolyline=t(o.Polyline),o.MultiPolygon=t(o.Polygon),o.multiPolyline=function(t,e){return new o.MultiPolyline(t,e)},o.multiPolygon=function(t,e){return new o.MultiPolygon(t,e)}}(),o.Rectangle=o.Polygon.extend({initialize:function(t,e){o.Polygon.prototype.initialize.call(this,this._boundsToLatLngs(t),e)},setBounds:function(t){this.setLatLngs(this._boundsToLatLngs(t))},_boundsToLatLngs:function(t){return t=o.latLngBounds(t),[t.getSouthWest(),t.getNorthWest(),t.getNorthEast(),t.getSouthEast()]}}),o.rectangle=function(t,e){return new o.Rectangle(t,e)},o.Circle=o.Path.extend({initialize:function(t,e,i){o.Path.prototype.initialize.call(this,i),this._latlng=o.latLng(t),this._mRadius=e},options:{fill:!0},setLatLng:function(t){return this._latlng=o.latLng(t),this.redraw()},setRadius:function(t){return this._mRadius=t,this.redraw()},projectLatlngs:function(){var t=this._getLngRadius(),e=this._latlng,i=this._map.latLngToLayerPoint([e.lat,e.lng-t]);this._point=this._map.latLngToLayerPoint(e),this._radius=Math.max(this._point.x-i.x,1)},getBounds:function(){var t=this._getLngRadius(),e=this._mRadius/40075017*360,i=this._latlng;return new o.LatLngBounds([i.lat-e,i.lng-t],[i.lat+e,i.lng+t])},getLatLng:function(){return this._latlng},getPathString:function(){var t=this._point,e=this._radius;return this._checkIfEmpty()?"":o.Browser.svg?"M"+t.x+","+(t.y-e)+"A"+e+","+e+",0,1,1,"+(t.x-.1)+","+(t.y-e)+" z":(t._round(),e=Math.round(e),"AL "+t.x+","+t.y+" "+e+","+e+" 0,23592600")},getRadius:function(){return this._mRadius},_getLatRadius:function(){return this._mRadius/40075017*360},_getLngRadius:function(){return this._getLatRadius()/Math.cos(o.LatLng.DEG_TO_RAD*this._latlng.lat)},_checkIfEmpty:function(){if(!this._map)return!1;var t=this._map._pathViewport,e=this._radius,i=this._point;return i.x-e>t.max.x||i.y-e>t.max.y||i.x+e<t.min.x||i.y+e<t.min.y}}),o.circle=function(t,e,i){return new o.Circle(t,e,i)},o.CircleMarker=o.Circle.extend({options:{radius:10,weight:2},initialize:function(t,e){o.Circle.prototype.initialize.call(this,t,null,e),this._radius=this.options.radius},projectLatlngs:function(){this._point=this._map.latLngToLayerPoint(this._latlng)},_updateStyle:function(){o.Circle.prototype._updateStyle.call(this),this.setRadius(this.options.radius)},setLatLng:function(t){return o.Circle.prototype.setLatLng.call(this,t),this._popup&&this._popup._isOpen&&this._popup.setLatLng(t),this},setRadius:function(t){return this.options.radius=this._radius=t,this.redraw()},getRadius:function(){return this._radius}}),o.circleMarker=function(t,e){return new o.CircleMarker(t,e)},o.Polyline.include(o.Path.CANVAS?{_containsPoint:function(t,e){var i,n,s,a,r,h,l,u=this.options.weight/2;for(o.Browser.touch&&(u+=10),i=0,a=this._parts.length;a>i;i++)for(l=this._parts[i],n=0,r=l.length,s=r-1;r>n;s=n++)if((e||0!==n)&&(h=o.LineUtil.pointToSegmentDistance(t,l[s],l[n]),u>=h))return!0;return!1}}:{}),o.Polygon.include(o.Path.CANVAS?{_containsPoint:function(t){var e,i,n,s,a,r,h,l,u=!1;if(o.Polyline.prototype._containsPoint.call(this,t,!0))return!0;for(s=0,h=this._parts.length;h>s;s++)for(e=this._parts[s],a=0,l=e.length,r=l-1;l>a;r=a++)i=e[a],n=e[r],i.y>t.y!=n.y>t.y&&t.x<(n.x-i.x)*(t.y-i.y)/(n.y-i.y)+i.x&&(u=!u);return u}}:{}),o.Circle.include(o.Path.CANVAS?{_drawPath:function(){var t=this._point;this._ctx.beginPath(),this._ctx.arc(t.x,t.y,this._radius,0,2*Math.PI,!1)},_containsPoint:function(t){var e=this._point,i=this.options.stroke?this.options.weight/2:0;return t.distanceTo(e)<=this._radius+i}}:{}),o.CircleMarker.include(o.Path.CANVAS?{_updateStyle:function(){o.Path.prototype._updateStyle.call(this)}}:{}),o.GeoJSON=o.FeatureGroup.extend({initialize:function(t,e){o.setOptions(this,e),this._layers={},t&&this.addData(t)},addData:function(t){var e,i,n,s=o.Util.isArray(t)?t:t.features;if(s){for(e=0,i=s.length;i>e;e++)n=s[e],(n.geometries||n.geometry||n.features||n.coordinates)&&this.addData(s[e]);return this}var a=this.options;if(!a.filter||a.filter(t)){var r=o.GeoJSON.geometryToLayer(t,a.pointToLayer,a.coordsToLatLng,a);return r.feature=o.GeoJSON.asFeature(t),r.defaultOptions=r.options,this.resetStyle(r),a.onEachFeature&&a.onEachFeature(t,r),this.addLayer(r)}},resetStyle:function(t){var e=this.options.style;e&&(o.Util.extend(t.options,t.defaultOptions),this._setLayerStyle(t,e))},setStyle:function(t){this.eachLayer(function(e){this._setLayerStyle(e,t)},this)},_setLayerStyle:function(t,e){"function"==typeof e&&(e=e(t.feature)),t.setStyle&&t.setStyle(e)}}),o.extend(o.GeoJSON,{geometryToLayer:function(t,e,i,n){var s,a,r,h,l="Feature"===t.type?t.geometry:t,u=l.coordinates,c=[];switch(i=i||this.coordsToLatLng,l.type){case"Point":return s=i(u),e?e(t,s):new o.Marker(s);case"MultiPoint":for(r=0,h=u.length;h>r;r++)s=i(u[r]),c.push(e?e(t,s):new o.Marker(s));return new o.FeatureGroup(c);case"LineString":return a=this.coordsToLatLngs(u,0,i),new o.Polyline(a,n);case"Polygon":if(2===u.length&&!u[1].length)throw new Error("Invalid GeoJSON object.");return a=this.coordsToLatLngs(u,1,i),new o.Polygon(a,n);case"MultiLineString":return a=this.coordsToLatLngs(u,1,i),new o.MultiPolyline(a,n);case"MultiPolygon":return a=this.coordsToLatLngs(u,2,i),new o.MultiPolygon(a,n);case"GeometryCollection":for(r=0,h=l.geometries.length;h>r;r++)c.push(this.geometryToLayer({geometry:l.geometries[r],type:"Feature",properties:t.properties},e,i,n));return new o.FeatureGroup(c);default:throw new Error("Invalid GeoJSON object.")}},coordsToLatLng:function(t){return new o.LatLng(t[1],t[0],t[2])},coordsToLatLngs:function(t,e,i){var n,o,s,a=[];for(o=0,s=t.length;s>o;o++)n=e?this.coordsToLatLngs(t[o],e-1,i):(i||this.coordsToLatLng)(t[o]),a.push(n);return a},latLngToCoords:function(t){var e=[t.lng,t.lat];return t.alt!==i&&e.push(t.alt),e},latLngsToCoords:function(t){for(var e=[],i=0,n=t.length;n>i;i++)e.push(o.GeoJSON.latLngToCoords(t[i]));return e},getFeature:function(t,e){return t.feature?o.extend({},t.feature,{geometry:e}):o.GeoJSON.asFeature(e)},asFeature:function(t){return"Feature"===t.type?t:{type:"Feature",properties:{},geometry:t}}});var a={toGeoJSON:function(){return o.GeoJSON.getFeature(this,{type:"Point",coordinates:o.GeoJSON.latLngToCoords(this.getLatLng())})}};o.Marker.include(a),o.Circle.include(a),o.CircleMarker.include(a),o.Polyline.include({toGeoJSON:function(){return o.GeoJSON.getFeature(this,{type:"LineString",coordinates:o.GeoJSON.latLngsToCoords(this.getLatLngs())})}}),o.Polygon.include({toGeoJSON:function(){var t,e,i,n=[o.GeoJSON.latLngsToCoords(this.getLatLngs())];if(n[0].push(n[0][0]),this._holes)for(t=0,e=this._holes.length;e>t;t++)i=o.GeoJSON.latLngsToCoords(this._holes[t]),i.push(i[0]),n.push(i);return o.GeoJSON.getFeature(this,{type:"Polygon",coordinates:n})}}),function(){function t(t){return function(){var e=[];return this.eachLayer(function(t){e.push(t.toGeoJSON().geometry.coordinates)}),o.GeoJSON.getFeature(this,{type:t,coordinates:e})}}o.MultiPolyline.include({toGeoJSON:t("MultiLineString")}),o.MultiPolygon.include({toGeoJSON:t("MultiPolygon")}),o.LayerGroup.include({toGeoJSON:function(){var e,i=this.feature&&this.feature.geometry,n=[];if(i&&"MultiPoint"===i.type)return t("MultiPoint").call(this);var s=i&&"GeometryCollection"===i.type;return this.eachLayer(function(t){t.toGeoJSON&&(e=t.toGeoJSON(),n.push(s?e.geometry:o.GeoJSON.asFeature(e)))}),s?o.GeoJSON.getFeature(this,{geometries:n,type:"GeometryCollection"}):{type:"FeatureCollection",features:n}}})}(),o.geoJson=function(t,e){return new o.GeoJSON(t,e)},o.DomEvent={addListener:function(t,e,i,n){var s,a,r,h=o.stamp(i),l="_leaflet_"+e+h;return t[l]?this:(s=function(e){return i.call(n||t,e||o.DomEvent._getEvent())},o.Browser.pointer&&0===e.indexOf("touch")?this.addPointerListener(t,e,s,h):(o.Browser.touch&&"dblclick"===e&&this.addDoubleTapListener&&this.addDoubleTapListener(t,s,h),"addEventListener"in t?"mousewheel"===e?(t.addEventListener("DOMMouseScroll",s,!1),t.addEventListener(e,s,!1)):"mouseenter"===e||"mouseleave"===e?(a=s,r="mouseenter"===e?"mouseover":"mouseout",s=function(e){return o.DomEvent._checkMouse(t,e)?a(e):void 0},t.addEventListener(r,s,!1)):"click"===e&&o.Browser.android?(a=s,s=function(t){return o.DomEvent._filterClick(t,a)},t.addEventListener(e,s,!1)):t.addEventListener(e,s,!1):"attachEvent"in t&&t.attachEvent("on"+e,s),t[l]=s,this))},removeListener:function(t,e,i){var n=o.stamp(i),s="_leaflet_"+e+n,a=t[s];return a?(o.Browser.pointer&&0===e.indexOf("touch")?this.removePointerListener(t,e,n):o.Browser.touch&&"dblclick"===e&&this.removeDoubleTapListener?this.removeDoubleTapListener(t,n):"removeEventListener"in t?"mousewheel"===e?(t.removeEventListener("DOMMouseScroll",a,!1),t.removeEventListener(e,a,!1)):"mouseenter"===e||"mouseleave"===e?t.removeEventListener("mouseenter"===e?"mouseover":"mouseout",a,!1):t.removeEventListener(e,a,!1):"detachEvent"in t&&t.detachEvent("on"+e,a),t[s]=null,this):this},stopPropagation:function(t){return t.stopPropagation?t.stopPropagation():t.cancelBubble=!0,o.DomEvent._skipped(t),this},disableScrollPropagation:function(t){var e=o.DomEvent.stopPropagation;return o.DomEvent.on(t,"mousewheel",e).on(t,"MozMousePixelScroll",e)},disableClickPropagation:function(t){for(var e=o.DomEvent.stopPropagation,i=o.Draggable.START.length-1;i>=0;i--)o.DomEvent.on(t,o.Draggable.START[i],e);return o.DomEvent.on(t,"click",o.DomEvent._fakeStop).on(t,"dblclick",e)},preventDefault:function(t){return t.preventDefault?t.preventDefault():t.returnValue=!1,this},stop:function(t){return o.DomEvent.preventDefault(t).stopPropagation(t)},getMousePosition:function(t,e){if(!e)return new o.Point(t.clientX,t.clientY);var i=e.getBoundingClientRect();return new o.Point(t.clientX-i.left-e.clientLeft,t.clientY-i.top-e.clientTop)},getWheelDelta:function(t){var e=0;return t.wheelDelta&&(e=t.wheelDelta/120),t.detail&&(e=-t.detail/3),e},_skipEvents:{},_fakeStop:function(t){o.DomEvent._skipEvents[t.type]=!0},_skipped:function(t){var e=this._skipEvents[t.type];return this._skipEvents[t.type]=!1,e},_checkMouse:function(t,e){var i=e.relatedTarget;if(!i)return!0;try{for(;i&&i!==t;)i=i.parentNode}catch(n){return!1}return i!==t},_getEvent:function(){var e=t.event;if(!e)for(var i=arguments.callee.caller;i&&(e=i.arguments[0],!e||t.Event!==e.constructor);)i=i.caller;return e},_filterClick:function(t,e){var i=t.timeStamp||t.originalEvent.timeStamp,n=o.DomEvent._lastClick&&i-o.DomEvent._lastClick;return n&&n>100&&500>n||t.target._simulatedClick&&!t._simulated?void o.DomEvent.stop(t):(o.DomEvent._lastClick=i,e(t))}},o.DomEvent.on=o.DomEvent.addListener,o.DomEvent.off=o.DomEvent.removeListener,o.Draggable=o.Class.extend({includes:o.Mixin.Events,statics:{START:o.Browser.touch?["touchstart","mousedown"]:["mousedown"],END:{mousedown:"mouseup",touchstart:"touchend",pointerdown:"touchend",MSPointerDown:"touchend"},MOVE:{mousedown:"mousemove",touchstart:"touchmove",pointerdown:"touchmove",MSPointerDown:"touchmove"}},initialize:function(t,e){this._element=t,this._dragStartTarget=e||t},enable:function(){if(!this._enabled){for(var t=o.Draggable.START.length-1;t>=0;t--)o.DomEvent.on(this._dragStartTarget,o.Draggable.START[t],this._onDown,this);this._enabled=!0}},disable:function(){if(this._enabled){for(var t=o.Draggable.START.length-1;t>=0;t--)o.DomEvent.off(this._dragStartTarget,o.Draggable.START[t],this._onDown,this);this._enabled=!1,this._moved=!1}},_onDown:function(t){if(this._moved=!1,!(t.shiftKey||1!==t.which&&1!==t.button&&!t.touches||(o.DomEvent.stopPropagation(t),o.Draggable._disabled||(o.DomUtil.disableImageDrag(),o.DomUtil.disableTextSelection(),this._moving)))){var i=t.touches?t.touches[0]:t;this._startPoint=new o.Point(i.clientX,i.clientY),this._startPos=this._newPos=o.DomUtil.getPosition(this._element),o.DomEvent.on(e,o.Draggable.MOVE[t.type],this._onMove,this).on(e,o.Draggable.END[t.type],this._onUp,this)}},_onMove:function(t){if(t.touches&&t.touches.length>1)return void(this._moved=!0);var i=t.touches&&1===t.touches.length?t.touches[0]:t,n=new o.Point(i.clientX,i.clientY),s=n.subtract(this._startPoint);(s.x||s.y)&&(o.Browser.touch&&Math.abs(s.x)+Math.abs(s.y)<3||(o.DomEvent.preventDefault(t),this._moved||(this.fire("dragstart"),this._moved=!0,this._startPos=o.DomUtil.getPosition(this._element).subtract(s),o.DomUtil.addClass(e.body,"leaflet-dragging"),this._lastTarget=t.target||t.srcElement,o.DomUtil.addClass(this._lastTarget,"leaflet-drag-target")),this._newPos=this._startPos.add(s),this._moving=!0,o.Util.cancelAnimFrame(this._animRequest),this._animRequest=o.Util.requestAnimFrame(this._updatePosition,this,!0,this._dragStartTarget)))},_updatePosition:function(){this.fire("predrag"),o.DomUtil.setPosition(this._element,this._newPos),this.fire("drag")},_onUp:function(){o.DomUtil.removeClass(e.body,"leaflet-dragging"),this._lastTarget&&(o.DomUtil.removeClass(this._lastTarget,"leaflet-drag-target"),this._lastTarget=null);for(var t in o.Draggable.MOVE)o.DomEvent.off(e,o.Draggable.MOVE[t],this._onMove).off(e,o.Draggable.END[t],this._onUp);o.DomUtil.enableImageDrag(),o.DomUtil.enableTextSelection(),this._moved&&this._moving&&(o.Util.cancelAnimFrame(this._animRequest),this.fire("dragend",{distance:this._newPos.distanceTo(this._startPos)})),this._moving=!1}}),o.Handler=o.Class.extend({initialize:function(t){this._map=t},enable:function(){this._enabled||(this._enabled=!0,this.addHooks())},disable:function(){this._enabled&&(this._enabled=!1,this.removeHooks())},enabled:function(){return!!this._enabled}}),o.Map.mergeOptions({dragging:!0,inertia:!o.Browser.android23,inertiaDeceleration:3400,inertiaMaxSpeed:1/0,inertiaThreshold:o.Browser.touch?32:18,easeLinearity:.25,worldCopyJump:!1}),o.Map.Drag=o.Handler.extend({addHooks:function(){if(!this._draggable){var t=this._map;this._draggable=new o.Draggable(t._mapPane,t._container),this._draggable.on({dragstart:this._onDragStart,drag:this._onDrag,dragend:this._onDragEnd},this),t.options.worldCopyJump&&(this._draggable.on("predrag",this._onPreDrag,this),t.on("viewreset",this._onViewReset,this),t.whenReady(this._onViewReset,this))}this._draggable.enable()},removeHooks:function(){this._draggable.disable()},moved:function(){return this._draggable&&this._draggable._moved},_onDragStart:function(){var t=this._map;t._panAnim&&t._panAnim.stop(),t.fire("movestart").fire("dragstart"),t.options.inertia&&(this._positions=[],this._times=[])},_onDrag:function(){if(this._map.options.inertia){var t=this._lastTime=+new Date,e=this._lastPos=this._draggable._newPos;this._positions.push(e),this._times.push(t),t-this._times[0]>200&&(this._positions.shift(),this._times.shift())}this._map.fire("move").fire("drag")},_onViewReset:function(){var t=this._map.getSize()._divideBy(2),e=this._map.latLngToLayerPoint([0,0]);this._initialWorldOffset=e.subtract(t).x,this._worldWidth=this._map.project([0,180]).x},_onPreDrag:function(){var t=this._worldWidth,e=Math.round(t/2),i=this._initialWorldOffset,n=this._draggable._newPos.x,o=(n-e+i)%t+e-i,s=(n+e+i)%t-e-i,a=Math.abs(o+i)<Math.abs(s+i)?o:s;this._draggable._newPos.x=a},_onDragEnd:function(t){var e=this._map,i=e.options,n=+new Date-this._lastTime,s=!i.inertia||n>i.inertiaThreshold||!this._positions[0];if(e.fire("dragend",t),s)e.fire("moveend");else{var a=this._lastPos.subtract(this._positions[0]),r=(this._lastTime+n-this._times[0])/1e3,h=i.easeLinearity,l=a.multiplyBy(h/r),u=l.distanceTo([0,0]),c=Math.min(i.inertiaMaxSpeed,u),d=l.multiplyBy(c/u),p=c/(i.inertiaDeceleration*h),_=d.multiplyBy(-p/2).round();_.x&&_.y?(_=e._limitOffset(_,e.options.maxBounds),o.Util.requestAnimFrame(function(){e.panBy(_,{duration:p,easeLinearity:h,noMoveStart:!0})})):e.fire("moveend")}}}),o.Map.addInitHook("addHandler","dragging",o.Map.Drag),o.Map.mergeOptions({doubleClickZoom:!0}),o.Map.DoubleClickZoom=o.Handler.extend({addHooks:function(){this._map.on("dblclick",this._onDoubleClick,this)},removeHooks:function(){this._map.off("dblclick",this._onDoubleClick,this)},_onDoubleClick:function(t){var e=this._map,i=e.getZoom()+(t.originalEvent.shiftKey?-1:1);"center"===e.options.doubleClickZoom?e.setZoom(i):e.setZoomAround(t.containerPoint,i)}}),o.Map.addInitHook("addHandler","doubleClickZoom",o.Map.DoubleClickZoom),o.Map.mergeOptions({scrollWheelZoom:!0}),o.Map.ScrollWheelZoom=o.Handler.extend({addHooks:function(){o.DomEvent.on(this._map._container,"mousewheel",this._onWheelScroll,this),o.DomEvent.on(this._map._container,"MozMousePixelScroll",o.DomEvent.preventDefault),this._delta=0},removeHooks:function(){o.DomEvent.off(this._map._container,"mousewheel",this._onWheelScroll),o.DomEvent.off(this._map._container,"MozMousePixelScroll",o.DomEvent.preventDefault)},_onWheelScroll:function(t){var e=o.DomEvent.getWheelDelta(t);this._delta+=e,this._lastMousePos=this._map.mouseEventToContainerPoint(t),this._startTime||(this._startTime=+new Date);var i=Math.max(40-(+new Date-this._startTime),0);clearTimeout(this._timer),this._timer=setTimeout(o.bind(this._performZoom,this),i),o.DomEvent.preventDefault(t),o.DomEvent.stopPropagation(t)},_performZoom:function(){var t=this._map,e=this._delta,i=t.getZoom();e=e>0?Math.ceil(e):Math.floor(e),e=Math.max(Math.min(e,4),-4),e=t._limitZoom(i+e)-i,this._delta=0,this._startTime=null,e&&("center"===t.options.scrollWheelZoom?t.setZoom(i+e):t.setZoomAround(this._lastMousePos,i+e))}}),o.Map.addInitHook("addHandler","scrollWheelZoom",o.Map.ScrollWheelZoom),o.extend(o.DomEvent,{_touchstart:o.Browser.msPointer?"MSPointerDown":o.Browser.pointer?"pointerdown":"touchstart",_touchend:o.Browser.msPointer?"MSPointerUp":o.Browser.pointer?"pointerup":"touchend",addDoubleTapListener:function(t,i,n){function s(t){var e;if(o.Browser.pointer?(_.push(t.pointerId),e=_.length):e=t.touches.length,!(e>1)){var i=Date.now(),n=i-(r||i);h=t.touches?t.touches[0]:t,l=n>0&&u>=n,r=i}}function a(t){if(o.Browser.pointer){var e=_.indexOf(t.pointerId);if(-1===e)return;_.splice(e,1)}if(l){if(o.Browser.pointer){var n,s={};for(var a in h)n=h[a],"function"==typeof n?s[a]=n.bind(h):s[a]=n;h=s}h.type="dblclick",i(h),r=null}}var r,h,l=!1,u=250,c="_leaflet_",d=this._touchstart,p=this._touchend,_=[];t[c+d+n]=s,t[c+p+n]=a;var m=o.Browser.pointer?e.documentElement:t;return t.addEventListener(d,s,!1),m.addEventListener(p,a,!1),o.Browser.pointer&&m.addEventListener(o.DomEvent.POINTER_CANCEL,a,!1),this},removeDoubleTapListener:function(t,i){var n="_leaflet_";return t.removeEventListener(this._touchstart,t[n+this._touchstart+i],!1),(o.Browser.pointer?e.documentElement:t).removeEventListener(this._touchend,t[n+this._touchend+i],!1),o.Browser.pointer&&e.documentElement.removeEventListener(o.DomEvent.POINTER_CANCEL,t[n+this._touchend+i],!1),this}}),o.extend(o.DomEvent,{POINTER_DOWN:o.Browser.msPointer?"MSPointerDown":"pointerdown",POINTER_MOVE:o.Browser.msPointer?"MSPointerMove":"pointermove",POINTER_UP:o.Browser.msPointer?"MSPointerUp":"pointerup",POINTER_CANCEL:o.Browser.msPointer?"MSPointerCancel":"pointercancel",_pointers:[],_pointerDocumentListener:!1,addPointerListener:function(t,e,i,n){switch(e){case"touchstart":return this.addPointerListenerStart(t,e,i,n);
+case"touchend":return this.addPointerListenerEnd(t,e,i,n);case"touchmove":return this.addPointerListenerMove(t,e,i,n);default:throw"Unknown touch event type"}},addPointerListenerStart:function(t,i,n,s){var a="_leaflet_",r=this._pointers,h=function(t){o.DomEvent.preventDefault(t);for(var e=!1,i=0;i<r.length;i++)if(r[i].pointerId===t.pointerId){e=!0;break}e||r.push(t),t.touches=r.slice(),t.changedTouches=[t],n(t)};if(t[a+"touchstart"+s]=h,t.addEventListener(this.POINTER_DOWN,h,!1),!this._pointerDocumentListener){var l=function(t){for(var e=0;e<r.length;e++)if(r[e].pointerId===t.pointerId){r.splice(e,1);break}};e.documentElement.addEventListener(this.POINTER_UP,l,!1),e.documentElement.addEventListener(this.POINTER_CANCEL,l,!1),this._pointerDocumentListener=!0}return this},addPointerListenerMove:function(t,e,i,n){function o(t){if(t.pointerType!==t.MSPOINTER_TYPE_MOUSE&&"mouse"!==t.pointerType||0!==t.buttons){for(var e=0;e<a.length;e++)if(a[e].pointerId===t.pointerId){a[e]=t;break}t.touches=a.slice(),t.changedTouches=[t],i(t)}}var s="_leaflet_",a=this._pointers;return t[s+"touchmove"+n]=o,t.addEventListener(this.POINTER_MOVE,o,!1),this},addPointerListenerEnd:function(t,e,i,n){var o="_leaflet_",s=this._pointers,a=function(t){for(var e=0;e<s.length;e++)if(s[e].pointerId===t.pointerId){s.splice(e,1);break}t.touches=s.slice(),t.changedTouches=[t],i(t)};return t[o+"touchend"+n]=a,t.addEventListener(this.POINTER_UP,a,!1),t.addEventListener(this.POINTER_CANCEL,a,!1),this},removePointerListener:function(t,e,i){var n="_leaflet_",o=t[n+e+i];switch(e){case"touchstart":t.removeEventListener(this.POINTER_DOWN,o,!1);break;case"touchmove":t.removeEventListener(this.POINTER_MOVE,o,!1);break;case"touchend":t.removeEventListener(this.POINTER_UP,o,!1),t.removeEventListener(this.POINTER_CANCEL,o,!1)}return this}}),o.Map.mergeOptions({touchZoom:o.Browser.touch&&!o.Browser.android23,bounceAtZoomLimits:!0}),o.Map.TouchZoom=o.Handler.extend({addHooks:function(){o.DomEvent.on(this._map._container,"touchstart",this._onTouchStart,this)},removeHooks:function(){o.DomEvent.off(this._map._container,"touchstart",this._onTouchStart,this)},_onTouchStart:function(t){var i=this._map;if(t.touches&&2===t.touches.length&&!i._animatingZoom&&!this._zooming){var n=i.mouseEventToLayerPoint(t.touches[0]),s=i.mouseEventToLayerPoint(t.touches[1]),a=i._getCenterLayerPoint();this._startCenter=n.add(s)._divideBy(2),this._startDist=n.distanceTo(s),this._moved=!1,this._zooming=!0,this._centerOffset=a.subtract(this._startCenter),i._panAnim&&i._panAnim.stop(),o.DomEvent.on(e,"touchmove",this._onTouchMove,this).on(e,"touchend",this._onTouchEnd,this),o.DomEvent.preventDefault(t)}},_onTouchMove:function(t){var e=this._map;if(t.touches&&2===t.touches.length&&this._zooming){var i=e.mouseEventToLayerPoint(t.touches[0]),n=e.mouseEventToLayerPoint(t.touches[1]);this._scale=i.distanceTo(n)/this._startDist,this._delta=i._add(n)._divideBy(2)._subtract(this._startCenter),1!==this._scale&&(e.options.bounceAtZoomLimits||!(e.getZoom()===e.getMinZoom()&&this._scale<1||e.getZoom()===e.getMaxZoom()&&this._scale>1))&&(this._moved||(o.DomUtil.addClass(e._mapPane,"leaflet-touching"),e.fire("movestart").fire("zoomstart"),this._moved=!0),o.Util.cancelAnimFrame(this._animRequest),this._animRequest=o.Util.requestAnimFrame(this._updateOnMove,this,!0,this._map._container),o.DomEvent.preventDefault(t))}},_updateOnMove:function(){var t=this._map,e=this._getScaleOrigin(),i=t.layerPointToLatLng(e),n=t.getScaleZoom(this._scale);t._animateZoom(i,n,this._startCenter,this._scale,this._delta,!1,!0)},_onTouchEnd:function(){if(!this._moved||!this._zooming)return void(this._zooming=!1);var t=this._map;this._zooming=!1,o.DomUtil.removeClass(t._mapPane,"leaflet-touching"),o.Util.cancelAnimFrame(this._animRequest),o.DomEvent.off(e,"touchmove",this._onTouchMove).off(e,"touchend",this._onTouchEnd);var i=this._getScaleOrigin(),n=t.layerPointToLatLng(i),s=t.getZoom(),a=t.getScaleZoom(this._scale)-s,r=a>0?Math.ceil(a):Math.floor(a),h=t._limitZoom(s+r),l=t.getZoomScale(h)/this._scale;t._animateZoom(n,h,i,l)},_getScaleOrigin:function(){var t=this._centerOffset.subtract(this._delta).divideBy(this._scale);return this._startCenter.add(t)}}),o.Map.addInitHook("addHandler","touchZoom",o.Map.TouchZoom),o.Map.mergeOptions({tap:!0,tapTolerance:15}),o.Map.Tap=o.Handler.extend({addHooks:function(){o.DomEvent.on(this._map._container,"touchstart",this._onDown,this)},removeHooks:function(){o.DomEvent.off(this._map._container,"touchstart",this._onDown,this)},_onDown:function(t){if(t.touches){if(o.DomEvent.preventDefault(t),this._fireClick=!0,t.touches.length>1)return this._fireClick=!1,void clearTimeout(this._holdTimeout);var i=t.touches[0],n=i.target;this._startPos=this._newPos=new o.Point(i.clientX,i.clientY),n.tagName&&"a"===n.tagName.toLowerCase()&&o.DomUtil.addClass(n,"leaflet-active"),this._holdTimeout=setTimeout(o.bind(function(){this._isTapValid()&&(this._fireClick=!1,this._onUp(),this._simulateEvent("contextmenu",i))},this),1e3),o.DomEvent.on(e,"touchmove",this._onMove,this).on(e,"touchend",this._onUp,this)}},_onUp:function(t){if(clearTimeout(this._holdTimeout),o.DomEvent.off(e,"touchmove",this._onMove,this).off(e,"touchend",this._onUp,this),this._fireClick&&t&&t.changedTouches){var i=t.changedTouches[0],n=i.target;n&&n.tagName&&"a"===n.tagName.toLowerCase()&&o.DomUtil.removeClass(n,"leaflet-active"),this._isTapValid()&&this._simulateEvent("click",i)}},_isTapValid:function(){return this._newPos.distanceTo(this._startPos)<=this._map.options.tapTolerance},_onMove:function(t){var e=t.touches[0];this._newPos=new o.Point(e.clientX,e.clientY)},_simulateEvent:function(i,n){var o=e.createEvent("MouseEvents");o._simulated=!0,n.target._simulatedClick=!0,o.initMouseEvent(i,!0,!0,t,1,n.screenX,n.screenY,n.clientX,n.clientY,!1,!1,!1,!1,0,null),n.target.dispatchEvent(o)}}),o.Browser.touch&&!o.Browser.pointer&&o.Map.addInitHook("addHandler","tap",o.Map.Tap),o.Map.mergeOptions({boxZoom:!0}),o.Map.BoxZoom=o.Handler.extend({initialize:function(t){this._map=t,this._container=t._container,this._pane=t._panes.overlayPane,this._moved=!1},addHooks:function(){o.DomEvent.on(this._container,"mousedown",this._onMouseDown,this)},removeHooks:function(){o.DomEvent.off(this._container,"mousedown",this._onMouseDown),this._moved=!1},moved:function(){return this._moved},_onMouseDown:function(t){return this._moved=!1,!t.shiftKey||1!==t.which&&1!==t.button?!1:(o.DomUtil.disableTextSelection(),o.DomUtil.disableImageDrag(),this._startLayerPoint=this._map.mouseEventToLayerPoint(t),void o.DomEvent.on(e,"mousemove",this._onMouseMove,this).on(e,"mouseup",this._onMouseUp,this).on(e,"keydown",this._onKeyDown,this))},_onMouseMove:function(t){this._moved||(this._box=o.DomUtil.create("div","leaflet-zoom-box",this._pane),o.DomUtil.setPosition(this._box,this._startLayerPoint),this._container.style.cursor="crosshair",this._map.fire("boxzoomstart"));var e=this._startLayerPoint,i=this._box,n=this._map.mouseEventToLayerPoint(t),s=n.subtract(e),a=new o.Point(Math.min(n.x,e.x),Math.min(n.y,e.y));o.DomUtil.setPosition(i,a),this._moved=!0,i.style.width=Math.max(0,Math.abs(s.x)-4)+"px",i.style.height=Math.max(0,Math.abs(s.y)-4)+"px"},_finish:function(){this._moved&&(this._pane.removeChild(this._box),this._container.style.cursor=""),o.DomUtil.enableTextSelection(),o.DomUtil.enableImageDrag(),o.DomEvent.off(e,"mousemove",this._onMouseMove).off(e,"mouseup",this._onMouseUp).off(e,"keydown",this._onKeyDown)},_onMouseUp:function(t){this._finish();var e=this._map,i=e.mouseEventToLayerPoint(t);if(!this._startLayerPoint.equals(i)){var n=new o.LatLngBounds(e.layerPointToLatLng(this._startLayerPoint),e.layerPointToLatLng(i));e.fitBounds(n),e.fire("boxzoomend",{boxZoomBounds:n})}},_onKeyDown:function(t){27===t.keyCode&&this._finish()}}),o.Map.addInitHook("addHandler","boxZoom",o.Map.BoxZoom),o.Map.mergeOptions({keyboard:!0,keyboardPanOffset:80,keyboardZoomOffset:1}),o.Map.Keyboard=o.Handler.extend({keyCodes:{left:[37],right:[39],down:[40],up:[38],zoomIn:[187,107,61,171],zoomOut:[189,109,173]},initialize:function(t){this._map=t,this._setPanOffset(t.options.keyboardPanOffset),this._setZoomOffset(t.options.keyboardZoomOffset)},addHooks:function(){var t=this._map._container;-1===t.tabIndex&&(t.tabIndex="0"),o.DomEvent.on(t,"focus",this._onFocus,this).on(t,"blur",this._onBlur,this).on(t,"mousedown",this._onMouseDown,this),this._map.on("focus",this._addHooks,this).on("blur",this._removeHooks,this)},removeHooks:function(){this._removeHooks();var t=this._map._container;o.DomEvent.off(t,"focus",this._onFocus,this).off(t,"blur",this._onBlur,this).off(t,"mousedown",this._onMouseDown,this),this._map.off("focus",this._addHooks,this).off("blur",this._removeHooks,this)},_onMouseDown:function(){if(!this._focused){var i=e.body,n=e.documentElement,o=i.scrollTop||n.scrollTop,s=i.scrollLeft||n.scrollLeft;this._map._container.focus(),t.scrollTo(s,o)}},_onFocus:function(){this._focused=!0,this._map.fire("focus")},_onBlur:function(){this._focused=!1,this._map.fire("blur")},_setPanOffset:function(t){var e,i,n=this._panKeys={},o=this.keyCodes;for(e=0,i=o.left.length;i>e;e++)n[o.left[e]]=[-1*t,0];for(e=0,i=o.right.length;i>e;e++)n[o.right[e]]=[t,0];for(e=0,i=o.down.length;i>e;e++)n[o.down[e]]=[0,t];for(e=0,i=o.up.length;i>e;e++)n[o.up[e]]=[0,-1*t]},_setZoomOffset:function(t){var e,i,n=this._zoomKeys={},o=this.keyCodes;for(e=0,i=o.zoomIn.length;i>e;e++)n[o.zoomIn[e]]=t;for(e=0,i=o.zoomOut.length;i>e;e++)n[o.zoomOut[e]]=-t},_addHooks:function(){o.DomEvent.on(e,"keydown",this._onKeyDown,this)},_removeHooks:function(){o.DomEvent.off(e,"keydown",this._onKeyDown,this)},_onKeyDown:function(t){var e=t.keyCode,i=this._map;if(e in this._panKeys){if(i._panAnim&&i._panAnim._inProgress)return;i.panBy(this._panKeys[e]),i.options.maxBounds&&i.panInsideBounds(i.options.maxBounds)}else{if(!(e in this._zoomKeys))return;i.setZoom(i.getZoom()+this._zoomKeys[e])}o.DomEvent.stop(t)}}),o.Map.addInitHook("addHandler","keyboard",o.Map.Keyboard),o.Handler.MarkerDrag=o.Handler.extend({initialize:function(t){this._marker=t},addHooks:function(){var t=this._marker._icon;this._draggable||(this._draggable=new o.Draggable(t,t)),this._draggable.on("dragstart",this._onDragStart,this).on("drag",this._onDrag,this).on("dragend",this._onDragEnd,this),this._draggable.enable(),o.DomUtil.addClass(this._marker._icon,"leaflet-marker-draggable")},removeHooks:function(){this._draggable.off("dragstart",this._onDragStart,this).off("drag",this._onDrag,this).off("dragend",this._onDragEnd,this),this._draggable.disable(),o.DomUtil.removeClass(this._marker._icon,"leaflet-marker-draggable")},moved:function(){return this._draggable&&this._draggable._moved},_onDragStart:function(){this._marker.closePopup().fire("movestart").fire("dragstart")},_onDrag:function(){var t=this._marker,e=t._shadow,i=o.DomUtil.getPosition(t._icon),n=t._map.layerPointToLatLng(i);e&&o.DomUtil.setPosition(e,i),t._latlng=n,t.fire("move",{latlng:n}).fire("drag")},_onDragEnd:function(t){this._marker.fire("moveend").fire("dragend",t)}}),o.Control=o.Class.extend({options:{position:"topright"},initialize:function(t){o.setOptions(this,t)},getPosition:function(){return this.options.position},setPosition:function(t){var e=this._map;return e&&e.removeControl(this),this.options.position=t,e&&e.addControl(this),this},getContainer:function(){return this._container},addTo:function(t){this._map=t;var e=this._container=this.onAdd(t),i=this.getPosition(),n=t._controlCorners[i];return o.DomUtil.addClass(e,"leaflet-control"),-1!==i.indexOf("bottom")?n.insertBefore(e,n.firstChild):n.appendChild(e),this},removeFrom:function(t){var e=this.getPosition(),i=t._controlCorners[e];return i.removeChild(this._container),this._map=null,this.onRemove&&this.onRemove(t),this},_refocusOnMap:function(){this._map&&this._map.getContainer().focus()}}),o.control=function(t){return new o.Control(t)},o.Map.include({addControl:function(t){return t.addTo(this),this},removeControl:function(t){return t.removeFrom(this),this},_initControlPos:function(){function t(t,s){var a=i+t+" "+i+s;e[t+s]=o.DomUtil.create("div",a,n)}var e=this._controlCorners={},i="leaflet-",n=this._controlContainer=o.DomUtil.create("div",i+"control-container",this._container);t("top","left"),t("top","right"),t("bottom","left"),t("bottom","right")},_clearControlPos:function(){this._container.removeChild(this._controlContainer)}}),o.Control.Zoom=o.Control.extend({options:{position:"topleft",zoomInText:"+",zoomInTitle:"Zoom in",zoomOutText:"-",zoomOutTitle:"Zoom out"},onAdd:function(t){var e="leaflet-control-zoom",i=o.DomUtil.create("div",e+" leaflet-bar");return this._map=t,this._zoomInButton=this._createButton(this.options.zoomInText,this.options.zoomInTitle,e+"-in",i,this._zoomIn,this),this._zoomOutButton=this._createButton(this.options.zoomOutText,this.options.zoomOutTitle,e+"-out",i,this._zoomOut,this),this._updateDisabled(),t.on("zoomend zoomlevelschange",this._updateDisabled,this),i},onRemove:function(t){t.off("zoomend zoomlevelschange",this._updateDisabled,this)},_zoomIn:function(t){this._map.zoomIn(t.shiftKey?3:1)},_zoomOut:function(t){this._map.zoomOut(t.shiftKey?3:1)},_createButton:function(t,e,i,n,s,a){var r=o.DomUtil.create("a",i,n);r.innerHTML=t,r.href="#",r.title=e;var h=o.DomEvent.stopPropagation;return o.DomEvent.on(r,"click",h).on(r,"mousedown",h).on(r,"dblclick",h).on(r,"click",o.DomEvent.preventDefault).on(r,"click",s,a).on(r,"click",this._refocusOnMap,a),r},_updateDisabled:function(){var t=this._map,e="leaflet-disabled";o.DomUtil.removeClass(this._zoomInButton,e),o.DomUtil.removeClass(this._zoomOutButton,e),t._zoom===t.getMinZoom()&&o.DomUtil.addClass(this._zoomOutButton,e),t._zoom===t.getMaxZoom()&&o.DomUtil.addClass(this._zoomInButton,e)}}),o.Map.mergeOptions({zoomControl:!0}),o.Map.addInitHook(function(){this.options.zoomControl&&(this.zoomControl=new o.Control.Zoom,this.addControl(this.zoomControl))}),o.control.zoom=function(t){return new o.Control.Zoom(t)},o.Control.Attribution=o.Control.extend({options:{position:"bottomright",prefix:'<a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a>'},initialize:function(t){o.setOptions(this,t),this._attributions={}},onAdd:function(t){this._container=o.DomUtil.create("div","leaflet-control-attribution"),o.DomEvent.disableClickPropagation(this._container);for(var e in t._layers)t._layers[e].getAttribution&&this.addAttribution(t._layers[e].getAttribution());return t.on("layeradd",this._onLayerAdd,this).on("layerremove",this._onLayerRemove,this),this._update(),this._container},onRemove:function(t){t.off("layeradd",this._onLayerAdd).off("layerremove",this._onLayerRemove)},setPrefix:function(t){return this.options.prefix=t,this._update(),this},addAttribution:function(t){return t?(this._attributions[t]||(this._attributions[t]=0),this._attributions[t]++,this._update(),this):void 0},removeAttribution:function(t){return t?(this._attributions[t]&&(this._attributions[t]--,this._update()),this):void 0},_update:function(){if(this._map){var t=[];for(var e in this._attributions)this._attributions[e]&&t.push(e);var i=[];this.options.prefix&&i.push(this.options.prefix),t.length&&i.push(t.join(", ")),this._container.innerHTML=i.join(" | ")}},_onLayerAdd:function(t){t.layer.getAttribution&&this.addAttribution(t.layer.getAttribution())},_onLayerRemove:function(t){t.layer.getAttribution&&this.removeAttribution(t.layer.getAttribution())}}),o.Map.mergeOptions({attributionControl:!0}),o.Map.addInitHook(function(){this.options.attributionControl&&(this.attributionControl=(new o.Control.Attribution).addTo(this))}),o.control.attribution=function(t){return new o.Control.Attribution(t)},o.Control.Scale=o.Control.extend({options:{position:"bottomleft",maxWidth:100,metric:!0,imperial:!0,updateWhenIdle:!1},onAdd:function(t){this._map=t;var e="leaflet-control-scale",i=o.DomUtil.create("div",e),n=this.options;return this._addScales(n,e,i),t.on(n.updateWhenIdle?"moveend":"move",this._update,this),t.whenReady(this._update,this),i},onRemove:function(t){t.off(this.options.updateWhenIdle?"moveend":"move",this._update,this)},_addScales:function(t,e,i){t.metric&&(this._mScale=o.DomUtil.create("div",e+"-line",i)),t.imperial&&(this._iScale=o.DomUtil.create("div",e+"-line",i))},_update:function(){var t=this._map.getBounds(),e=t.getCenter().lat,i=6378137*Math.PI*Math.cos(e*Math.PI/180),n=i*(t.getNorthEast().lng-t.getSouthWest().lng)/180,o=this._map.getSize(),s=this.options,a=0;o.x>0&&(a=n*(s.maxWidth/o.x)),this._updateScales(s,a)},_updateScales:function(t,e){t.metric&&e&&this._updateMetric(e),t.imperial&&e&&this._updateImperial(e)},_updateMetric:function(t){var e=this._getRoundNum(t);this._mScale.style.width=this._getScaleWidth(e/t)+"px",this._mScale.innerHTML=1e3>e?e+" m":e/1e3+" km"},_updateImperial:function(t){var e,i,n,o=3.2808399*t,s=this._iScale;o>5280?(e=o/5280,i=this._getRoundNum(e),s.style.width=this._getScaleWidth(i/e)+"px",s.innerHTML=i+" mi"):(n=this._getRoundNum(o),s.style.width=this._getScaleWidth(n/o)+"px",s.innerHTML=n+" ft")},_getScaleWidth:function(t){return Math.round(this.options.maxWidth*t)-10},_getRoundNum:function(t){var e=Math.pow(10,(Math.floor(t)+"").length-1),i=t/e;return i=i>=10?10:i>=5?5:i>=3?3:i>=2?2:1,e*i}}),o.control.scale=function(t){return new o.Control.Scale(t)},o.Control.Layers=o.Control.extend({options:{collapsed:!0,position:"topright",autoZIndex:!0},initialize:function(t,e,i){o.setOptions(this,i),this._layers={},this._lastZIndex=0,this._handlingClick=!1;for(var n in t)this._addLayer(t[n],n);for(n in e)this._addLayer(e[n],n,!0)},onAdd:function(t){return this._initLayout(),this._update(),t.on("layeradd",this._onLayerChange,this).on("layerremove",this._onLayerChange,this),this._container},onRemove:function(t){t.off("layeradd",this._onLayerChange,this).off("layerremove",this._onLayerChange,this)},addBaseLayer:function(t,e){return this._addLayer(t,e),this._update(),this},addOverlay:function(t,e){return this._addLayer(t,e,!0),this._update(),this},removeLayer:function(t){var e=o.stamp(t);return delete this._layers[e],this._update(),this},_initLayout:function(){var t="leaflet-control-layers",e=this._container=o.DomUtil.create("div",t);e.setAttribute("aria-haspopup",!0),o.Browser.touch?o.DomEvent.on(e,"click",o.DomEvent.stopPropagation):o.DomEvent.disableClickPropagation(e).disableScrollPropagation(e);var i=this._form=o.DomUtil.create("form",t+"-list");if(this.options.collapsed){o.Browser.android||o.DomEvent.on(e,"mouseover",this._expand,this).on(e,"mouseout",this._collapse,this);var n=this._layersLink=o.DomUtil.create("a",t+"-toggle",e);n.href="#",n.title="Layers",o.Browser.touch?o.DomEvent.on(n,"click",o.DomEvent.stop).on(n,"click",this._expand,this):o.DomEvent.on(n,"focus",this._expand,this),o.DomEvent.on(i,"click",function(){setTimeout(o.bind(this._onInputClick,this),0)},this),this._map.on("click",this._collapse,this)}else this._expand();this._baseLayersList=o.DomUtil.create("div",t+"-base",i),this._separator=o.DomUtil.create("div",t+"-separator",i),this._overlaysList=o.DomUtil.create("div",t+"-overlays",i),e.appendChild(i)},_addLayer:function(t,e,i){var n=o.stamp(t);this._layers[n]={layer:t,name:e,overlay:i},this.options.autoZIndex&&t.setZIndex&&(this._lastZIndex++,t.setZIndex(this._lastZIndex))},_update:function(){if(this._container){this._baseLayersList.innerHTML="",this._overlaysList.innerHTML="";var t,e,i=!1,n=!1;for(t in this._layers)e=this._layers[t],this._addItem(e),n=n||e.overlay,i=i||!e.overlay;this._separator.style.display=n&&i?"":"none"}},_onLayerChange:function(t){var e=this._layers[o.stamp(t.layer)];if(e){this._handlingClick||this._update();var i=e.overlay?"layeradd"===t.type?"overlayadd":"overlayremove":"layeradd"===t.type?"baselayerchange":null;i&&this._map.fire(i,e)}},_createRadioElement:function(t,i){var n='<input type="radio" class="leaflet-control-layers-selector" name="'+t+'"';i&&(n+=' checked="checked"'),n+="/>";var o=e.createElement("div");return o.innerHTML=n,o.firstChild},_addItem:function(t){var i,n=e.createElement("label"),s=this._map.hasLayer(t.layer);t.overlay?(i=e.createElement("input"),i.type="checkbox",i.className="leaflet-control-layers-selector",i.defaultChecked=s):i=this._createRadioElement("leaflet-base-layers",s),i.layerId=o.stamp(t.layer),o.DomEvent.on(i,"click",this._onInputClick,this);var a=e.createElement("span");a.innerHTML=" "+t.name,n.appendChild(i),n.appendChild(a);var r=t.overlay?this._overlaysList:this._baseLayersList;return r.appendChild(n),n},_onInputClick:function(){var t,e,i,n=this._form.getElementsByTagName("input"),o=n.length;for(this._handlingClick=!0,t=0;o>t;t++)e=n[t],i=this._layers[e.layerId],e.checked&&!this._map.hasLayer(i.layer)?this._map.addLayer(i.layer):!e.checked&&this._map.hasLayer(i.layer)&&this._map.removeLayer(i.layer);this._handlingClick=!1,this._refocusOnMap()},_expand:function(){o.DomUtil.addClass(this._container,"leaflet-control-layers-expanded")},_collapse:function(){this._container.className=this._container.className.replace(" leaflet-control-layers-expanded","")}}),o.control.layers=function(t,e,i){return new o.Control.Layers(t,e,i)},o.PosAnimation=o.Class.extend({includes:o.Mixin.Events,run:function(t,e,i,n){this.stop(),this._el=t,this._inProgress=!0,this._newPos=e,this.fire("start"),t.style[o.DomUtil.TRANSITION]="all "+(i||.25)+"s cubic-bezier(0,0,"+(n||.5)+",1)",o.DomEvent.on(t,o.DomUtil.TRANSITION_END,this._onTransitionEnd,this),o.DomUtil.setPosition(t,e),o.Util.falseFn(t.offsetWidth),this._stepTimer=setInterval(o.bind(this._onStep,this),50)},stop:function(){this._inProgress&&(o.DomUtil.setPosition(this._el,this._getPos()),this._onTransitionEnd(),o.Util.falseFn(this._el.offsetWidth))},_onStep:function(){var t=this._getPos();return t?(this._el._leaflet_pos=t,void this.fire("step")):void this._onTransitionEnd()},_transformRe:/([-+]?(?:\d*\.)?\d+)\D*, ([-+]?(?:\d*\.)?\d+)\D*\)/,_getPos:function(){var e,i,n,s=this._el,a=t.getComputedStyle(s);if(o.Browser.any3d){if(n=a[o.DomUtil.TRANSFORM].match(this._transformRe),!n)return;e=parseFloat(n[1]),i=parseFloat(n[2])}else e=parseFloat(a.left),i=parseFloat(a.top);return new o.Point(e,i,!0)},_onTransitionEnd:function(){o.DomEvent.off(this._el,o.DomUtil.TRANSITION_END,this._onTransitionEnd,this),this._inProgress&&(this._inProgress=!1,this._el.style[o.DomUtil.TRANSITION]="",this._el._leaflet_pos=this._newPos,clearInterval(this._stepTimer),this.fire("step").fire("end"))}}),o.Map.include({setView:function(t,e,n){if(e=e===i?this._zoom:this._limitZoom(e),t=this._limitCenter(o.latLng(t),e,this.options.maxBounds),n=n||{},this._panAnim&&this._panAnim.stop(),this._loaded&&!n.reset&&n!==!0){n.animate!==i&&(n.zoom=o.extend({animate:n.animate},n.zoom),n.pan=o.extend({animate:n.animate},n.pan));var s=this._zoom!==e?this._tryAnimatedZoom&&this._tryAnimatedZoom(t,e,n.zoom):this._tryAnimatedPan(t,n.pan);if(s)return clearTimeout(this._sizeTimer),this}return this._resetView(t,e),this},panBy:function(t,e){if(t=o.point(t).round(),e=e||{},!t.x&&!t.y)return this;if(this._panAnim||(this._panAnim=new o.PosAnimation,this._panAnim.on({step:this._onPanTransitionStep,end:this._onPanTransitionEnd},this)),e.noMoveStart||this.fire("movestart"),e.animate!==!1){o.DomUtil.addClass(this._mapPane,"leaflet-pan-anim");var i=this._getMapPanePos().subtract(t);this._panAnim.run(this._mapPane,i,e.duration||.25,e.easeLinearity)}else this._rawPanBy(t),this.fire("move").fire("moveend");return this},_onPanTransitionStep:function(){this.fire("move")},_onPanTransitionEnd:function(){o.DomUtil.removeClass(this._mapPane,"leaflet-pan-anim"),this.fire("moveend")},_tryAnimatedPan:function(t,e){var i=this._getCenterOffset(t)._floor();return(e&&e.animate)===!0||this.getSize().contains(i)?(this.panBy(i,e),!0):!1}}),o.PosAnimation=o.DomUtil.TRANSITION?o.PosAnimation:o.PosAnimation.extend({run:function(t,e,i,n){this.stop(),this._el=t,this._inProgress=!0,this._duration=i||.25,this._easeOutPower=1/Math.max(n||.5,.2),this._startPos=o.DomUtil.getPosition(t),this._offset=e.subtract(this._startPos),this._startTime=+new Date,this.fire("start"),this._animate()},stop:function(){this._inProgress&&(this._step(),this._complete())},_animate:function(){this._animId=o.Util.requestAnimFrame(this._animate,this),this._step()},_step:function(){var t=+new Date-this._startTime,e=1e3*this._duration;e>t?this._runFrame(this._easeOut(t/e)):(this._runFrame(1),this._complete())},_runFrame:function(t){var e=this._startPos.add(this._offset.multiplyBy(t));o.DomUtil.setPosition(this._el,e),this.fire("step")},_complete:function(){o.Util.cancelAnimFrame(this._animId),this._inProgress=!1,this.fire("end")},_easeOut:function(t){return 1-Math.pow(1-t,this._easeOutPower)}}),o.Map.mergeOptions({zoomAnimation:!0,zoomAnimationThreshold:4}),o.DomUtil.TRANSITION&&o.Map.addInitHook(function(){this._zoomAnimated=this.options.zoomAnimation&&o.DomUtil.TRANSITION&&o.Browser.any3d&&!o.Browser.android23&&!o.Browser.mobileOpera,this._zoomAnimated&&o.DomEvent.on(this._mapPane,o.DomUtil.TRANSITION_END,this._catchTransitionEnd,this)}),o.Map.include(o.DomUtil.TRANSITION?{_catchTransitionEnd:function(t){this._animatingZoom&&t.propertyName.indexOf("transform")>=0&&this._onZoomTransitionEnd()},_nothingToAnimate:function(){return!this._container.getElementsByClassName("leaflet-zoom-animated").length},_tryAnimatedZoom:function(t,e,i){if(this._animatingZoom)return!0;if(i=i||{},!this._zoomAnimated||i.animate===!1||this._nothingToAnimate()||Math.abs(e-this._zoom)>this.options.zoomAnimationThreshold)return!1;var n=this.getZoomScale(e),o=this._getCenterOffset(t)._divideBy(1-1/n),s=this._getCenterLayerPoint()._add(o);return i.animate===!0||this.getSize().contains(o)?(this.fire("movestart").fire("zoomstart"),this._animateZoom(t,e,s,n,null,!0),!0):!1},_animateZoom:function(t,e,i,n,s,a,r){r||(this._animatingZoom=!0),o.DomUtil.addClass(this._mapPane,"leaflet-zoom-anim"),this._animateToCenter=t,this._animateToZoom=e,o.Draggable&&(o.Draggable._disabled=!0),o.Util.requestAnimFrame(function(){this.fire("zoomanim",{center:t,zoom:e,origin:i,scale:n,delta:s,backwards:a}),setTimeout(o.bind(this._onZoomTransitionEnd,this),250)},this)},_onZoomTransitionEnd:function(){this._animatingZoom&&(this._animatingZoom=!1,o.DomUtil.removeClass(this._mapPane,"leaflet-zoom-anim"),this._resetView(this._animateToCenter,this._animateToZoom,!0,!0),o.Draggable&&(o.Draggable._disabled=!1))}}:{}),o.TileLayer.include({_animateZoom:function(t){this._animating||(this._animating=!0,this._prepareBgBuffer());var e=this._bgBuffer,i=o.DomUtil.TRANSFORM,n=t.delta?o.DomUtil.getTranslateString(t.delta):e.style[i],s=o.DomUtil.getScaleString(t.scale,t.origin);e.style[i]=t.backwards?s+" "+n:n+" "+s},_endZoomAnim:function(){var t=this._tileContainer,e=this._bgBuffer;t.style.visibility="",t.parentNode.appendChild(t),o.Util.falseFn(e.offsetWidth);var i=this._map.getZoom();(i>this.options.maxZoom||i<this.options.minZoom)&&this._clearBgBuffer(),this._animating=!1},_clearBgBuffer:function(){var t=this._map;!t||t._animatingZoom||t.touchZoom._zooming||(this._bgBuffer.innerHTML="",this._bgBuffer.style[o.DomUtil.TRANSFORM]="")},_prepareBgBuffer:function(){var t=this._tileContainer,e=this._bgBuffer,i=this._getLoadedTilesPercentage(e),n=this._getLoadedTilesPercentage(t);return e&&i>.5&&.5>n?(t.style.visibility="hidden",void this._stopLoadingImages(t)):(e.style.visibility="hidden",e.style[o.DomUtil.TRANSFORM]="",this._tileContainer=e,e=this._bgBuffer=t,this._stopLoadingImages(e),void clearTimeout(this._clearBgBufferTimer))},_getLoadedTilesPercentage:function(t){var e,i,n=t.getElementsByTagName("img"),o=0;for(e=0,i=n.length;i>e;e++)n[e].complete&&o++;return o/i},_stopLoadingImages:function(t){var e,i,n,s=Array.prototype.slice.call(t.getElementsByTagName("img"));for(e=0,i=s.length;i>e;e++)n=s[e],n.complete||(n.onload=o.Util.falseFn,n.onerror=o.Util.falseFn,n.src=o.Util.emptyImageUrl,n.parentNode.removeChild(n))}}),o.Map.include({_defaultLocateOptions:{watch:!1,setView:!1,maxZoom:1/0,timeout:1e4,maximumAge:0,enableHighAccuracy:!1},locate:function(t){if(t=this._locateOptions=o.extend(this._defaultLocateOptions,t),!navigator.geolocation)return this._handleGeolocationError({code:0,message:"Geolocation not supported."}),this;var e=o.bind(this._handleGeolocationResponse,this),i=o.bind(this._handleGeolocationError,this);return t.watch?this._locationWatchId=navigator.geolocation.watchPosition(e,i,t):navigator.geolocation.getCurrentPosition(e,i,t),this},stopLocate:function(){return navigator.geolocation&&navigator.geolocation.clearWatch(this._locationWatchId),this._locateOptions&&(this._locateOptions.setView=!1),this},_handleGeolocationError:function(t){var e=t.code,i=t.message||(1===e?"permission denied":2===e?"position unavailable":"timeout");this._locateOptions.setView&&!this._loaded&&this.fitWorld(),this.fire("locationerror",{code:e,message:"Geolocation error: "+i+"."})},_handleGeolocationResponse:function(t){var e=t.coords.latitude,i=t.coords.longitude,n=new o.LatLng(e,i),s=180*t.coords.accuracy/40075017,a=s/Math.cos(o.LatLng.DEG_TO_RAD*e),r=o.latLngBounds([e-s,i-a],[e+s,i+a]),h=this._locateOptions;if(h.setView){var l=Math.min(this.getBoundsZoom(r),h.maxZoom);this.setView(n,l)}var u={latlng:n,bounds:r,timestamp:t.timestamp};for(var c in t.coords)"number"==typeof t.coords[c]&&(u[c]=t.coords[c]);this.fire("locationfound",u)}})}(window,document);
+/*!
+*  angular-leaflet-directive 0.8.8 2015-09-16
+*  angular-leaflet-directive - An AngularJS directive to easily interact with Leaflet maps
+*  git: https://github.com/tombatossals/angular-leaflet-directive
+*/
+(function(angular){
+'use strict';
+angular.module("leaflet-directive", ['nemLogging']).directive('leaflet',
+    ["$q", "leafletData", "leafletMapDefaults", "leafletHelpers", "leafletEvents", function ($q, leafletData, leafletMapDefaults, leafletHelpers, leafletEvents) {
+    return {
+        restrict: "EA",
+        replace: true,
+        scope: {
+            center         : '=',
+            lfCenter       : '=',
+            defaults       : '=',
+            maxbounds      : '=',
+            bounds         : '=',
+            markers        : '=',
+            legend         : '=',
+            geojson        : '=',
+            paths          : '=',
+            tiles          : '=',
+            layers         : '=',
+            controls       : '=',
+            decorations    : '=',
+            eventBroadcast : '=',
+            markersWatchOptions : '=',
+            geojsonWatchOptions : '='
+        },
+        transclude: true,
+        template: '<div class="angular-leaflet-map"><div ng-transclude></div></div>',
+        controller: ["$scope", function ($scope) {
+            this._leafletMap = $q.defer();
+            this.getMap = function () {
+                return this._leafletMap.promise;
+            };
+
+            this.getLeafletScope = function() {
+                return $scope;
+            };
+        }],
+
+        link: function(scope, element, attrs, ctrl) {
+            var isDefined = leafletHelpers.isDefined,
+                defaults = leafletMapDefaults.setDefaults(scope.defaults, attrs.id),
+                mapEvents = leafletEvents.getAvailableMapEvents(),
+                addEvents = leafletEvents.addEvents;
+
+            scope.mapId =  attrs.id;
+            leafletData.setDirectiveControls({}, attrs.id);
+
+            // Set width and height utility functions
+            function updateWidth() {
+                if (isNaN(attrs.width)) {
+                    element.css('width', attrs.width);
+                } else {
+                    element.css('width', attrs.width + 'px');
+                }
+            }
+
+            function updateHeight() {
+                if (isNaN(attrs.height)) {
+                    element.css('height', attrs.height);
+                } else {
+                    element.css('height', attrs.height + 'px');
+                }
+            }
+
+            // If the width attribute defined update css
+            // Then watch if bound property changes and update css
+            if (isDefined(attrs.width)) {
+                updateWidth();
+
+                scope.$watch(
+                    function () {
+                        return element[0].getAttribute('width');
+                    },
+                    function () {
+                        updateWidth();
+                        map.invalidateSize();
+                    });
+            }
+
+            // If the height attribute defined update css
+            // Then watch if bound property changes and update css
+            if (isDefined(attrs.height)) {
+                updateHeight();
+
+                scope.$watch(
+                    function () {
+                        return element[0].getAttribute('height');
+                    },
+                    function () {
+                        updateHeight();
+                        map.invalidateSize();
+                    });
+            }
+
+            // Create the Leaflet Map Object with the options
+            var map = new L.Map(element[0], leafletMapDefaults.getMapCreationDefaults(attrs.id));
+            ctrl._leafletMap.resolve(map);
+
+            if (!isDefined(attrs.center) && !isDefined(attrs.lfCenter)) {
+                map.setView([defaults.center.lat, defaults.center.lng], defaults.center.zoom);
+            }
+
+            // If no layers nor tiles defined, set the default tileLayer
+            if (!isDefined(attrs.tiles) && (!isDefined(attrs.layers))) {
+                var tileLayerObj = L.tileLayer(defaults.tileLayer, defaults.tileLayerOptions);
+                tileLayerObj.addTo(map);
+                leafletData.setTiles(tileLayerObj, attrs.id);
+            }
+
+            // Set zoom control configuration
+            if (isDefined(map.zoomControl) &&
+                isDefined(defaults.zoomControlPosition)) {
+                map.zoomControl.setPosition(defaults.zoomControlPosition);
+            }
+
+            if (isDefined(map.zoomControl) &&
+                defaults.zoomControl===false) {
+                map.zoomControl.removeFrom(map);
+            }
+
+            if (isDefined(map.zoomsliderControl) &&
+                isDefined(defaults.zoomsliderControl) &&
+                defaults.zoomsliderControl===false) {
+                map.zoomsliderControl.removeFrom(map);
+            }
+
+
+            // if no event-broadcast attribute, all events are broadcasted
+            if (!isDefined(attrs.eventBroadcast)) {
+                var logic = "broadcast";
+                addEvents(map, mapEvents, "eventName", scope, logic);
+            }
+
+            // Resolve the map object to the promises
+            map.whenReady(function() {
+                leafletData.setMap(map, attrs.id);
+            });
+
+            scope.$on('$destroy', function () {
+                leafletMapDefaults.reset();
+                map.remove();
+                leafletData.unresolveMap(attrs.id);
+            });
+
+            //Handle request to invalidate the map size
+            //Up scope using $scope.$emit('invalidateSize')
+            //Down scope using $scope.$broadcast('invalidateSize')
+            scope.$on('invalidateSize', function() {
+                map.invalidateSize();
+            });
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").factory('leafletBoundsHelpers', ["leafletLogger", "leafletHelpers", function (leafletLogger, leafletHelpers) {
+
+    var isArray = leafletHelpers.isArray,
+        isNumber = leafletHelpers.isNumber,
+        isFunction = leafletHelpers.isFunction,
+        isDefined = leafletHelpers.isDefined,
+        $log = leafletLogger;
+
+    function _isValidBounds(bounds) {
+        return angular.isDefined(bounds) && angular.isDefined(bounds.southWest) &&
+               angular.isDefined(bounds.northEast) && angular.isNumber(bounds.southWest.lat) &&
+               angular.isNumber(bounds.southWest.lng) && angular.isNumber(bounds.northEast.lat) &&
+               angular.isNumber(bounds.northEast.lng);
+    }
+
+    return {
+        createLeafletBounds: function(bounds) {
+            if (_isValidBounds(bounds)) {
+                return L.latLngBounds([bounds.southWest.lat, bounds.southWest.lng],
+                                      [bounds.northEast.lat, bounds.northEast.lng ]);
+            }
+        },
+
+        isValidBounds: _isValidBounds,
+
+        createBoundsFromArray: function(boundsArray) {
+            if (!(isArray(boundsArray) && boundsArray.length === 2 &&
+                  isArray(boundsArray[0]) && isArray(boundsArray[1]) &&
+                  boundsArray[0].length === 2 && boundsArray[1].length === 2 &&
+                  isNumber(boundsArray[0][0]) && isNumber(boundsArray[0][1]) &&
+                  isNumber(boundsArray[1][0]) && isNumber(boundsArray[1][1]))) {
+                $log.error("[AngularJS - Leaflet] The bounds array is not valid.");
+                return;
+            }
+
+            return {
+                northEast: {
+                    lat: boundsArray[0][0],
+                    lng: boundsArray[0][1]
+                },
+                southWest: {
+                    lat: boundsArray[1][0],
+                    lng: boundsArray[1][1]
+                }
+            };
+        },
+
+        createBoundsFromLeaflet: function(lfBounds) {
+            if (!(isDefined(lfBounds) && isFunction(lfBounds.getNorthEast) && isFunction(lfBounds.getSouthWest))) {
+                $log.error("[AngularJS - Leaflet] The leaflet bounds is not valid object.");
+                return;
+            }
+
+            var northEast = lfBounds.getNorthEast(),
+                southWest = lfBounds.getSouthWest();
+
+            return {
+                northEast: {
+                    lat: northEast.lat,
+                    lng: northEast.lng
+                },
+                southWest: {
+                    lat: southWest.lat,
+                    lng: southWest.lng
+                }
+            };
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").factory('leafletControlHelpers', ["$rootScope", "leafletLogger", "leafletHelpers", "leafletLayerHelpers", "leafletMapDefaults", function ($rootScope, leafletLogger, leafletHelpers, leafletLayerHelpers, leafletMapDefaults) {
+    var isDefined = leafletHelpers.isDefined,
+        isObject = leafletHelpers.isObject,
+        createLayer = leafletLayerHelpers.createLayer,
+        _controls = {},
+        errorHeader = leafletHelpers.errorHeader + ' [Controls] ',
+        $log = leafletLogger;
+
+    var _controlLayersMustBeVisible = function(baselayers, overlays, mapId) {
+        var defaults = leafletMapDefaults.getDefaults(mapId);
+        if(!defaults.controls.layers.visible) {
+            return false;
+        }
+
+        var atLeastOneControlItemMustBeShown = false;
+
+        if (isObject(baselayers)) {
+            Object.keys(baselayers).forEach(function(key) {
+                var layer = baselayers[key];
+                if (!isDefined(layer.layerOptions) || layer.layerOptions.showOnSelector !== false) {
+                    atLeastOneControlItemMustBeShown = true;
+                }
+            });
+        }
+
+        if (isObject(overlays)) {
+            Object.keys(overlays).forEach(function(key) {
+                var layer = overlays[key];
+                if (!isDefined(layer.layerParams) || layer.layerParams.showOnSelector !== false) {
+                    atLeastOneControlItemMustBeShown = true;
+                }
+            });
+        }
+
+        return atLeastOneControlItemMustBeShown;
+    };
+
+    var _createLayersControl = function(mapId) {
+        var defaults = leafletMapDefaults.getDefaults(mapId);
+        var controlOptions = {
+            collapsed: defaults.controls.layers.collapsed,
+            position: defaults.controls.layers.position,
+            autoZIndex: false
+        };
+
+        angular.extend(controlOptions, defaults.controls.layers.options);
+
+        var control;
+        if(defaults.controls.layers && isDefined(defaults.controls.layers.control)) {
+			control = defaults.controls.layers.control.apply(this, [[], [], controlOptions]);
+		} else {
+			control = new L.control.layers([], [], controlOptions);
+		}
+
+        return control;
+    };
+
+    var controlTypes = {
+        draw: {
+            isPluginLoaded: function() {
+                if (!angular.isDefined(L.Control.Draw)) {
+                    $log.error(errorHeader + ' Draw plugin is not loaded.');
+                    return false;
+                }
+                return true;
+            },
+            checkValidParams: function(/* params */) {
+                return true;
+            },
+            createControl: function(params) {
+                return new L.Control.Draw(params);
+            }
+        },
+        scale: {
+            isPluginLoaded: function() {
+                return true;
+            },
+            checkValidParams: function(/* params */) {
+                return true;
+            },
+            createControl: function(params) {
+                return new L.control.scale(params);
+            }
+        },
+        fullscreen: {
+            isPluginLoaded: function() {
+                if (!angular.isDefined(L.Control.Fullscreen)) {
+                    $log.error(errorHeader + ' Fullscreen plugin is not loaded.');
+                    return false;
+                }
+                return true;
+            },
+            checkValidParams: function(/* params */) {
+                return true;
+            },
+            createControl: function(params) {
+                return new L.Control.Fullscreen(params);
+            }
+        },
+        search: {
+            isPluginLoaded: function() {
+                if (!angular.isDefined(L.Control.Search)) {
+                    $log.error(errorHeader + ' Search plugin is not loaded.');
+                    return false;
+                }
+                return true;
+            },
+            checkValidParams: function(/* params */) {
+                return true;
+            },
+            createControl: function(params) {
+                return new L.Control.Search(params);
+            }
+        },
+        custom: {},
+        minimap: {
+            isPluginLoaded: function() {
+                if (!angular.isDefined(L.Control.MiniMap)) {
+                    $log.error(errorHeader + ' Minimap plugin is not loaded.');
+                    return false;
+                }
+
+                return true;
+            },
+            checkValidParams: function(params) {
+                if(!isDefined(params.layer)) {
+                    $log.warn(errorHeader +' minimap "layer" option should be defined.');
+                    return false;
+                }
+                return true;
+            },
+            createControl: function(params) {
+                var layer = createLayer(params.layer);
+
+                if (!isDefined(layer)) {
+                    $log.warn(errorHeader + ' minimap control "layer" could not be created.');
+                    return;
+                }
+
+                return new L.Control.MiniMap(layer, params);
+            }
+        }
+    };
+
+    return {
+        layersControlMustBeVisible: _controlLayersMustBeVisible,
+
+        isValidControlType: function(type) {
+            return Object.keys(controlTypes).indexOf(type) !== -1;
+        },
+
+        createControl: function (type, params) {
+            if (!controlTypes[type].checkValidParams(params)) {
+                return;
+            }
+
+            return controlTypes[type].createControl(params);
+        },
+
+        updateLayersControl: function(map, mapId, loaded, baselayers, overlays, leafletLayers) {
+            var i;
+            var _layersControl = _controls[mapId];
+            var mustBeLoaded = _controlLayersMustBeVisible(baselayers, overlays, mapId);
+
+            if (isDefined(_layersControl) && loaded) {
+                for (i in leafletLayers.baselayers) {
+                    _layersControl.removeLayer(leafletLayers.baselayers[i]);
+                }
+                for (i in leafletLayers.overlays) {
+                    _layersControl.removeLayer(leafletLayers.overlays[i]);
+                }
+                map.removeControl(_layersControl);
+                delete _controls[mapId];
+            }
+
+            if (mustBeLoaded) {
+                _layersControl = _createLayersControl(mapId);
+                _controls[mapId] = _layersControl;
+                for (i in baselayers) {
+                    var hideOnSelector = isDefined(baselayers[i].layerOptions) &&
+                                         baselayers[i].layerOptions.showOnSelector === false;
+                    if (!hideOnSelector && isDefined(leafletLayers.baselayers[i])) {
+                        _layersControl.addBaseLayer(leafletLayers.baselayers[i], baselayers[i].name);
+                    }
+                }
+                for (i in overlays) {
+                	var hideOverlayOnSelector = isDefined(overlays[i].layerParams) &&
+                            overlays[i].layerParams.showOnSelector === false;
+                    if (!hideOverlayOnSelector && isDefined(leafletLayers.overlays[i])) {
+                        _layersControl.addOverlay(leafletLayers.overlays[i], overlays[i].name);
+                    }
+                }
+
+                map.addControl(_layersControl);
+            }
+            return mustBeLoaded;
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").service('leafletData', ["leafletLogger", "$q", "leafletHelpers", function (leafletLogger, $q, leafletHelpers) {
+    var getDefer = leafletHelpers.getDefer,
+        getUnresolvedDefer = leafletHelpers.getUnresolvedDefer,
+        setResolvedDefer = leafletHelpers.setResolvedDefer;
+        // $log = leafletLogger;
+
+    var _private = {};
+    var self = this;
+
+    var upperFirst = function (string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    };
+
+    var _privateItems = [
+        'map',
+        'tiles',
+        'layers',
+        'paths',
+        'markers',
+        'geoJSON',
+        'UTFGrid', //odd ball on naming convention keeping to not break
+        'decorations',
+        'directiveControls'];
+
+    //init
+    _privateItems.forEach(function(itemName){
+        _private[itemName] = {};
+    });
+
+    this.unresolveMap = function (scopeId) {
+        var id = leafletHelpers.obtainEffectiveMapId(_private.map, scopeId);
+        _privateItems.forEach(function (itemName) {
+            _private[itemName][id] = undefined;
+        });
+    };
+
+    //int repetitive stuff (get and sets)
+    _privateItems.forEach(function (itemName) {
+        var name = upperFirst(itemName);
+        self['set' + name] = function (lObject, scopeId) {
+            var defer = getUnresolvedDefer(_private[itemName], scopeId);
+            defer.resolve(lObject);
+            setResolvedDefer(_private[itemName], scopeId);
+        };
+
+        self['get' + name] = function (scopeId) {
+            var defer = getDefer(_private[itemName], scopeId);
+            return defer.promise;
+        };
+    });
+}]);
+
+angular.module("leaflet-directive")
+.service('leafletDirectiveControlsHelpers', ["leafletLogger", "leafletData", "leafletHelpers", function (leafletLogger, leafletData, leafletHelpers) {
+    var _isDefined = leafletHelpers.isDefined,
+        _isString = leafletHelpers.isString,
+        _isObject = leafletHelpers.isObject,
+        _mainErrorHeader = leafletHelpers.errorHeader,
+        $log = leafletLogger;
+
+    var _errorHeader = _mainErrorHeader + '[leafletDirectiveControlsHelpers';
+
+    var _extend = function(id, thingToAddName, createFn, cleanFn){
+        var _fnHeader = _errorHeader + '.extend] ';
+        var extender = {};
+        if(!_isDefined(thingToAddName)){
+            $log.error(_fnHeader + 'thingToAddName cannot be undefined');
+            return;
+        }
+
+        if(_isString(thingToAddName) && _isDefined(createFn) && _isDefined(cleanFn)){
+            extender[thingToAddName] = {
+                create: createFn,
+                clean: cleanFn
+            };
+        }
+        else if(_isObject(thingToAddName) && !_isDefined(createFn) && !_isDefined(cleanFn)){
+            extender = thingToAddName;
+        }
+        else{
+            $log.error(_fnHeader + 'incorrect arguments');
+            return;
+        }
+
+        //add external control to create / destroy markers without a watch
+        leafletData.getDirectiveControls().then(function(controls){
+            angular.extend(controls, extender);
+            leafletData.setDirectiveControls(controls, id);
+        });
+    };
+
+    return {
+        extend: _extend
+    };
+}]);
+
+angular.module("leaflet-directive").factory('leafletEvents',
+    ["leafletMapEvents", "leafletMarkerEvents", "leafletPathEvents", "leafletIterators", function (leafletMapEvents, leafletMarkerEvents, leafletPathEvents, leafletIterators) {
+        //NOTE THIS SHOULD BE DEPRECATED infavor of getting a specific events helper
+        var instance = angular.extend({},
+            leafletMapEvents, {
+                bindMarkerEvents: leafletMarkerEvents.bindEvents,
+                getAvailableMarkerEvents: leafletMarkerEvents.getAvailableEvents
+            }, leafletPathEvents);
+
+        var genDispatchMapEvent = instance.genDispatchMapEvent;
+
+        instance.addEvents =  function(map, mapEvents, contextName, scope, logic){
+            leafletIterators.each(mapEvents, function(eventName) {
+                var context = {};
+                context[contextName] = eventName;
+                map.on(eventName, genDispatchMapEvent(scope, eventName, logic), context);
+            });
+        };
+
+        return instance;
+}]);
+
+angular.module("leaflet-directive")
+.service('leafletGeoJsonHelpers', ["leafletHelpers", "leafletIterators", function (leafletHelpers, leafletIterators) {
+    var lHlp = leafletHelpers,
+    lIt = leafletIterators;
+    var Point = function(lat,lng){
+        this.lat = lat;
+        this.lng = lng;
+        return this;
+    };
+
+    var _getLat = function(value) {
+        if (Array.isArray(value) && value.length === 2) {
+            return value[1];
+        } else if (lHlp.isDefined(value.type) && value.type === 'Point') {
+            return +value.coordinates[1];
+        } else {
+            return +value.lat;
+        }
+    };
+
+    var _getLng = function(value) {
+        if (Array.isArray(value) && value.length === 2) {
+            return value[0];
+        } else if (lHlp.isDefined(value.type) && value.type === 'Point') {
+            return +value.coordinates[0];
+        } else {
+            return +value.lng;
+        }
+    };
+
+    var _validateCoords = function(coords) {
+        if (lHlp.isUndefined(coords)) {
+            return false;
+        }
+        if (lHlp.isArray(coords)) {
+            if (coords.length === 2 && lHlp.isNumber(coords[0]) && lHlp.isNumber(coords[1])) {
+                return true;
+            }
+        } else if (lHlp.isDefined(coords.type)) {
+            if (
+                coords.type === 'Point' && lHlp.isArray(coords.coordinates) &&
+                coords.coordinates.length === 2  &&
+                lHlp.isNumber(coords.coordinates[0]) &&
+                lHlp.isNumber(coords.coordinates[1])) {
+                    return true;
+                }
+            }
+
+            var ret = lIt.all(['lat', 'lng'], function(pos){
+                return lHlp.isDefined(coords[pos]) && lHlp.isNumber(coords[pos]);
+            });
+            return ret;
+        };
+
+        var _getCoords = function(value) {
+            if (!value || !_validateCoords(value)) {
+                return;
+            }
+            var p =  null;
+            if (Array.isArray(value) && value.length === 2) {
+                p = new Point(value[1], value[0]);
+            } else if (lHlp.isDefined(value.type) && value.type === 'Point') {
+                p = new Point(value.coordinates[1], value.coordinates[0]);
+            } else {
+                return value;
+            }
+            //note angular.merge is avail in angular 1.4.X we might want to fill it here
+            return angular.extend(value, p);//tap on lat, lng if it doesnt exist
+        };
+
+
+        return {
+            getLat: _getLat,
+            getLng: _getLng,
+            validateCoords: _validateCoords,
+            getCoords: _getCoords
+        };
+    }]);
+
+angular.module("leaflet-directive").service('leafletHelpers', ["$q", "$log", function ($q, $log) {
+    var _errorHeader = '[AngularJS - Leaflet] ';
+    var _copy = angular.copy;
+    var _clone = _copy;
+    /*
+    For parsing paths to a field in an object
+
+    Example:
+    var obj = {
+        bike:{
+         1: 'hi'
+         2: 'foo'
+        }
+    };
+    _getObjectValue(obj,"bike.1") returns 'hi'
+    this is getPath in ui-gmap
+     */
+    var _getObjectValue = function(object, pathStr) {
+        var obj;
+        if(!object || !angular.isObject(object))
+            return;
+        //if the key is not a sting then we already have the value
+        if ((pathStr === null) || !angular.isString(pathStr)) {
+            return pathStr;
+        }
+        obj = object;
+        pathStr.split('.').forEach(function(value) {
+            if (obj) {
+                obj = obj[value];
+            }
+        });
+        return obj;
+    };
+
+    /*
+     Object Array Notation
+     _getObjectArrayPath("bike.one.two")
+     returns:
+     'bike["one"]["two"]'
+     */
+    var _getObjectArrayPath = function(pathStr){
+        return pathStr.split('.').reduce(function(previous, current) {
+            return previous + '["'+ current + '"]';
+        });
+    };
+
+    /* Object Dot Notation
+     _getObjectPath(["bike","one","two"])
+     returns:
+     "bike.one.two"
+     */
+    var _getObjectDotPath = function(arrayOfStrings){
+        return arrayOfStrings.reduce(function(previous, current) {
+            return previous + '.' + current;
+        });
+    };
+
+    function _obtainEffectiveMapId(d, mapId) {
+        var id, i;
+        if (!angular.isDefined(mapId)) {
+        if (Object.keys(d).length === 0) {
+            id = "main";
+        } else if (Object.keys(d).length >= 1) {
+            for (i in d) {
+                if (d.hasOwnProperty(i)) {
+                    id = i;
+                }
+            }
+        } else {
+                $log.error(_errorHeader + "- You have more than 1 map on the DOM, you must provide the map ID to the leafletData.getXXX call");
+            }
+        } else {
+            id = mapId;
+        }
+
+        return id;
+    }
+
+    function _getUnresolvedDefer(d, mapId) {
+        var id = _obtainEffectiveMapId(d, mapId),
+            defer;
+
+        if (!angular.isDefined(d[id]) || d[id].resolvedDefer === true) {
+            defer = $q.defer();
+            d[id] = {
+                defer: defer,
+                resolvedDefer: false
+            };
+        } else {
+            defer = d[id].defer;
+        }
+
+        return defer;
+    }
+
+    var _isDefined = function(value) {
+        return angular.isDefined(value) && value !== null;
+    };
+    var _isUndefined = function(value){
+        return !_isDefined(value);
+    };
+
+    // BEGIN DIRECT PORT FROM AngularJS code base
+
+    var SPECIAL_CHARS_REGEXP = /([\:\-\_]+(.))/g;
+
+    var MOZ_HACK_REGEXP = /^moz([A-Z])/;
+
+    var PREFIX_REGEXP = /^((?:x|data)[\:\-_])/i;
+
+    /**
+    Converts snake_case to camelCase.
+    Also there is special case for Moz prefix starting with upper case letter.
+    @param name Name to normalize
+     */
+
+    var camelCase = function(name) {
+      return name.replace(SPECIAL_CHARS_REGEXP, function(_, separator, letter, offset) {
+        if (offset) {
+          return letter.toUpperCase();
+        } else {
+          return letter;
+        }
+      }).replace(MOZ_HACK_REGEXP, "Moz$1");
+    };
+
+
+    /**
+    Converts all accepted directives format into proper directive name.
+    @param name Name to normalize
+     */
+
+     var directiveNormalize = function(name) {
+      return camelCase(name.replace(PREFIX_REGEXP, ""));
+    };
+
+    // END AngularJS port
+
+    return {
+        camelCase: camelCase,
+        directiveNormalize: directiveNormalize,
+        copy:_copy,
+        clone:_clone,
+        errorHeader: _errorHeader,
+        getObjectValue: _getObjectValue,
+        getObjectArrayPath:_getObjectArrayPath,
+        getObjectDotPath: _getObjectDotPath,
+        defaultTo: function(val, _default){
+            return _isDefined(val) ? val : _default;
+        },
+        //mainly for checking attributes of directives lets keep this minimal (on what we accept)
+        isTruthy: function(val){
+            return val === 'true' || val === true;
+        },
+        //Determine if a reference is {}
+        isEmpty: function(value) {
+            return Object.keys(value).length === 0;
+        },
+
+        //Determine if a reference is undefined or {}
+        isUndefinedOrEmpty: function (value) {
+            return (angular.isUndefined(value) || value === null) || Object.keys(value).length === 0;
+        },
+
+        // Determine if a reference is defined
+        isDefined: _isDefined,
+        isUndefined:_isUndefined,
+        isNumber: angular.isNumber,
+        isString: angular.isString,
+        isArray: angular.isArray,
+        isObject: angular.isObject,
+        isFunction: angular.isFunction,
+        equals: angular.equals,
+
+        isValidCenter: function(center) {
+            return angular.isDefined(center) && angular.isNumber(center.lat) &&
+                   angular.isNumber(center.lng) && angular.isNumber(center.zoom);
+        },
+
+        isValidPoint: function(point) {
+            if (!angular.isDefined(point)) {
+                return false;
+            }
+            if (angular.isArray(point)) {
+                return point.length === 2 && angular.isNumber(point[0]) && angular.isNumber(point[1]);
+            }
+            return angular.isNumber(point.lat) && angular.isNumber(point.lng);
+        },
+
+        isSameCenterOnMap: function(centerModel, map) {
+            var mapCenter = map.getCenter();
+            var zoom = map.getZoom();
+            if (centerModel.lat && centerModel.lng &&
+                mapCenter.lat.toFixed(4) === centerModel.lat.toFixed(4) &&
+                mapCenter.lng.toFixed(4) === centerModel.lng.toFixed(4) &&
+                zoom === centerModel.zoom) {
+                    return true;
+            }
+            return false;
+        },
+
+        safeApply: function($scope, fn) {
+            var phase = $scope.$root.$$phase;
+            if (phase === '$apply' || phase === '$digest') {
+                $scope.$eval(fn);
+            } else {
+                $scope.$evalAsync(fn);
+            }
+        },
+
+        obtainEffectiveMapId: _obtainEffectiveMapId,
+
+        getDefer: function(d, mapId) {
+            var id = _obtainEffectiveMapId(d, mapId),
+                defer;
+            if (!angular.isDefined(d[id]) || d[id].resolvedDefer === false) {
+                defer = _getUnresolvedDefer(d, mapId);
+            } else {
+                defer = d[id].defer;
+            }
+            return defer;
+        },
+
+        getUnresolvedDefer: _getUnresolvedDefer,
+
+        setResolvedDefer: function(d, mapId) {
+            var id = _obtainEffectiveMapId(d, mapId);
+            d[id].resolvedDefer = true;
+        },
+
+        rangeIsSupported: function() {
+            var testrange = document.createElement('input');
+            testrange.setAttribute('type', 'range');
+            return testrange.type === 'range';
+        },
+
+        FullScreenControlPlugin: {
+            isLoaded: function() {
+                return angular.isDefined(L.Control.Fullscreen);
+            }
+        },
+
+        MiniMapControlPlugin: {
+            isLoaded: function() {
+                return angular.isDefined(L.Control.MiniMap);
+            }
+        },
+
+        AwesomeMarkersPlugin: {
+            isLoaded: function() {
+                return angular.isDefined(L.AwesomeMarkers) && angular.isDefined(L.AwesomeMarkers.Icon);
+            },
+            is: function(icon) {
+                if (this.isLoaded()) {
+                    return icon instanceof L.AwesomeMarkers.Icon;
+                } else {
+                    return false;
+                }
+            },
+            equal: function (iconA, iconB) {
+                if (!this.isLoaded()) {
+                    return false;
+                }
+                if (this.is(iconA)) {
+                    return angular.equals(iconA, iconB);
+                } else {
+                    return false;
+                }
+            }
+        },
+
+        DomMarkersPlugin: {
+            isLoaded: function () {
+                if (angular.isDefined(L.DomMarkers) && angular.isDefined(L.DomMarkers.Icon)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            is: function (icon) {
+                if (this.isLoaded()) {
+                    return icon instanceof L.DomMarkers.Icon;
+                } else {
+                    return false;
+                }
+            },
+            equal: function (iconA, iconB) {
+                if (!this.isLoaded()) {
+                    return false;
+                }
+                if (this.is(iconA)) {
+                    return angular.equals(iconA, iconB);
+                } else {
+                    return false;
+                }
+            }
+        },
+
+        PolylineDecoratorPlugin: {
+            isLoaded: function() {
+                if (angular.isDefined(L.PolylineDecorator)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            is: function(decoration) {
+                if (this.isLoaded()) {
+                    return decoration instanceof L.PolylineDecorator;
+                } else {
+                    return false;
+                }
+            },
+            equal: function(decorationA, decorationB) {
+                if (!this.isLoaded()) {
+                    return false;
+                }
+                if (this.is(decorationA)) {
+                    return angular.equals(decorationA, decorationB);
+                } else {
+                    return false;
+                }
+            }
+        },
+
+        MakiMarkersPlugin: {
+            isLoaded: function() {
+                if (angular.isDefined(L.MakiMarkers) && angular.isDefined(L.MakiMarkers.Icon)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            is: function(icon) {
+                if (this.isLoaded()) {
+                    return icon instanceof L.MakiMarkers.Icon;
+                } else {
+                    return false;
+                }
+            },
+            equal: function (iconA, iconB) {
+                if (!this.isLoaded()) {
+                    return false;
+                }
+                if (this.is(iconA)) {
+                    return angular.equals(iconA, iconB);
+                } else {
+                    return false;
+                }
+            }
+        },
+        ExtraMarkersPlugin: {
+            isLoaded: function () {
+                if (angular.isDefined(L.ExtraMarkers) && angular.isDefined(L.ExtraMarkers.Icon)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            is: function (icon) {
+                if (this.isLoaded()) {
+                    return icon instanceof L.ExtraMarkers.Icon;
+                } else {
+                    return false;
+                }
+            },
+            equal: function (iconA, iconB) {
+                if (!this.isLoaded()) {
+                    return false;
+                }
+                if (this.is(iconA)) {
+                    return angular.equals(iconA, iconB);
+                } else {
+                    return false;
+                }
+            }
+        },
+        LabelPlugin: {
+            isLoaded: function() {
+                return angular.isDefined(L.Label);
+            },
+            is: function(layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.MarkerClusterGroup;
+                } else {
+                    return false;
+                }
+            }
+        },
+        MarkerClusterPlugin: {
+            isLoaded: function() {
+                return angular.isDefined(L.MarkerClusterGroup);
+            },
+            is: function(layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.MarkerClusterGroup;
+                } else {
+                    return false;
+                }
+            }
+        },
+        GoogleLayerPlugin: {
+            isLoaded: function() {
+                return angular.isDefined(L.Google);
+            },
+            is: function(layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.Google;
+                } else {
+                    return false;
+                }
+            }
+        },
+        ChinaLayerPlugin: {
+            isLoaded: function() {
+                return angular.isDefined(L.tileLayer.chinaProvider);
+            }
+        },
+        HeatLayerPlugin: {
+            isLoaded: function() {
+                return angular.isDefined(L.heatLayer);
+            }
+        },
+        WebGLHeatMapLayerPlugin: {
+            isLoaded: function() {
+                return angular.isDefined(L.TileLayer.WebGLHeatMap);
+            }
+        },
+        BingLayerPlugin: {
+            isLoaded: function() {
+                return angular.isDefined(L.BingLayer);
+            },
+            is: function(layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.BingLayer;
+                } else {
+                    return false;
+                }
+            }
+        },
+        WFSLayerPlugin: {
+            isLoaded: function() {
+                return L.GeoJSON.WFS !== undefined;
+            },
+            is: function(layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.GeoJSON.WFS;
+                } else {
+                    return false;
+                }
+            }
+        },
+        AGSBaseLayerPlugin: {
+            isLoaded: function() {
+                return L.esri !== undefined && L.esri.basemapLayer !== undefined;
+            },
+            is: function (layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.esri.basemapLayer;
+                } else {
+                    return false;
+                }
+            }
+        },
+        AGSLayerPlugin: {
+            isLoaded: function() {
+                return lvector !== undefined && lvector.AGS !== undefined;
+            },
+            is: function(layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof lvector.AGS;
+                } else {
+                    return false;
+                }
+            }
+        },
+        AGSFeatureLayerPlugin: {
+            isLoaded: function() {
+                return L.esri !== undefined && L.esri.featureLayer !== undefined;
+            },
+            is: function (layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.esri.featureLayer;
+                } else {
+                    return false;
+                }
+            }
+        },
+        AGSTiledMapLayerPlugin: {
+            isLoaded: function() {
+                return L.esri !== undefined && L.esri.tiledMapLayer !== undefined;
+            },
+            is: function (layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.esri.tiledMapLayer;
+                } else {
+                    return false;
+                }
+            }
+        },
+        AGSDynamicMapLayerPlugin: {
+            isLoaded: function () {
+                return L.esri !== undefined && L.esri.dynamicMapLayer !== undefined;
+            },
+            is: function (layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.esri.dynamicMapLayer;
+                } else {
+                    return false;
+                }
+            }
+        },
+        AGSImageMapLayerPlugin: {
+            isLoaded: function () {
+                return L.esri !== undefined && L.esri.imageMapLayer !== undefined;
+            },
+            is: function (layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.esri.imageMapLayer;
+                } else {
+                    return false;
+                }
+            }
+        },
+        AGSClusteredLayerPlugin: {
+            isLoaded: function () {
+                return L.esri !== undefined && L.esri.clusteredFeatureLayer !== undefined;
+            },
+            is: function (layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.esri.clusteredFeatureLayer;
+                } else {
+                    return false;
+                }
+            }
+        },
+        AGSHeatmapLayerPlugin: {
+            isLoaded: function () {
+                return L.esri !== undefined && L.esri.heatmapFeatureLayer !== undefined;
+            },
+            is: function (layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.esri.heatmapFeatureLayer;
+                } else {
+                    return false;
+                }
+            }
+        },
+        YandexLayerPlugin: {
+            isLoaded: function() {
+                return angular.isDefined(L.Yandex);
+            },
+            is: function(layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.Yandex;
+                } else {
+                    return false;
+                }
+            }
+        },
+        GeoJSONPlugin: {
+            isLoaded: function(){
+                return angular.isDefined(L.TileLayer.GeoJSON);
+            },
+            is: function(layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.TileLayer.GeoJSON;
+                } else {
+                    return false;
+                }
+            }
+        },
+        UTFGridPlugin: {
+            isLoaded: function(){
+                return angular.isDefined(L.UtfGrid);
+            },
+            is: function(layer) {
+                if (this.isLoaded()) {
+                    return layer instanceof L.UtfGrid;
+                } else {
+                    $log.error('[AngularJS - Leaflet] No UtfGrid plugin found.');
+                    return false;
+                }
+            }
+        },
+        CartoDB: {
+            isLoaded: function(){
+                return cartodb;
+            },
+            is: function(/*layer*/) {
+                return true;
+                /*
+                if (this.isLoaded()) {
+                    return layer instanceof L.TileLayer.GeoJSON;
+                } else {
+                    return false;
+                }*/
+            }
+        },
+        Leaflet: {
+            DivIcon: {
+                is: function(icon) {
+                    return icon instanceof L.DivIcon;
+                },
+                equal: function(iconA, iconB) {
+                    if (this.is(iconA)) {
+                        return angular.equals(iconA, iconB);
+                    } else {
+                        return false;
+                    }
+                }
+            },
+            Icon: {
+                is: function(icon) {
+                    return icon instanceof L.Icon;
+                },
+                equal: function(iconA, iconB) {
+                    if (this.is(iconA)) {
+                        return angular.equals(iconA, iconB);
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        },
+        /*
+         watchOptions - object to set deep nested watches and turn off watches all together
+         (rely on control / functional updates)
+         watchOptions - Object
+             doWatch:boolean
+             isDeep:boolean (sets $watch(function,isDeep))
+             individual
+                 doWatch:boolean
+                 isDeep:boolean
+         */
+        //legacy defaults
+        watchOptions: {
+            doWatch:true,
+            isDeep: true,
+            individual:{
+                doWatch:true,
+                isDeep: true
+            }
+        }
+    };
+}]);
+
+angular.module('leaflet-directive').service('leafletIterators', ["leafletLogger", "leafletHelpers", function (leafletLogger, leafletHelpers) {
+
+  var lHlp = leafletHelpers,
+  errorHeader = leafletHelpers.errorHeader + 'leafletIterators: ';
+
+  //BEGIN COPY from underscore
+  var _keys = Object.keys;
+  var _isFunction = lHlp.isFunction;
+  var _isObject = lHlp.isObject;
+  var $log = leafletLogger;
+
+  // Helper for collection methods to determine whether a collection
+  // should be iterated as an array or as an object
+  // Related: http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
+  var MAX_ARRAY_INDEX = Math.pow(2, 53) - 1;
+
+  var _isArrayLike = function(collection) {
+    var length = collection !== null && collection.length;
+    return  lHlp.isNumber(length) && length >= 0 && length <= MAX_ARRAY_INDEX;
+  };
+
+  // Keep the identity function around for default iteratees.
+  var _identity = function(value) {
+    return value;
+  };
+
+  var _property = function(key) {
+    return function(obj) {
+      return obj === null ? void 0 : obj[key];
+    };
+  };
+
+  // Internal function that returns an efficient (for current engines) version
+  // of the passed-in callback, to be repeatedly applied in other Underscore
+  // functions.
+  var optimizeCb = function(func, context, argCount) {
+    if (context === void 0) return func;
+    switch (argCount === null ? 3 : argCount) {
+      case 1: return function(value) {
+        return func.call(context, value);
+      };
+      case 2: return function(value, other) {
+        return func.call(context, value, other);
+      };
+      case 3: return function(value, index, collection) {
+        return func.call(context, value, index, collection);
+      };
+      case 4: return function(accumulator, value, index, collection) {
+        return func.call(context, accumulator, value, index, collection);
+      };
+    }
+    return function() {
+      return func.apply(context, arguments);
+    };
+  };
+
+  // An internal function for creating assigner functions.
+  var createAssigner = function(keysFunc, undefinedOnly) {
+    return function(obj) {
+      var length = arguments.length;
+      if (length < 2 || obj === null) return obj;
+      for (var index = 1; index < length; index++) {
+        var source = arguments[index],
+            keys = keysFunc(source),
+            l = keys.length;
+        for (var i = 0; i < l; i++) {
+          var key = keys[i];
+          if (!undefinedOnly || obj[key] === void 0) obj[key] = source[key];
+        }
+      }
+      return obj;
+    };
+  };
+
+  // Assigns a given object with all the own properties in the passed-in object(s)
+  // (https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign)
+  var _extendOwn, _assign = null;
+  _extendOwn = _assign = createAssigner(_keys);
+
+  // Returns whether an object has a given set of `key:value` pairs.
+  var _isMatch = function(object, attrs) {
+    var keys = _keys(attrs), length = keys.length;
+    if (object === null) return !length;
+    var obj = Object(object);
+    for (var i = 0; i < length; i++) {
+      var key = keys[i];
+      if (attrs[key] !== obj[key] || !(key in obj)) return false;
+    }
+    return true;
+  };
+
+  // Returns a predicate for checking whether an object has a given set of
+  // `key:value` pairs.
+  var _matcher, _matches = null;
+  _matcher = _matches = function(attrs) {
+    attrs = _extendOwn({}, attrs);
+    return function(obj) {
+      return _isMatch(obj, attrs);
+    };
+  };
+
+
+  // A mostly-internal function to generate callbacks that can be applied
+  // to each element in a collection, returning the desired result — either
+  // identity, an arbitrary callback, a property matcher, or a property accessor.
+  var cb = function(value, context, argCount) {
+    if (value === null) return _identity;
+    if (_isFunction(value)) return optimizeCb(value, context, argCount);
+    if (_isObject(value)) return _matcher(value);
+    return _property(value);
+  };
+
+  var _every, _all = null;
+  _every = _all = function(obj, predicate, context) {
+    predicate = cb(predicate, context);
+    var keys = !_isArrayLike(obj) && _keys(obj),
+    length = (keys || obj).length;
+    for (var index = 0; index < length; index++) {
+      var currentKey = keys ? keys[index] : index;
+      if (!predicate(obj[currentKey], currentKey, obj)) return false;
+    }
+    return true;
+  };
+
+  //END COPY fron underscore
+
+  var _hasErrors = function(collection, cb, ignoreCollection, cbName){
+    if(!ignoreCollection) {
+      if (!lHlp.isDefined(collection) || !lHlp.isDefined(cb)) {
+        return true;
+      }
+    }
+    if(!lHlp.isFunction(cb)){
+      cbName = lHlp.defaultTo(cb,'cb');
+      $log.error(errorHeader + cbName + ' is not a function');
+      return true;
+    }
+    return false;
+  };
+
+  var _iterate = function(collection, externalCb, internalCb){
+    if(_hasErrors(undefined, internalCb, true, 'internalCb')){
+      return;
+    }
+    if(!_hasErrors(collection, externalCb)){
+      for(var key in collection){
+          if (collection.hasOwnProperty(key)) {
+              internalCb(collection[key], key);
+          }
+      }
+    }
+  };
+
+  //see http://jsperf.com/iterators/3
+  //utilizing for in is way faster
+  var _each = function(collection, cb){
+    _iterate(collection, cb, function(val, key){
+      cb(val, key);
+    });
+  };
+
+  return {
+    each:_each,
+    forEach: _each,
+    every: _every,
+    all: _all
+  };
+}]);
+
+angular.module("leaflet-directive")
+.factory('leafletLayerHelpers', ["$rootScope", "$q", "leafletLogger", "leafletHelpers", "leafletIterators", function ($rootScope, $q, leafletLogger, leafletHelpers, leafletIterators) {
+    var Helpers = leafletHelpers;
+    var isString = leafletHelpers.isString;
+    var isObject = leafletHelpers.isObject;
+    var isArray = leafletHelpers.isArray;
+    var isDefined = leafletHelpers.isDefined;
+    var errorHeader = leafletHelpers.errorHeader;
+    var $it = leafletIterators;
+    var $log = leafletLogger;
+
+    var utfGridCreateLayer = function(params) {
+        if (!Helpers.UTFGridPlugin.isLoaded()) {
+            $log.error('[AngularJS - Leaflet] The UTFGrid plugin is not loaded.');
+            return;
+        }
+        var utfgrid = new L.UtfGrid(params.url, params.pluginOptions);
+
+        utfgrid.on('mouseover', function(e) {
+            $rootScope.$broadcast('leafletDirectiveMap.utfgridMouseover', e);
+        });
+
+        utfgrid.on('mouseout', function(e) {
+            $rootScope.$broadcast('leafletDirectiveMap.utfgridMouseout', e);
+        });
+
+        utfgrid.on('click', function(e) {
+            $rootScope.$broadcast('leafletDirectiveMap.utfgridClick', e);
+        });
+
+        utfgrid.on('mousemove', function(e) {
+            $rootScope.$broadcast('leafletDirectiveMap.utfgridMousemove', e);
+        });
+
+        return utfgrid;
+    };
+
+    var layerTypes = {
+        xyz: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                return L.tileLayer(params.url, params.options);
+            }
+        },
+        mapbox: {
+            mustHaveKey: true,
+            createLayer: function(params) {
+                var version = 3;
+                if(isDefined(params.options.version) && params.options.version === 4) {
+                    version = params.options.version;
+                }
+                var url = version === 3?
+                    '//{s}.tiles.mapbox.com/v3/' + params.key + '/{z}/{x}/{y}.png':
+                    '//api.tiles.mapbox.com/v4/' + params.key + '/{z}/{x}/{y}.png?access_token=' + params.apiKey;
+                return L.tileLayer(url, params.options);
+            }
+        },
+        geoJSON: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                if (!Helpers.GeoJSONPlugin.isLoaded()) {
+                    return;
+                }
+                return new L.TileLayer.GeoJSON(params.url, params.pluginOptions, params.options);
+            }
+        },
+        geoJSONShape: {
+            mustHaveUrl: false,
+            createLayer: function(params) {
+                        return new L.GeoJSON(params.data,
+                            params.options);
+            }
+        },
+        geoJSONAwesomeMarker: {
+            mustHaveUrl: false,
+            createLayer: function(params) {
+                    return new L.geoJson(params.data, {
+                        pointToLayer: function (feature, latlng) {
+                            return L.marker(latlng, {icon: L.AwesomeMarkers.icon(params.icon)});
+                    }
+                });
+            }
+        },
+        utfGrid: {
+            mustHaveUrl: true,
+            createLayer: utfGridCreateLayer
+        },
+        cartodbTiles: {
+            mustHaveKey: true,
+            createLayer: function(params) {
+                var url = '//' + params.user + '.cartodb.com/api/v1/map/' + params.key + '/{z}/{x}/{y}.png';
+                return L.tileLayer(url, params.options);
+            }
+        },
+        cartodbUTFGrid: {
+            mustHaveKey: true,
+            mustHaveLayer : true,
+            createLayer: function(params) {
+                params.url = '//' + params.user + '.cartodb.com/api/v1/map/' + params.key + '/' + params.layer + '/{z}/{x}/{y}.grid.json';
+                return utfGridCreateLayer(params);
+            }
+        },
+        cartodbInteractive: {
+            mustHaveKey: true,
+            mustHaveLayer : true,
+            createLayer: function(params) {
+                var tilesURL = '//' + params.user + '.cartodb.com/api/v1/map/' + params.key + '/{z}/{x}/{y}.png';
+                var tileLayer = L.tileLayer(tilesURL, params.options);
+                params.url = '//' + params.user + '.cartodb.com/api/v1/map/' + params.key + '/' + params.layer + '/{z}/{x}/{y}.grid.json';
+                var utfLayer = utfGridCreateLayer(params);
+                return L.layerGroup([tileLayer, utfLayer]);
+            }
+        },
+        wms: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                return L.tileLayer.wms(params.url, params.options);
+            }
+        },
+        wmts: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                return L.tileLayer.wmts(params.url, params.options);
+            }
+        },
+        wfs: {
+            mustHaveUrl: true,
+            mustHaveLayer : true,
+            createLayer: function(params) {
+                if (!Helpers.WFSLayerPlugin.isLoaded()) {
+                    return;
+                }
+                var options = angular.copy(params.options);
+                if(options.crs && 'string' === typeof options.crs) {
+                    /*jshint -W061 */
+                    options.crs = eval(options.crs);
+                }
+                return new L.GeoJSON.WFS(params.url, params.layer, options);
+            }
+        },
+        group: {
+            mustHaveUrl: false,
+            createLayer: function (params) {
+                var lyrs = [];
+                $it.each(params.options.layers, function(l){
+                  lyrs.push(createLayer(l));
+                });
+                params.options.loadedDefer = function() {
+                    var defers = [];
+                    if(isDefined(params.options.layers)) {
+                        for (var i = 0; i < params.options.layers.length; i++) {
+                            var d = params.options.layers[i].layerOptions.loadedDefer;
+                            if(isDefined(d)) {
+                                defers.push(d);
+                            }
+                        }
+                    }
+                    return defers;
+                };
+                return L.layerGroup(lyrs);
+            }
+        },
+        featureGroup: {
+            mustHaveUrl: false,
+            createLayer: function () {
+                return L.featureGroup();
+            }
+        },
+        google: {
+            mustHaveUrl: false,
+            createLayer: function(params) {
+                var type = params.type || 'SATELLITE';
+                if (!Helpers.GoogleLayerPlugin.isLoaded()) {
+                    return;
+                }
+                return new L.Google(type, params.options);
+            }
+        },
+        china:{
+            mustHaveUrl:false,
+            createLayer:function(params){
+                var type = params.type || '';
+                if(!Helpers.ChinaLayerPlugin.isLoaded()){
+                    return;
+                }
+                return L.tileLayer.chinaProvider(type, params.options);
+            }
+        },
+        agsBase: {
+            mustHaveLayer : true,
+            createLayer: function (params) {
+                if (!Helpers.AGSBaseLayerPlugin.isLoaded()) {
+                    return;
+                }
+                return L.esri.basemapLayer(params.layer, params.options);
+            }
+        },
+        ags: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                if (!Helpers.AGSLayerPlugin.isLoaded()) {
+                    return;
+                }
+
+                var options = angular.copy(params.options);
+                angular.extend(options, {
+                    url: params.url
+                });
+                var layer = new lvector.AGS(options);
+                layer.onAdd = function(map) {
+                    this.setMap(map);
+                };
+                layer.onRemove = function() {
+                    this.setMap(null);
+                };
+                return layer;
+            }
+        },
+        agsFeature: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                if (!Helpers.AGSFeatureLayerPlugin.isLoaded()) {
+                    $log.warn(errorHeader + ' The esri plugin is not loaded.');
+                    return;
+                }
+
+                params.options.url = params.url;
+
+                var layer = L.esri.featureLayer(params.options);
+                var load = function() {
+                    if(isDefined(params.options.loadedDefer)) {
+                        params.options.loadedDefer.resolve();
+                    }
+                };
+                layer.on('loading', function() {
+                    params.options.loadedDefer = $q.defer();
+                    layer.off('load', load);
+                    layer.on('load', load);
+                });
+
+                return layer;
+            }
+        },
+        agsTiled: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                if (!Helpers.AGSTiledMapLayerPlugin.isLoaded()) {
+                    $log.warn(errorHeader + ' The esri plugin is not loaded.');
+                    return;
+                }
+
+                params.options.url = params.url;
+
+                return L.esri.tiledMapLayer(params.options);
+            }
+        },
+        agsDynamic: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                if (!Helpers.AGSDynamicMapLayerPlugin.isLoaded()) {
+                    $log.warn(errorHeader + ' The esri plugin is not loaded.');
+                    return;
+                }
+
+                params.options.url = params.url;
+
+                return L.esri.dynamicMapLayer(params.options);
+            }
+        },
+        agsImage: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                if (!Helpers.AGSImageMapLayerPlugin.isLoaded()) {
+                    $log.warn(errorHeader + ' The esri plugin is not loaded.');
+                    return;
+                }
+                 params.options.url = params.url;
+
+                return L.esri.imageMapLayer(params.options);
+            }
+        },
+        agsClustered: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                if (!Helpers.AGSClusteredLayerPlugin.isLoaded()) {
+                    $log.warn(errorHeader + ' The esri clustered layer plugin is not loaded.');
+                    return;
+                }
+
+                if(!Helpers.MarkerClusterPlugin.isLoaded()) {
+                    $log.warn(errorHeader + ' The markercluster plugin is not loaded.');
+                    return;
+                }
+                return L.esri.clusteredFeatureLayer(params.url, params.options);
+            }
+        },
+        agsHeatmap: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                if (!Helpers.AGSHeatmapLayerPlugin.isLoaded()) {
+                    $log.warn(errorHeader + ' The esri heatmap layer plugin is not loaded.');
+                    return;
+                }
+
+                if(!Helpers.HeatLayerPlugin.isLoaded()) {
+                    $log.warn(errorHeader + ' The heatlayer plugin is not loaded.');
+                    return;
+                }
+                return L.esri.heatmapFeatureLayer(params.url, params.options);
+            }
+        },
+        markercluster: {
+            mustHaveUrl: false,
+            createLayer: function(params) {
+                if (!Helpers.MarkerClusterPlugin.isLoaded()) {
+                    $log.warn(errorHeader + ' The markercluster plugin is not loaded.');
+                    return;
+                }
+                return new L.MarkerClusterGroup(params.options);
+            }
+        },
+        bing: {
+            mustHaveUrl: false,
+            createLayer: function(params) {
+                if (!Helpers.BingLayerPlugin.isLoaded()) {
+                    return;
+                }
+                return new L.BingLayer(params.key, params.options);
+            }
+        },
+        webGLHeatmap: {
+            mustHaveUrl: false,
+            mustHaveData: true,
+            createLayer: function(params) {
+                if (!Helpers.WebGLHeatMapLayerPlugin.isLoaded()) {
+                    return;
+                }
+                var layer = new L.TileLayer.WebGLHeatMap(params.options);
+                if (isDefined(params.data)) {
+                    layer.setData(params.data);
+                }
+
+                return layer;
+            }
+        },
+        heat: {
+            mustHaveUrl: false,
+            mustHaveData: true,
+            createLayer: function(params) {
+                if (!Helpers.HeatLayerPlugin.isLoaded()) {
+                    return;
+                }
+                var layer = new L.heatLayer();
+
+                if (isArray(params.data)) {
+                    layer.setLatLngs(params.data);
+                }
+
+                if (isObject(params.options)) {
+                    layer.setOptions(params.options);
+                }
+
+                return layer;
+            }
+        },
+        yandex: {
+            mustHaveUrl: false,
+            createLayer: function(params) {
+                var type = params.type || 'map';
+                if (!Helpers.YandexLayerPlugin.isLoaded()) {
+                    return;
+                }
+                return new L.Yandex(type, params.options);
+            }
+        },
+        imageOverlay: {
+            mustHaveUrl: true,
+            mustHaveBounds : true,
+            createLayer: function(params) {
+                return L.imageOverlay(params.url, params.bounds, params.options);
+            }
+        },
+        iip: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                return L.tileLayer.iip(params.url, params.options);
+            }
+        },
+
+        // This "custom" type is used to accept every layer that user want to define himself.
+        // We can wrap these custom layers like heatmap or yandex, but it means a lot of work/code to wrap the world,
+        // so we let user to define their own layer outside the directive,
+        // and pass it on "createLayer" result for next processes
+        custom: {
+            createLayer: function (params) {
+                if (params.layer instanceof L.Class) {
+                    return angular.copy(params.layer);
+                }
+                else {
+                    $log.error('[AngularJS - Leaflet] A custom layer must be a leaflet Class');
+                }
+            }
+        },
+        cartodb: {
+            mustHaveUrl: true,
+            createLayer: function(params) {
+                return cartodb.createLayer(params.map, params.url);
+            }
+        }
+    };
+
+    function isValidLayerType(layerDefinition) {
+        // Check if the baselayer has a valid type
+        if (!isString(layerDefinition.type)) {
+            $log.error('[AngularJS - Leaflet] A layer must have a valid type defined.');
+            return false;
+        }
+
+        if (Object.keys(layerTypes).indexOf(layerDefinition.type) === -1) {
+            $log.error('[AngularJS - Leaflet] A layer must have a valid type: ' + Object.keys(layerTypes));
+            return false;
+        }
+
+        // Check if the layer must have an URL
+        if (layerTypes[layerDefinition.type].mustHaveUrl && !isString(layerDefinition.url)) {
+            $log.error('[AngularJS - Leaflet] A base layer must have an url');
+            return false;
+        }
+
+        if (layerTypes[layerDefinition.type].mustHaveData && !isDefined(layerDefinition.data)) {
+            $log.error('[AngularJS - Leaflet] The base layer must have a "data" array attribute');
+            return false;
+        }
+
+        if(layerTypes[layerDefinition.type].mustHaveLayer && !isDefined(layerDefinition.layer)) {
+            $log.error('[AngularJS - Leaflet] The type of layer ' + layerDefinition.type + ' must have an layer defined');
+            return false;
+        }
+
+        if (layerTypes[layerDefinition.type].mustHaveBounds && !isDefined(layerDefinition.bounds)) {
+            $log.error('[AngularJS - Leaflet] The type of layer ' + layerDefinition.type + ' must have bounds defined');
+            return false ;
+        }
+
+        if (layerTypes[layerDefinition.type].mustHaveKey && !isDefined(layerDefinition.key)) {
+            $log.error('[AngularJS - Leaflet] The type of layer ' + layerDefinition.type + ' must have key defined');
+            return false ;
+        }
+        return true;
+    }
+
+    function createLayer(layerDefinition) {
+        if (!isValidLayerType(layerDefinition)) {
+            return;
+        }
+
+        if (!isString(layerDefinition.name)) {
+            $log.error('[AngularJS - Leaflet] A base layer must have a name');
+            return;
+        }
+        if (!isObject(layerDefinition.layerParams)) {
+            layerDefinition.layerParams = {};
+        }
+        if (!isObject(layerDefinition.layerOptions)) {
+            layerDefinition.layerOptions = {};
+        }
+
+        // Mix the layer specific parameters with the general Leaflet options. Although this is an overhead
+        // the definition of a base layers is more 'clean' if the two types of parameters are differentiated
+        for (var attrname in layerDefinition.layerParams) {
+            layerDefinition.layerOptions[attrname] = layerDefinition.layerParams[attrname];
+        }
+
+        var params = {
+            url: layerDefinition.url,
+            data: layerDefinition.data,
+            options: layerDefinition.layerOptions,
+            layer: layerDefinition.layer,
+            icon: layerDefinition.icon,
+            type: layerDefinition.layerType,
+            bounds: layerDefinition.bounds,
+            key: layerDefinition.key,
+            apiKey: layerDefinition.apiKey,
+            pluginOptions: layerDefinition.pluginOptions,
+            user: layerDefinition.user
+        };
+
+        //TODO Add $watch to the layer properties
+        return layerTypes[layerDefinition.type].createLayer(params);
+    }
+
+    function safeAddLayer(map, layer) {
+        if (layer && typeof layer.addTo === 'function') {
+            layer.addTo(map);
+        } else {
+            map.addLayer(layer);
+        }
+    }
+
+    function safeRemoveLayer(map, layer, layerOptions) {
+        if(isDefined(layerOptions) && isDefined(layerOptions.loadedDefer)) {
+            if(angular.isFunction(layerOptions.loadedDefer)) {
+                var defers = layerOptions.loadedDefer();
+                $log.debug('Loaded Deferred', defers);
+                var count = defers.length;
+                if(count > 0) {
+                    var resolve = function() {
+                        count--;
+                        if(count === 0) {
+                            map.removeLayer(layer);
+                        }
+                    };
+
+                    for(var i = 0; i < defers.length; i++) {
+                        defers[i].promise.then(resolve);
+                    }
+                } else {
+                    map.removeLayer(layer);
+                }
+            } else {
+                layerOptions.loadedDefer.promise.then(function() {
+                    map.removeLayer(layer);
+                });
+            }
+        } else {
+            map.removeLayer(layer);
+        }
+    }
+
+    return {
+        createLayer: createLayer,
+        safeAddLayer: safeAddLayer,
+        safeRemoveLayer: safeRemoveLayer
+    };
+}]);
+
+angular.module("leaflet-directive").factory('leafletLegendHelpers', function () {
+	var _updateLegend = function(div, legendData, type, url) {
+		div.innerHTML = '';
+		if(legendData.error) {
+			div.innerHTML += '<div class="info-title alert alert-danger">' + legendData.error.message + '</div>';
+		} else {
+			if (type === 'arcgis') {
+				for (var i = 0; i < legendData.layers.length; i++) {
+					var layer = legendData.layers[i];
+					div.innerHTML += '<div class="info-title" data-layerid="' + layer.layerId + '">' + layer.layerName + '</div>';
+					for(var j = 0; j < layer.legend.length; j++) {
+						var leg = layer.legend[j];
+						div.innerHTML +=
+							'<div class="inline" data-layerid="' + layer.layerId + '"><img src="data:' + leg.contentType + ';base64,' + leg.imageData + '" /></div>' +
+							'<div class="info-label" data-layerid="' + layer.layerId + '">' + leg.label + '</div>';
+					}
+				}
+			}
+			else if (type === 'image') {
+				div.innerHTML = '<img src="' + url + '"/>';
+			}
+		}
+	};
+
+	var _getOnAddLegend = function(legendData, legendClass, type, url) {
+		return function(/*map*/) {
+			var div = L.DomUtil.create('div', legendClass);
+
+			if (!L.Browser.touch) {
+				L.DomEvent.disableClickPropagation(div);
+				L.DomEvent.on(div, 'mousewheel', L.DomEvent.stopPropagation);
+			} else {
+				L.DomEvent.on(div, 'click', L.DomEvent.stopPropagation);
+			}
+			_updateLegend(div, legendData, type, url);
+			return div;
+		};
+	};
+
+	var _getOnAddArrayLegend = function(legend, legendClass) {
+		return function(/*map*/) {
+			var div = L.DomUtil.create('div', legendClass);
+            for (var i = 0; i < legend.colors.length; i++) {
+                div.innerHTML +=
+                    '<div class="outline"><i style="background:' + legend.colors[i] + '"></i></div>' +
+                    '<div class="info-label">' + legend.labels[i] + '</div>';
+            }
+            if (!L.Browser.touch) {
+				L.DomEvent.disableClickPropagation(div);
+				L.DomEvent.on(div, 'mousewheel', L.DomEvent.stopPropagation);
+			} else {
+				L.DomEvent.on(div, 'click', L.DomEvent.stopPropagation);
+			}
+            return div;
+		};
+	};
+
+	return {
+		getOnAddLegend: _getOnAddLegend,
+		getOnAddArrayLegend: _getOnAddArrayLegend,
+		updateLegend: _updateLegend,
+	};
+});
+
+angular.module("leaflet-directive").factory('leafletMapDefaults', ["$q", "leafletHelpers", function ($q, leafletHelpers) {
+    function _getDefaults() {
+        return {
+            keyboard: true,
+            dragging: true,
+            worldCopyJump: false,
+            doubleClickZoom: true,
+            scrollWheelZoom: true,
+            tap: true,
+            touchZoom: true,
+            zoomControl: true,
+            zoomsliderControl: false,
+            zoomControlPosition: 'topleft',
+            attributionControl: true,
+            controls: {
+                layers: {
+                    visible: true,
+                    position: 'topright',
+                    collapsed: true
+                }
+            },
+            nominatim: {
+                server: ' http://nominatim.openstreetmap.org/search'
+            },
+            crs: L.CRS.EPSG3857,
+            tileLayer: '//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            tileLayerOptions: {
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            },
+            path: {
+                weight: 10,
+                opacity: 1,
+                color: '#0000ff'
+            },
+            center: {
+                lat: 0,
+                lng: 0,
+                zoom: 1
+            }
+        };
+    }
+
+    var isDefined = leafletHelpers.isDefined,
+        isObject = leafletHelpers.isObject,
+        obtainEffectiveMapId = leafletHelpers.obtainEffectiveMapId,
+        defaults = {};
+
+    // Get the _defaults dictionary, and override the properties defined by the user
+    return {
+        reset: function () {
+           defaults = {};
+        },
+        getDefaults: function (scopeId) {
+            var mapId = obtainEffectiveMapId(defaults, scopeId);
+            return defaults[mapId];
+        },
+
+        getMapCreationDefaults: function (scopeId) {
+            var mapId = obtainEffectiveMapId(defaults, scopeId);
+            var d = defaults[mapId];
+
+            var mapDefaults = {
+                maxZoom: d.maxZoom,
+                keyboard: d.keyboard,
+                dragging: d.dragging,
+                zoomControl: d.zoomControl,
+                doubleClickZoom: d.doubleClickZoom,
+                scrollWheelZoom: d.scrollWheelZoom,
+                tap: d.tap,
+                touchZoom: d.touchZoom,
+                attributionControl: d.attributionControl,
+                worldCopyJump: d.worldCopyJump,
+                crs: d.crs
+            };
+
+            if (isDefined(d.minZoom)) {
+                mapDefaults.minZoom = d.minZoom;
+            }
+
+            if (isDefined(d.zoomAnimation)) {
+                mapDefaults.zoomAnimation = d.zoomAnimation;
+            }
+
+            if (isDefined(d.fadeAnimation)) {
+                mapDefaults.fadeAnimation = d.fadeAnimation;
+            }
+
+            if (isDefined(d.markerZoomAnimation)) {
+                mapDefaults.markerZoomAnimation = d.markerZoomAnimation;
+            }
+
+            if (d.map) {
+                for (var option in d.map) {
+                    mapDefaults[option] = d.map[option];
+                }
+            }
+
+            return mapDefaults;
+        },
+
+        setDefaults: function (userDefaults, scopeId) {
+            var newDefaults = _getDefaults();
+
+            if (isDefined(userDefaults)) {
+                newDefaults.doubleClickZoom = isDefined(userDefaults.doubleClickZoom) ? userDefaults.doubleClickZoom : newDefaults.doubleClickZoom;
+                newDefaults.scrollWheelZoom = isDefined(userDefaults.scrollWheelZoom) ? userDefaults.scrollWheelZoom : newDefaults.doubleClickZoom;
+                newDefaults.tap = isDefined(userDefaults.tap) ? userDefaults.tap : newDefaults.tap;
+                newDefaults.touchZoom = isDefined(userDefaults.touchZoom) ? userDefaults.touchZoom : newDefaults.doubleClickZoom;
+                newDefaults.zoomControl = isDefined(userDefaults.zoomControl) ? userDefaults.zoomControl : newDefaults.zoomControl;
+                newDefaults.zoomsliderControl = isDefined(userDefaults.zoomsliderControl) ? userDefaults.zoomsliderControl : newDefaults.zoomsliderControl;
+                newDefaults.attributionControl = isDefined(userDefaults.attributionControl) ? userDefaults.attributionControl : newDefaults.attributionControl;
+                newDefaults.tileLayer = isDefined(userDefaults.tileLayer) ? userDefaults.tileLayer : newDefaults.tileLayer;
+                newDefaults.zoomControlPosition = isDefined(userDefaults.zoomControlPosition) ? userDefaults.zoomControlPosition : newDefaults.zoomControlPosition;
+                newDefaults.keyboard = isDefined(userDefaults.keyboard) ? userDefaults.keyboard : newDefaults.keyboard;
+                newDefaults.dragging = isDefined(userDefaults.dragging) ? userDefaults.dragging : newDefaults.dragging;
+
+                if (isDefined(userDefaults.controls)) {
+                    angular.extend(newDefaults.controls, userDefaults.controls);
+                }
+
+                if (isObject(userDefaults.crs)) {
+                    newDefaults.crs = userDefaults.crs;
+                } else if (isDefined(L.CRS[userDefaults.crs])) {
+                    newDefaults.crs = L.CRS[userDefaults.crs];
+                }
+
+                if (isDefined(userDefaults.center)) {
+                    angular.copy(userDefaults.center, newDefaults.center);
+                }
+
+                if (isDefined(userDefaults.tileLayerOptions)) {
+                    angular.copy(userDefaults.tileLayerOptions, newDefaults.tileLayerOptions);
+                }
+
+                if (isDefined(userDefaults.maxZoom)) {
+                    newDefaults.maxZoom = userDefaults.maxZoom;
+                }
+
+                if (isDefined(userDefaults.minZoom)) {
+                    newDefaults.minZoom = userDefaults.minZoom;
+                }
+
+                if (isDefined(userDefaults.zoomAnimation)) {
+                    newDefaults.zoomAnimation = userDefaults.zoomAnimation;
+                }
+
+                if (isDefined(userDefaults.fadeAnimation)) {
+                    newDefaults.fadeAnimation = userDefaults.fadeAnimation;
+                }
+
+                if (isDefined(userDefaults.markerZoomAnimation)) {
+                    newDefaults.markerZoomAnimation = userDefaults.markerZoomAnimation;
+                }
+
+                if (isDefined(userDefaults.worldCopyJump)) {
+                    newDefaults.worldCopyJump = userDefaults.worldCopyJump;
+                }
+
+                if (isDefined(userDefaults.map)) {
+                    newDefaults.map = userDefaults.map;
+                }
+
+                if (isDefined(userDefaults.path)) {
+                    newDefaults.path = userDefaults.path;
+                }
+            }
+
+            var mapId = obtainEffectiveMapId(defaults, scopeId);
+            defaults[mapId] = newDefaults;
+            return newDefaults;
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").service('leafletMarkersHelpers', ["$rootScope", "$timeout", "leafletHelpers", "leafletLogger", "$compile", "leafletGeoJsonHelpers", function ($rootScope, $timeout, leafletHelpers, leafletLogger, $compile, leafletGeoJsonHelpers) {
+    var isDefined = leafletHelpers.isDefined,
+        defaultTo = leafletHelpers.defaultTo,
+        MarkerClusterPlugin = leafletHelpers.MarkerClusterPlugin,
+        AwesomeMarkersPlugin = leafletHelpers.AwesomeMarkersPlugin,
+        MakiMarkersPlugin = leafletHelpers.MakiMarkersPlugin,
+        ExtraMarkersPlugin = leafletHelpers.ExtraMarkersPlugin,
+        DomMarkersPlugin = leafletHelpers.DomMarkersPlugin,
+        safeApply = leafletHelpers.safeApply,
+        Helpers = leafletHelpers,
+        isString = leafletHelpers.isString,
+        isNumber = leafletHelpers.isNumber,
+        isObject = leafletHelpers.isObject,
+        groups = {},
+        geoHlp = leafletGeoJsonHelpers,
+        errorHeader = leafletHelpers.errorHeader,
+        $log = leafletLogger;
+
+
+    var _string = function (marker) {
+        //this exists since JSON.stringify barfs on cyclic
+        var retStr = '';
+        ['_icon', '_latlng', '_leaflet_id', '_map', '_shadow'].forEach(function (prop) {
+            retStr += prop + ': ' + defaultTo(marker[prop], 'undefined') + ' \n';
+        });
+        return '[leafletMarker] : \n' + retStr;
+    };
+    var _log = function (marker, useConsole) {
+        var logger = useConsole ? console : $log;
+        logger.debug(_string(marker));
+    };
+
+    var createLeafletIcon = function (iconData) {
+        if (isDefined(iconData) && isDefined(iconData.type) && iconData.type === 'awesomeMarker') {
+            if (!AwesomeMarkersPlugin.isLoaded()) {
+                $log.error(errorHeader + ' The AwesomeMarkers Plugin is not loaded.');
+            }
+
+            return new L.AwesomeMarkers.icon(iconData);
+        }
+
+        if (isDefined(iconData) && isDefined(iconData.type) && iconData.type === 'makiMarker') {
+            if (!MakiMarkersPlugin.isLoaded()) {
+                $log.error(errorHeader + 'The MakiMarkers Plugin is not loaded.');
+            }
+
+            return new L.MakiMarkers.icon(iconData);
+        }
+
+        if (isDefined(iconData) && isDefined(iconData.type) && iconData.type === 'extraMarker') {
+            if (!ExtraMarkersPlugin.isLoaded()) {
+                $log.error(errorHeader + 'The ExtraMarkers Plugin is not loaded.');
+            }
+            return new L.ExtraMarkers.icon(iconData);
+        }
+
+        if (isDefined(iconData) && isDefined(iconData.type) && iconData.type === 'div') {
+            return new L.divIcon(iconData);
+        }
+
+        if (isDefined(iconData) && isDefined(iconData.type) && iconData.type === 'dom') {
+            if (!DomMarkersPlugin.isLoaded()) {
+                $log.error(errorHeader + 'The DomMarkers Plugin is not loaded.');
+            }
+            var markerScope = angular.isFunction(iconData.getMarkerScope) ? iconData.getMarkerScope() : $rootScope,
+                template = $compile(iconData.template)(markerScope),
+                iconDataCopy = angular.copy(iconData);
+            iconDataCopy.element = template[0];
+            return new L.DomMarkers.icon(iconDataCopy);
+        }
+
+        // allow for any custom icon to be used... assumes the icon has already been initialized
+        if (isDefined(iconData) && isDefined(iconData.type) && iconData.type === 'icon') {
+            return iconData.icon;
+        }
+
+        var base64icon = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYAAADAk4LOAAAGmklEQVRYw7VXeUyTZxjvNnfELFuyIzOabermMZEeQC/OclkO49CpOHXOLJl/CAURuYbQi3KLgEhbrhZ1aDwmaoGqKII6odATmH/scDFbdC7LvFqOCc+e95s2VG50X/LLm/f4/Z7neY/ne18aANCmAr5E/xZf1uDOkTcGcWR6hl9247tT5U7Y6SNvWsKT63P58qbfeLJG8M5qcgTknrvvrdDbsT7Ml+tv82X6vVxJE33aRmgSyYtcWVMqX97Yv2JvW39UhRE2HuyBL+t+gK1116ly06EeWFNlAmHxlQE0OMiV6mQCScusKRlhS3QLeVJdl1+23h5dY4FNB3thrbYboqptEFlphTC1hSpJnbRvxP4NWgsE5Jyz86QNNi/5qSUTGuFk1gu54tN9wuK2wc3o+Wc13RCmsoBwEqzGcZsxsvCSy/9wJKf7UWf1mEY8JWfewc67UUoDbDjQC+FqK4QqLVMGGR9d2wurKzqBk3nqIT/9zLxRRjgZ9bqQgub+DdoeCC03Q8j+0QhFhBHR/eP3U/zCln7Uu+hihJ1+bBNffLIvmkyP0gpBZWYXhKussK6mBz5HT6M1Nqpcp+mBCPXosYQfrekGvrjewd59/GvKCE7TbK/04/ZV5QZYVWmDwH1mF3xa2Q3ra3DBC5vBT1oP7PTj4C0+CcL8c7C2CtejqhuCnuIQHaKHzvcRfZpnylFfXsYJx3pNLwhKzRAwAhEqG0SpusBHfAKkxw3w4627MPhoCH798z7s0ZnBJ/MEJbZSbXPhER2ih7p2ok/zSj2cEJDd4CAe+5WYnBCgR2uruyEw6zRoW6/DWJ/OeAP8pd/BGtzOZKpG8oke0SX6GMmRk6GFlyAc59K32OTEinILRJRchah8HQwND8N435Z9Z0FY1EqtxUg+0SO6RJ/mmXz4VuS+DpxXC3gXmZwIL7dBSH4zKE50wESf8qwVgrP1EIlTO5JP9Igu0aexdh28F1lmAEGJGfh7jE6ElyM5Rw/FDcYJjWhbeiBYoYNIpc2FT/SILivp0F1ipDWk4BIEo2VuodEJUifhbiltnNBIXPUFCMpthtAyqws/BPlEF/VbaIxErdxPphsU7rcCp8DohC+GvBIPJS/tW2jtvTmmAeuNO8BNOYQeG8G/2OzCJ3q+soYB5i6NhMaKr17FSal7GIHheuV3uSCY8qYVuEm1cOzqdWr7ku/R0BDoTT+DT+ohCM6/CCvKLKO4RI+dXPeAuaMqksaKrZ7L3FE5FIFbkIceeOZ2OcHO6wIhTkNo0ffgjRGxEqogXHYUPHfWAC/lADpwGcLRY3aeK4/oRGCKYcZXPVoeX/kelVYY8dUGf8V5EBRbgJXT5QIPhP9ePJi428JKOiEYhYXFBqou2Guh+p/mEB1/RfMw6rY7cxcjTrneI1FrDyuzUSRm9miwEJx8E/gUmqlyvHGkneiwErR21F3tNOK5Tf0yXaT+O7DgCvALTUBXdM4YhC/IawPU+2PduqMvuaR6eoxSwUk75ggqsYJ7VicsnwGIkZBSXKOUww73WGXyqP+J2/b9c+gi1YAg/xpwck3gJuucNrh5JvDPvQr0WFXf0piyt8f8/WI0hV4pRxxkQZdJDfDJNOAmM0Ag8jyT6hz0WGXWuP94Yh2jcfjmXAGvHCMslRimDHYuHuDsy2QtHuIavznhbYURq5R57KpzBBRZKPJi8eQg48h4j8SDdowifdIrEVdU+gbO6QNvRRt4ZBthUaZhUnjlYObNagV3keoeru3rU7rcuceqU1mJBxy+BWZYlNEBH+0eH4vRiB+OYybU2hnblYlTvkHinM4m54YnxSyaZYSF6R3jwgP7udKLGIX6r/lbNa9N6y5MFynjWDtrHd75ZvTYAPO/6RgF0k76mQla3FGq7dO+cH8sKn0Vo7nDllwAhqwLPkxrHwWmHJOo+AKJ4rab5OgrM7rVu8eWb2Pu0Dh4eDgXoOfvp7Y7QeqknRmvcTBEyq9m/HQQSCSz6LHq3z0yzsNySRfMS253wl2KyRDbcZPcfJKjZmSEOjcxyi+Y8dUOtsIEH6R2wNykdqrkYJ0RV92H0W58pkfQk7cKevsLK10Py8SdMGfXNXATY+pPbyJR/ET6n9nIfztNtZYRV9XniQu9IA2vOVgy4ir7GCLVmmd+zjkH0eAF9Po6K61pmCXHxU5rHMYd1ftc3owjwRSVRzLjKvqZEty6cRUD7jGqiOdu5HG6MdHjNcNYGqfDm5YRzLBBCCDl/2bk8a8gdbqcfwECu62Fg/HrggAAAABJRU5ErkJggg==";
+        var base64shadow = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACkAAAApCAYAAACoYAD2AAAC5ElEQVRYw+2YW4/TMBCF45S0S1luXZCABy5CgLQgwf//S4BYBLTdJLax0fFqmB07nnQfEGqkIydpVH85M+NLjPe++dcPc4Q8Qh4hj5D/AaQJx6H/4TMwB0PeBNwU7EGQAmAtsNfAzoZkgIa0ZgLMa4Aj6CxIAsjhjOCoL5z7Glg1JAOkaicgvQBXuncwJAWjksLtBTWZe04CnYRktUGdilALppZBOgHGZcBzL6OClABvMSVIzyBjazOgrvACf1ydC5mguqAVg6RhdkSWQFj2uxfaq/BrIZOLEWgZdALIDvcMcZLD8ZbLC9de4yR1sYMi4G20S4Q/PWeJYxTOZn5zJXANZHIxAd4JWhPIloTJZhzMQduM89WQ3MUVAE/RnhAXpTycqys3NZALOBbB7kFrgLesQl2h45Fcj8L1tTSohUwuxhy8H/Qg6K7gIs+3kkaigQCOcyEXCHN07wyQazhrmIulvKMQAwMcmLNqyCVyMAI+BuxSMeTk3OPikLY2J1uE+VHQk6ANrhds+tNARqBeaGc72cK550FP4WhXmFmcMGhTwAR1ifOe3EvPqIegFmF+C8gVy0OfAaWQPMR7gF1OQKqGoBjq90HPMP01BUjPOqGFksC4emE48tWQAH0YmvOgF3DST6xieJgHAWxPAHMuNhrImIdvoNOKNWIOcE+UXE0pYAnkX6uhWsgVXDxHdTfCmrEEmMB2zMFimLVOtiiajxiGWrbU52EeCdyOwPEQD8LqyPH9Ti2kgYMf4OhSKB7qYILbBv3CuVTJ11Y80oaseiMWOONc/Y7kJYe0xL2f0BaiFTxknHO5HaMGMublKwxFGzYdWsBF174H/QDknhTHmHHN39iWFnkZx8lPyM8WHfYELmlLKtgWNmFNzQcC1b47gJ4hL19i7o65dhH0Negbca8vONZoP7doIeOC9zXm8RjuL0Gf4d4OYaU5ljo3GYiqzrWQHfJxA6ALhDpVKv9qYeZA8eM3EhfPSCmpuD0AAAAASUVORK5CYII=";
+
+        if (!isDefined(iconData) || !isDefined(iconData.iconUrl)) {
+            return new L.Icon.Default({
+                iconUrl: base64icon,
+                shadowUrl: base64shadow,
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+        }
+
+        return new L.Icon(iconData);
+    };
+
+    var _resetMarkerGroup = function (groupName) {
+        if (isDefined(groups[groupName])) {
+            groups.splice(groupName, 1);
+        }
+    };
+
+    var _resetMarkerGroups = function () {
+        groups = {};
+    };
+
+    var _deleteMarker = function (marker, map, layers) {
+        marker.closePopup();
+        // There is no easy way to know if a marker is added to a layer, so we search for it
+        // if there are overlays
+        if (isDefined(layers) && isDefined(layers.overlays)) {
+            for (var key in layers.overlays) {
+                if (layers.overlays[key] instanceof L.LayerGroup || layers.overlays[key] instanceof L.FeatureGroup) {
+                    if (layers.overlays[key].hasLayer(marker)) {
+                        layers.overlays[key].removeLayer(marker);
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (isDefined(groups)) {
+            for (var groupKey in groups) {
+                if (groups[groupKey].hasLayer(marker)) {
+                    groups[groupKey].removeLayer(marker);
+                }
+            }
+        }
+
+        if (map.hasLayer(marker)) {
+            map.removeLayer(marker);
+        }
+    };
+
+    var adjustPopupPan = function(marker, map) {
+        var containerHeight = marker._popup._container.offsetHeight,
+            layerPos = new L.Point(marker._popup._containerLeft, -containerHeight - marker._popup._containerBottom),
+            containerPos = map.layerPointToContainerPoint(layerPos);
+        if (containerPos !== null) {
+            marker._popup._adjustPan();
+        }
+    };
+
+    var compilePopup = function(marker, markerScope) {
+        $compile(marker._popup._contentNode)(markerScope);
+    };
+
+    var updatePopup = function (marker, markerScope, map) {
+        //The innerText should be more than 1 once angular has compiled.
+        //We need to keep trying until angular has compiled before we _updateLayout and _updatePosition
+        //This should take care of any scenario , eg ngincludes, whatever.
+        //Is there a better way to check for this?
+        var innerText = marker._popup._contentNode.innerText || marker._popup._contentNode.textContent;
+        if (innerText.length < 1) {
+            $timeout(function () {
+                updatePopup(marker, markerScope, map);
+            });
+        }
+
+        //cause a reflow - this is also very important - if we don't do this then the widths are from before $compile
+        var reflow = marker._popup._contentNode.offsetWidth;
+
+        marker._popup._updateLayout();
+        marker._popup._updatePosition();
+
+        if (marker._popup.options.autoPan) {
+            adjustPopupPan(marker, map);
+        }
+
+        //using / returning reflow so jshint doesn't moan
+        return reflow;
+    };
+
+    var _manageOpenPopup = function (marker, markerData, map) {
+        // The marker may provide a scope returning function used to compile the message
+        // default to $rootScope otherwise
+        var markerScope = angular.isFunction(markerData.getMessageScope) ? markerData.getMessageScope() : $rootScope,
+            compileMessage = isDefined(markerData.compileMessage) ? markerData.compileMessage : true;
+
+        if (compileMessage) {
+            if (!isDefined(marker._popup) || !isDefined(marker._popup._contentNode)) {
+                $log.error(errorHeader + 'Popup is invalid or does not have any content.');
+                return false;
+            }
+
+            compilePopup(marker, markerScope);
+            updatePopup(marker, markerData, map);
+        }
+    };
+
+
+    var _manageOpenLabel = function (marker, markerData) {
+        var markerScope = angular.isFunction(markerData.getMessageScope) ? markerData.getMessageScope() : $rootScope,
+            labelScope = angular.isFunction(markerData.getLabelScope) ? markerData.getLabelScope() : markerScope,
+            compileMessage = isDefined(markerData.compileMessage) ? markerData.compileMessage : true;
+
+        if (Helpers.LabelPlugin.isLoaded() && isDefined(markerData.label)) {
+            if (isDefined(markerData.label.options) && markerData.label.options.noHide === true) {
+                marker.showLabel();
+            }
+            if (compileMessage && isDefined(marker.label)) {
+                $compile(marker.label._container)(labelScope);
+            }
+        }
+    };
+
+    var _updateMarker = function (markerData, oldMarkerData, marker, name, leafletScope, layers, map) {
+            if (!isDefined(oldMarkerData)) {
+                return;
+            }
+
+            // Update the lat-lng property (always present in marker properties)
+            if (!geoHlp.validateCoords(markerData)) {
+                $log.warn('There are problems with lat-lng data, please verify your marker model');
+                _deleteMarker(marker, map, layers);
+                return;
+            }
+
+            // watch is being initialized if old and new object is the same
+            var isInitializing = markerData === oldMarkerData;
+
+            // Update marker rotation
+            if (isDefined(markerData.iconAngle) && oldMarkerData.iconAngle !== markerData.iconAngle) {
+                marker.setIconAngle(markerData.iconAngle);
+            }
+
+            // It is possible that the layer has been removed or the layer marker does not exist
+            // Update the layer group if present or move it to the map if not
+            if (!isString(markerData.layer)) {
+                // There is no layer information, we move the marker to the map if it was in a layer group
+                if (isString(oldMarkerData.layer)) {
+                    // Remove from the layer group that is supposed to be
+                    if (isDefined(layers.overlays[oldMarkerData.layer]) && layers.overlays[oldMarkerData.layer].hasLayer(marker)) {
+                        layers.overlays[oldMarkerData.layer].removeLayer(marker);
+                        marker.closePopup();
+                    }
+                    // Test if it is not on the map and add it
+                    if (!map.hasLayer(marker)) {
+                        map.addLayer(marker);
+                    }
+                }
+            }
+
+            if ((isNumber(markerData.opacity) || isNumber(parseFloat(markerData.opacity))) && markerData.opacity !== oldMarkerData.opacity) {
+                // There was a different opacity so we update it
+                marker.setOpacity(markerData.opacity);
+            }
+
+            if (isString(markerData.layer) && oldMarkerData.layer !== markerData.layer) {
+                // If it was on a layer group we have to remove it
+                if (isString(oldMarkerData.layer) && isDefined(layers.overlays[oldMarkerData.layer]) && layers.overlays[oldMarkerData.layer].hasLayer(marker)) {
+                    layers.overlays[oldMarkerData.layer].removeLayer(marker);
+                }
+                marker.closePopup();
+
+                // Remove it from the map in case the new layer is hidden or there is an error in the new layer
+                if (map.hasLayer(marker)) {
+                    map.removeLayer(marker);
+                }
+
+                // The markerData.layer is defined so we add the marker to the layer if it is different from the old data
+                if (!isDefined(layers.overlays[markerData.layer])) {
+                    $log.error(errorHeader + 'You must use a name of an existing layer');
+                    return;
+                }
+                // Is a group layer?
+                var layerGroup = layers.overlays[markerData.layer];
+                if (!(layerGroup instanceof L.LayerGroup || layerGroup instanceof L.FeatureGroup)) {
+                    $log.error(errorHeader + 'A marker can only be added to a layer of type "group" or "featureGroup"');
+                    return;
+                }
+                // The marker goes to a correct layer group, so first of all we add it
+                layerGroup.addLayer(marker);
+                // The marker is automatically added to the map depending on the visibility
+                // of the layer, so we only have to open the popup if the marker is in the map
+                if (map.hasLayer(marker) && markerData.focus === true) {
+                    marker.openPopup();
+                }
+            }
+
+            // Update the draggable property
+            if (markerData.draggable !== true && oldMarkerData.draggable === true && (isDefined(marker.dragging))) {
+                marker.dragging.disable();
+            }
+
+            if (markerData.draggable === true && oldMarkerData.draggable !== true) {
+                // The markerData.draggable property must be true so we update if there wasn't a previous value or it wasn't true
+                if (marker.dragging) {
+                    marker.dragging.enable();
+                } else {
+                    if (L.Handler.MarkerDrag) {
+                        marker.dragging = new L.Handler.MarkerDrag(marker);
+                        marker.options.draggable = true;
+                        marker.dragging.enable();
+                    }
+                }
+            }
+
+            // Update the icon property
+            if (!isObject(markerData.icon)) {
+                // If there is no icon property or it's not an object
+                if (isObject(oldMarkerData.icon)) {
+                    // If there was an icon before restore to the default
+                    marker.setIcon(createLeafletIcon());
+                    marker.closePopup();
+                    marker.unbindPopup();
+                    if (isString(markerData.message)) {
+                        marker.bindPopup(markerData.message, markerData.popupOptions);
+                    }
+                }
+            }
+
+            if (isObject(markerData.icon) && isObject(oldMarkerData.icon) && !angular.equals(markerData.icon, oldMarkerData.icon)) {
+                var dragG = false;
+                if (marker.dragging) {
+                    dragG = marker.dragging.enabled();
+                }
+                marker.setIcon(createLeafletIcon(markerData.icon));
+                if (dragG) {
+                    marker.dragging.enable();
+                }
+                marker.closePopup();
+                marker.unbindPopup();
+                if (isString(markerData.message)) {
+                    marker.bindPopup(markerData.message, markerData.popupOptions);
+                }
+            }
+
+            // Update the Popup message property
+            if (!isString(markerData.message) && isString(oldMarkerData.message)) {
+                marker.closePopup();
+                marker.unbindPopup();
+            }
+
+            // Update the label content or bind a new label if the old one has been removed.
+            if (Helpers.LabelPlugin.isLoaded()) {
+                if (isDefined(markerData.label) && isDefined(markerData.label.message)) {
+                    if ('label' in oldMarkerData && 'message' in oldMarkerData.label && !angular.equals(markerData.label.message, oldMarkerData.label.message)) {
+                        marker.updateLabelContent(markerData.label.message);
+                    } else if (!angular.isFunction(marker.getLabel) || angular.isFunction(marker.getLabel) && !isDefined(marker.getLabel())) {
+                        marker.bindLabel(markerData.label.message, markerData.label.options);
+                        _manageOpenLabel(marker, markerData);
+                    } else {
+                        _manageOpenLabel(marker, markerData);
+                    }
+                } else if (!('label' in markerData && !('message' in markerData.label))) {
+                    if (angular.isFunction(marker.unbindLabel)) {
+                        marker.unbindLabel();
+                    }
+                }
+            }
+
+            // There is some text in the popup, so we must show the text or update existing
+            if (isString(markerData.message) && !isString(oldMarkerData.message)) {
+                // There was no message before so we create it
+                marker.bindPopup(markerData.message, markerData.popupOptions);
+            }
+
+            if (isString(markerData.message) && isString(oldMarkerData.message) && markerData.message !== oldMarkerData.message) {
+                // There was a different previous message so we update it
+                marker.setPopupContent(markerData.message);
+            }
+
+            // Update the focus property
+            var updatedFocus = false;
+            if (markerData.focus !== true && oldMarkerData.focus === true) {
+                // If there was a focus property and was true we turn it off
+                marker.closePopup();
+                updatedFocus = true;
+            }
+
+            // The markerData.focus property must be true so we update if there wasn't a previous value or it wasn't true
+            if (markerData.focus === true && ( !isDefined(oldMarkerData.focus) || oldMarkerData.focus === false) || (isInitializing && markerData.focus === true)) {
+                // Reopen the popup when focus is still true
+                marker.openPopup();
+                updatedFocus = true;
+            }
+
+            // zIndexOffset adjustment
+            if (oldMarkerData.zIndexOffset !== markerData.zIndexOffset) {
+                marker.setZIndexOffset(markerData.zIndexOffset);
+            }
+
+            var markerLatLng = marker.getLatLng();
+            var isCluster = (isString(markerData.layer) && Helpers.MarkerClusterPlugin.is(layers.overlays[markerData.layer]));
+            // If the marker is in a cluster it has to be removed and added to the layer when the location is changed
+            if (isCluster) {
+                // The focus has changed even by a user click or programatically
+                if (updatedFocus) {
+                    // We only have to update the location if it was changed programatically, because it was
+                    // changed by a user drag the marker data has already been updated by the internal event
+                    // listened by the directive
+                    if ((markerData.lat !== oldMarkerData.lat) || (markerData.lng !== oldMarkerData.lng)) {
+                        layers.overlays[markerData.layer].removeLayer(marker);
+                        marker.setLatLng([markerData.lat, markerData.lng]);
+                        layers.overlays[markerData.layer].addLayer(marker);
+                    }
+                } else {
+                    // The marker has possibly moved. It can be moved by a user drag (marker location and data are equal but old
+                    // data is diferent) or programatically (marker location and data are diferent)
+                    if ((markerLatLng.lat !== markerData.lat) || (markerLatLng.lng !== markerData.lng)) {
+                        // The marker was moved by a user drag
+                        layers.overlays[markerData.layer].removeLayer(marker);
+                        marker.setLatLng([markerData.lat, markerData.lng]);
+                        layers.overlays[markerData.layer].addLayer(marker);
+                    } else if ((markerData.lat !== oldMarkerData.lat) || (markerData.lng !== oldMarkerData.lng)) {
+                        // The marker was moved programatically
+                        layers.overlays[markerData.layer].removeLayer(marker);
+                        marker.setLatLng([markerData.lat, markerData.lng]);
+                        layers.overlays[markerData.layer].addLayer(marker);
+                    } else if (isObject(markerData.icon) && isObject(oldMarkerData.icon) && !angular.equals(markerData.icon, oldMarkerData.icon)) {
+                        layers.overlays[markerData.layer].removeLayer(marker);
+                        layers.overlays[markerData.layer].addLayer(marker);
+                    }
+                }
+            } else if (markerLatLng.lat !== markerData.lat || markerLatLng.lng !== markerData.lng) {
+                marker.setLatLng([markerData.lat, markerData.lng]);
+            }
+        };
+    return {
+        resetMarkerGroup: _resetMarkerGroup,
+
+        resetMarkerGroups: _resetMarkerGroups,
+
+        deleteMarker: _deleteMarker,
+
+        manageOpenPopup: _manageOpenPopup,
+
+        manageOpenLabel: _manageOpenLabel,
+
+        createMarker: function (markerData) {
+            if (!isDefined(markerData) || !geoHlp.validateCoords(markerData)) {
+                $log.error(errorHeader + 'The marker definition is not valid.');
+                return;
+            }
+            var coords = geoHlp.getCoords(markerData);
+
+            if (!isDefined(coords)) {
+                $log.error(errorHeader + 'Unable to get coordinates from markerData.');
+                return;
+            }
+
+            var markerOptions = {
+                icon: createLeafletIcon(markerData.icon),
+                title: isDefined(markerData.title) ? markerData.title : '',
+                draggable: isDefined(markerData.draggable) ? markerData.draggable : false,
+                clickable: isDefined(markerData.clickable) ? markerData.clickable : true,
+                riseOnHover: isDefined(markerData.riseOnHover) ? markerData.riseOnHover : false,
+                zIndexOffset: isDefined(markerData.zIndexOffset) ? markerData.zIndexOffset : 0,
+                iconAngle: isDefined(markerData.iconAngle) ? markerData.iconAngle : 0
+            };
+            // Add any other options not added above to markerOptions
+            for (var markerDatum in markerData) {
+                if (markerData.hasOwnProperty(markerDatum) && !markerOptions.hasOwnProperty(markerDatum)) {
+                    markerOptions[markerDatum] = markerData[markerDatum];
+                }
+            }
+
+            var marker = new L.marker(coords, markerOptions);
+
+            if (!isString(markerData.message)) {
+                marker.unbindPopup();
+            }
+
+            return marker;
+        },
+
+        addMarkerToGroup: function (marker, groupName, groupOptions, map) {
+            if (!isString(groupName)) {
+                $log.error(errorHeader + 'The marker group you have specified is invalid.');
+                return;
+            }
+
+            if (!MarkerClusterPlugin.isLoaded()) {
+                $log.error(errorHeader + "The MarkerCluster plugin is not loaded.");
+                return;
+            }
+            if (!isDefined(groups[groupName])) {
+                groups[groupName] = new L.MarkerClusterGroup(groupOptions);
+                map.addLayer(groups[groupName]);
+            }
+            groups[groupName].addLayer(marker);
+        },
+
+        listenMarkerEvents: function (marker, markerData, leafletScope, doWatch, map) {
+            marker.on("popupopen", function (/* event */) {
+                safeApply(leafletScope, function () {
+                    if (isDefined(marker._popup) || isDefined(marker._popup._contentNode)) {
+                        markerData.focus = true;
+                        _manageOpenPopup(marker, markerData, map);//needed since markerData is now a copy
+                    }
+                });
+            });
+            marker.on("popupclose", function (/* event */) {
+                safeApply(leafletScope, function () {
+                    markerData.focus = false;
+                });
+            });
+            marker.on("add", function (/* event */) {
+                safeApply(leafletScope, function () {
+                    if ('label' in markerData)
+                        _manageOpenLabel(marker, markerData);
+                });
+            });
+        },
+
+        updateMarker: _updateMarker,
+
+        addMarkerWatcher: function (marker, name, leafletScope, layers, map, isDeepWatch) {
+            var markerWatchPath = Helpers.getObjectArrayPath("markers." + name);
+            isDeepWatch = defaultTo(isDeepWatch, true);
+
+            var clearWatch = leafletScope.$watch(markerWatchPath, function(markerData, oldMarkerData) {
+                if (!isDefined(markerData)) {
+                    _deleteMarker(marker, map, layers);
+                    clearWatch();
+                    return;
+                }
+                _updateMarker(markerData, oldMarkerData, marker, name, leafletScope, layers, map);
+            } , isDeepWatch);
+        },
+        string: _string,
+        log: _log
+    };
+}]);
+
+angular.module("leaflet-directive").factory('leafletPathsHelpers', ["$rootScope", "leafletLogger", "leafletHelpers", function ($rootScope, leafletLogger, leafletHelpers) {
+    var isDefined = leafletHelpers.isDefined,
+        isArray = leafletHelpers.isArray,
+        isNumber = leafletHelpers.isNumber,
+        isValidPoint = leafletHelpers.isValidPoint,
+        $log = leafletLogger;
+        
+    var availableOptions = [
+        // Path options
+        'stroke', 'weight', 'color', 'opacity',
+        'fill', 'fillColor', 'fillOpacity',
+        'dashArray', 'lineCap', 'lineJoin', 'clickable',
+        'pointerEvents', 'className',
+
+        // Polyline options
+        'smoothFactor', 'noClip'
+    ];
+    function _convertToLeafletLatLngs(latlngs) {
+        return latlngs.filter(function(latlng) {
+            return isValidPoint(latlng);
+        }).map(function (latlng) {
+            return _convertToLeafletLatLng(latlng);
+        });
+    }
+
+    function _convertToLeafletLatLng(latlng) {
+        if (isArray(latlng)) {
+            return new L.LatLng(latlng[0], latlng[1]);
+        } else {
+            return new L.LatLng(latlng.lat, latlng.lng);
+        }
+    }
+
+    function _convertToLeafletMultiLatLngs(paths) {
+        return paths.map(function(latlngs) {
+            return _convertToLeafletLatLngs(latlngs);
+        });
+    }
+
+    function _getOptions(path, defaults) {
+        var options = {};
+        for (var i = 0; i < availableOptions.length; i++) {
+            var optionName = availableOptions[i];
+
+            if (isDefined(path[optionName])) {
+                options[optionName] = path[optionName];
+            } else if (isDefined(defaults.path[optionName])) {
+                options[optionName] = defaults.path[optionName];
+            }
+        }
+
+        return options;
+    }
+
+    var _updatePathOptions = function (path, data) {
+        var updatedStyle = {};
+        for (var i = 0; i < availableOptions.length; i++) {
+            var optionName = availableOptions[i];
+            if (isDefined(data[optionName])) {
+                updatedStyle[optionName] = data[optionName];
+            }
+        }
+        path.setStyle(data);
+    };
+
+    var _isValidPolyline = function(latlngs) {
+        if (!isArray(latlngs)) {
+            return false;
+        }
+        for (var i = 0; i < latlngs.length; i++) {
+            var point = latlngs[i];
+            if (!isValidPoint(point)) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    var pathTypes = {
+        polyline: {
+            isValid: function(pathData) {
+                var latlngs = pathData.latlngs;
+                return _isValidPolyline(latlngs);
+            },
+            createPath: function(options) {
+                return new L.Polyline([], options);
+            },
+            setPath: function(path, data) {
+                path.setLatLngs(_convertToLeafletLatLngs(data.latlngs));
+                _updatePathOptions(path, data);
+                return;
+            }
+        },
+        multiPolyline: {
+            isValid: function(pathData) {
+                var latlngs = pathData.latlngs;
+                if (!isArray(latlngs)) {
+                    return false;
+                }
+
+                for (var i in latlngs) {
+                    var polyline = latlngs[i];
+                    if (!_isValidPolyline(polyline)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            },
+            createPath: function(options) {
+                return new L.multiPolyline([[[0,0],[1,1]]], options);
+            },
+            setPath: function(path, data) {
+                path.setLatLngs(_convertToLeafletMultiLatLngs(data.latlngs));
+                _updatePathOptions(path, data);
+                return;
+            }
+        } ,
+        polygon: {
+            isValid: function(pathData) {
+                var latlngs = pathData.latlngs;
+                return _isValidPolyline(latlngs);
+            },
+            createPath: function(options) {
+                return new L.Polygon([], options);
+            },
+            setPath: function(path, data) {
+                path.setLatLngs(_convertToLeafletLatLngs(data.latlngs));
+                _updatePathOptions(path, data);
+                return;
+            }
+        },
+        multiPolygon: {
+            isValid: function(pathData) {
+                var latlngs = pathData.latlngs;
+
+                if (!isArray(latlngs)) {
+                    return false;
+                }
+
+                for (var i in latlngs) {
+                    var polyline = latlngs[i];
+                    if (!_isValidPolyline(polyline)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            },
+            createPath: function(options) {
+                return new L.MultiPolygon([[[0,0],[1,1],[0,1]]], options);
+            },
+            setPath: function(path, data) {
+                path.setLatLngs(_convertToLeafletMultiLatLngs(data.latlngs));
+                _updatePathOptions(path, data);
+                return;
+            }
+        },
+        rectangle: {
+            isValid: function(pathData) {
+                var latlngs = pathData.latlngs;
+
+                if (!isArray(latlngs) || latlngs.length !== 2) {
+                    return false;
+                }
+
+                for (var i in latlngs) {
+                    var point = latlngs[i];
+                    if (!isValidPoint(point)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            },
+            createPath: function(options) {
+                return new L.Rectangle([[0,0],[1,1]], options);
+            },
+            setPath: function(path, data) {
+                path.setBounds(new L.LatLngBounds(_convertToLeafletLatLngs(data.latlngs)));
+                _updatePathOptions(path, data);
+            }
+        },
+        circle: {
+            isValid: function(pathData) {
+                var point= pathData.latlngs;
+                return isValidPoint(point) && isNumber(pathData.radius);
+            },
+            createPath: function(options) {
+                return new L.Circle([0,0], 1, options);
+            },
+            setPath: function(path, data) {
+                path.setLatLng(_convertToLeafletLatLng(data.latlngs));
+                if (isDefined(data.radius)) {
+                    path.setRadius(data.radius);
+                }
+                _updatePathOptions(path, data);
+            }
+        },
+        circleMarker: {
+            isValid: function(pathData) {
+                var point= pathData.latlngs;
+                return isValidPoint(point) && isNumber(pathData.radius);
+            },
+            createPath: function(options) {
+                return new L.CircleMarker([0,0], options);
+            },
+            setPath: function(path, data) {
+                path.setLatLng(_convertToLeafletLatLng(data.latlngs));
+                if (isDefined(data.radius)) {
+                    path.setRadius(data.radius);
+                }
+                _updatePathOptions(path, data);
+            }
+        }
+    };
+
+    var _getPathData = function(path) {
+        var pathData = {};
+        if (path.latlngs) {
+            pathData.latlngs = path.latlngs;
+        }
+
+        if (path.radius) {
+            pathData.radius = path.radius;
+        }
+
+        return pathData;
+    };
+
+    return {
+        setPathOptions: function(leafletPath, pathType, data) {
+            if(!isDefined(pathType)) {
+                pathType = "polyline";
+            }
+            pathTypes[pathType].setPath(leafletPath, data);
+        },
+        createPath: function(name, path, defaults) {
+            if(!isDefined(path.type)) {
+                path.type = "polyline";
+            }
+            var options = _getOptions(path, defaults);
+            var pathData = _getPathData(path);
+
+            if (!pathTypes[path.type].isValid(pathData)) {
+                $log.error("[AngularJS - Leaflet] Invalid data passed to the " + path.type + " path");
+                return;
+            }
+
+            return pathTypes[path.type].createPath(options);
+        }
+    };
+}]);
+
+angular.module("leaflet-directive")
+.service('leafletWatchHelpers', function (){
+
+    var _maybe = function(scope, watchFunctionName, thingToWatchStr, watchOptions, initCb){
+        //watchOptions.isDeep is/should be ignored in $watchCollection
+        var unWatch = scope[watchFunctionName](thingToWatchStr, function(newValue, oldValue) {
+            initCb(newValue, oldValue);
+            if(!watchOptions.doWatch)
+                unWatch();
+        }, watchOptions.isDeep);
+
+        return unWatch;
+    };
+
+  /*
+  @name: maybeWatch
+  @description: Utility to watch something once or forever.
+  @returns unWatch function
+  @param watchOptions - see markersWatchOptions and or derrivatives. This object is used
+  to set watching to once and its watch depth.
+  */
+  var _maybeWatch = function(scope, thingToWatchStr, watchOptions, initCb){
+      return _maybe(scope, '$watch', thingToWatchStr, watchOptions, initCb);
+  };
+
+  /*
+  @name: _maybeWatchCollection
+  @description: Utility to watch something once or forever.
+  @returns unWatch function
+  @param watchOptions - see markersWatchOptions and or derrivatives. This object is used
+  to set watching to once and its watch depth.
+  */
+  var _maybeWatchCollection = function(scope, thingToWatchStr, watchOptions, initCb){
+      return _maybe(scope, '$watchCollection', thingToWatchStr, watchOptions, initCb);
+  };
+
+  return {
+    maybeWatch: _maybeWatch,
+    maybeWatchCollection: _maybeWatchCollection
+  };
+});
+
+angular.module("leaflet-directive").service('leafletLogger', ["nemSimpleLogger", function(nemSimpleLogger) {
+  return nemSimpleLogger.spawn();
+}]);
+
+angular.module("leaflet-directive").factory('nominatimService', ["$q", "$http", "leafletHelpers", "leafletMapDefaults", function ($q, $http, leafletHelpers, leafletMapDefaults) {
+    var isDefined = leafletHelpers.isDefined;
+
+    return {
+        query: function(address, mapId) {
+            var defaults = leafletMapDefaults.getDefaults(mapId);
+            var url = defaults.nominatim.server;
+            var df = $q.defer();
+
+            $http.get(url, { params: { format: 'json', limit: 1, q: address } }).success(function(data) {
+                if (data.length > 0 && isDefined(data[0].boundingbox)) {
+                    df.resolve(data[0]);
+                } else {
+                    df.reject('[Nominatim] Invalid address');
+                }
+            });
+
+            return df.promise;
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").directive('bounds', ["leafletLogger", "$timeout", "$http", "leafletHelpers", "nominatimService", "leafletBoundsHelpers", function (leafletLogger, $timeout, $http, leafletHelpers, nominatimService, leafletBoundsHelpers) {
+    var $log = leafletLogger;
+    return {
+        restrict: "A",
+        scope: false,
+        replace: false,
+        require: [ 'leaflet' ],
+
+        link: function(scope, element, attrs, controller) {
+            var isDefined = leafletHelpers.isDefined;
+            var createLeafletBounds = leafletBoundsHelpers.createLeafletBounds;
+            var leafletScope = controller[0].getLeafletScope();
+            var mapController = controller[0];
+            var errorHeader = leafletHelpers.errorHeader + ' [Bounds] ';
+
+            var emptyBounds = function(bounds) {
+                return (bounds._southWest.lat === 0 && bounds._southWest.lng === 0 &&
+                        bounds._northEast.lat === 0 && bounds._northEast.lng === 0);
+            };
+
+            mapController.getMap().then(function (map) {
+                leafletScope.$on('boundsChanged', function (event) {
+                    var scope = event.currentScope;
+                    var bounds = map.getBounds();
+
+                    if (emptyBounds(bounds) || scope.settingBoundsFromScope) {
+                        return;
+                    }
+                    scope.settingBoundsFromLeaflet = true;
+                    var newScopeBounds = {
+                        northEast: {
+                            lat: bounds._northEast.lat,
+                            lng: bounds._northEast.lng
+                        },
+                        southWest: {
+                            lat: bounds._southWest.lat,
+                            lng: bounds._southWest.lng
+                        },
+                        options: bounds.options
+                    };
+                    if (!angular.equals(scope.bounds, newScopeBounds)) {
+                        scope.bounds = newScopeBounds;
+                    }
+                    $timeout( function() {
+                        scope.settingBoundsFromLeaflet = false;
+                    });
+                });
+
+                var lastNominatimQuery;
+                leafletScope.$watch('bounds', function (bounds) {
+                    if (scope.settingBoundsFromLeaflet)
+                        return;
+                    if (isDefined(bounds.address) && bounds.address !== lastNominatimQuery) {
+                        scope.settingBoundsFromScope = true;
+                        nominatimService.query(bounds.address, attrs.id).then(function(data) {
+                            var b = data.boundingbox;
+                            var newBounds = [ [ b[0], b[2]], [ b[1], b[3]] ];
+                            map.fitBounds(newBounds);
+                        }, function(errMsg) {
+                            $log.error(errorHeader + ' ' + errMsg + '.');
+                        });
+                        lastNominatimQuery = bounds.address;
+                        $timeout( function() {
+                            scope.settingBoundsFromScope = false;
+                        });
+                        return;
+                    }
+
+                    var leafletBounds = createLeafletBounds(bounds);
+                    if (leafletBounds && !map.getBounds().equals(leafletBounds)) {
+                        scope.settingBoundsFromScope = true;
+                        map.fitBounds(leafletBounds, bounds.options);
+                        $timeout( function() {
+                            scope.settingBoundsFromScope = false;
+                        });
+                    }
+                }, true);
+            });
+        }
+    };
+}]);
+
+var centerDirectiveTypes = ['center', 'lfCenter'],
+    centerDirectives = {};
+
+centerDirectiveTypes.forEach(function(directiveName) {
+    centerDirectives[directiveName] = ['leafletLogger', '$q', '$location', '$timeout', 'leafletMapDefaults', 'leafletHelpers',
+        'leafletBoundsHelpers', 'leafletEvents',
+        function(leafletLogger, $q, $location, $timeout, leafletMapDefaults, leafletHelpers,
+      leafletBoundsHelpers, leafletEvents) {
+
+        var isDefined = leafletHelpers.isDefined,
+            isNumber = leafletHelpers.isNumber,
+            isSameCenterOnMap = leafletHelpers.isSameCenterOnMap,
+            safeApply = leafletHelpers.safeApply,
+            isValidCenter = leafletHelpers.isValidCenter,
+            isValidBounds = leafletBoundsHelpers.isValidBounds,
+            isUndefinedOrEmpty = leafletHelpers.isUndefinedOrEmpty,
+            errorHeader = leafletHelpers.errorHeader,
+            $log = leafletLogger;
+
+        var shouldInitializeMapWithBounds = function(bounds, center) {
+            return isDefined(bounds) && isValidBounds(bounds) && isUndefinedOrEmpty(center);
+        };
+
+        var _leafletCenter;
+        return {
+            restrict: "A",
+            scope: false,
+            replace: false,
+            require: 'leaflet',
+            controller: function() {
+                _leafletCenter = $q.defer();
+                this.getCenter = function() {
+                    return _leafletCenter.promise;
+                };
+            },
+            link: function(scope, element, attrs, controller) {
+                var leafletScope = controller.getLeafletScope(),
+                    centerModel = leafletScope[directiveName];
+
+                controller.getMap().then(function(map) {
+                    var defaults = leafletMapDefaults.getDefaults(attrs.id);
+
+                    if (attrs[directiveName].search("-") !== -1) {
+                        $log.error(errorHeader + ' The "center" variable can\'t use a "-" on its key name: "' + attrs[directiveName] + '".');
+                        map.setView([defaults.center.lat, defaults.center.lng], defaults.center.zoom);
+                        return;
+                    } else if (shouldInitializeMapWithBounds(leafletScope.bounds, centerModel)) {
+                        map.fitBounds(leafletBoundsHelpers.createLeafletBounds(leafletScope.bounds), leafletScope.bounds.options);
+                        centerModel = map.getCenter();
+                        safeApply(leafletScope, function(scope) {
+                            angular.extend(scope[directiveName], {
+                                lat: map.getCenter().lat,
+                                lng: map.getCenter().lng,
+                                zoom: map.getZoom(),
+                                autoDiscover: false
+                            });
+                        });
+                        safeApply(leafletScope, function(scope) {
+                            var mapBounds = map.getBounds();
+                            scope.bounds = {
+                                northEast: {
+                                    lat: mapBounds._northEast.lat,
+                                    lng: mapBounds._northEast.lng
+                                },
+                                southWest: {
+                                    lat: mapBounds._southWest.lat,
+                                    lng: mapBounds._southWest.lng
+                                }
+                            };
+                        });
+                    } else if (!isDefined(centerModel)) {
+                        $log.error(errorHeader + ' The "center" property is not defined in the main scope');
+                        map.setView([defaults.center.lat, defaults.center.lng], defaults.center.zoom);
+                        return;
+                    } else if (!(isDefined(centerModel.lat) && isDefined(centerModel.lng)) && !isDefined(centerModel.autoDiscover)) {
+                        angular.copy(defaults.center, centerModel);
+                    }
+
+                    var urlCenterHash, mapReady;
+                    if (attrs.urlHashCenter === "yes") {
+                        var extractCenterFromUrl = function() {
+                            var search = $location.search();
+                            var centerParam;
+                            if (isDefined(search.c)) {
+                                var cParam = search.c.split(":");
+                                if (cParam.length === 3) {
+                                    centerParam = {
+                                        lat: parseFloat(cParam[0]),
+                                        lng: parseFloat(cParam[1]),
+                                        zoom: parseInt(cParam[2], 10)
+                                    };
+                                }
+                            }
+                            return centerParam;
+                        };
+                        urlCenterHash = extractCenterFromUrl();
+
+                        leafletScope.$on('$locationChangeSuccess', function(event) {
+                            var scope = event.currentScope;
+                            //$log.debug("updated location...");
+                            var urlCenter = extractCenterFromUrl();
+                            if (isDefined(urlCenter) && !isSameCenterOnMap(urlCenter, map)) {
+                                //$log.debug("updating center model...", urlCenter);
+                                angular.extend(scope[directiveName], {
+                                    lat: urlCenter.lat,
+                                    lng: urlCenter.lng,
+                                    zoom: urlCenter.zoom
+                                });
+                            }
+                        });
+                    }
+
+                    leafletScope.$watch(directiveName, function(center) {
+                        if (leafletScope.settingCenterFromLeaflet)
+                            return;
+                        //$log.debug("updated center model...");
+                        // The center from the URL has priority
+                        if (isDefined(urlCenterHash)) {
+                            angular.copy(urlCenterHash, center);
+                            urlCenterHash = undefined;
+                        }
+
+                        if (!isValidCenter(center) && center.autoDiscover !== true) {
+                            $log.warn(errorHeader + " invalid 'center'");
+                            //map.setView([defaults.center.lat, defaults.center.lng], defaults.center.zoom);
+                            return;
+                        }
+
+                        if (center.autoDiscover === true) {
+                            if (!isNumber(center.zoom)) {
+                                map.setView([defaults.center.lat, defaults.center.lng], defaults.center.zoom);
+                            }
+                            if (isNumber(center.zoom) && center.zoom > defaults.center.zoom) {
+                                map.locate({
+                                    setView: true,
+                                    maxZoom: center.zoom
+                                });
+                            } else if (isDefined(defaults.maxZoom)) {
+                                map.locate({
+                                    setView: true,
+                                    maxZoom: defaults.maxZoom
+                                });
+                            } else {
+                                map.locate({
+                                    setView: true
+                                });
+                            }
+                            return;
+                        }
+
+                        if (mapReady && isSameCenterOnMap(center, map)) {
+                            //$log.debug("no need to update map again.");
+                            return;
+                        }
+
+                        //$log.debug("updating map center...", center);
+                        leafletScope.settingCenterFromScope = true;
+                        map.setView([center.lat, center.lng], center.zoom);
+                        leafletEvents.notifyCenterChangedToBounds(leafletScope, map);
+                        $timeout(function() {
+                            leafletScope.settingCenterFromScope = false;
+                            //$log.debug("allow center scope updates");
+                        });
+                    }, true);
+
+                    map.whenReady(function() {
+                        mapReady = true;
+                    });
+
+                    map.on('moveend', function( /* event */ ) {
+                        // Resolve the center after the first map position
+                        _leafletCenter.resolve();
+                        leafletEvents.notifyCenterUrlHashChanged(leafletScope, map, attrs, $location.search());
+                        //$log.debug("updated center on map...");
+                        if (isSameCenterOnMap(centerModel, map) || leafletScope.settingCenterFromScope) {
+                            //$log.debug("same center in model, no need to update again.");
+                            return;
+                        }
+                        leafletScope.settingCenterFromLeaflet = true;
+                        safeApply(leafletScope, function(scope) {
+                            if (!leafletScope.settingCenterFromScope) {
+                                //$log.debug("updating center model...", map.getCenter(), map.getZoom());
+                                angular.extend(scope[directiveName], {
+                                    lat: map.getCenter().lat,
+                                    lng: map.getCenter().lng,
+                                    zoom: map.getZoom(),
+                                    autoDiscover: false
+                                });
+                            }
+                            leafletEvents.notifyCenterChangedToBounds(leafletScope, map);
+                            $timeout(function() {
+                                leafletScope.settingCenterFromLeaflet = false;
+                            });
+                        });
+                    });
+
+                    if (centerModel.autoDiscover === true) {
+                        map.on('locationerror', function() {
+                            $log.warn(errorHeader + " The Geolocation API is unauthorized on this page.");
+                            if (isValidCenter(centerModel)) {
+                                map.setView([centerModel.lat, centerModel.lng], centerModel.zoom);
+                                leafletEvents.notifyCenterChangedToBounds(leafletScope, map);
+                            } else {
+                                map.setView([defaults.center.lat, defaults.center.lng], defaults.center.zoom);
+                                leafletEvents.notifyCenterChangedToBounds(leafletScope, map);
+                            }
+                        });
+                    }
+                });
+            }
+        };
+    }
+    ];
+});
+
+centerDirectiveTypes.forEach(function(dirType){
+  angular.module("leaflet-directive").directive(dirType, centerDirectives[dirType]);
+});
+
+angular.module("leaflet-directive").directive('controls', ["leafletLogger", "leafletHelpers", "leafletControlHelpers", function (leafletLogger, leafletHelpers, leafletControlHelpers) {
+    var $log = leafletLogger;
+    return {
+        restrict: "A",
+        scope: false,
+        replace: false,
+        require: '?^leaflet',
+
+        link: function(scope, element, attrs, controller) {
+            if(!controller) {
+                return;
+            }
+
+            var createControl = leafletControlHelpers.createControl;
+            var isValidControlType = leafletControlHelpers.isValidControlType;
+            var leafletScope  = controller.getLeafletScope();
+            var isDefined = leafletHelpers.isDefined;
+            var isArray = leafletHelpers.isArray;
+            var leafletControls = {};
+            var errorHeader = leafletHelpers.errorHeader + ' [Controls] ';
+
+            controller.getMap().then(function(map) {
+
+                leafletScope.$watchCollection('controls', function(newControls) {
+
+                    // Delete controls from the array
+                    for (var name in leafletControls) {
+                        if (!isDefined(newControls[name])) {
+                            if (map.hasControl(leafletControls[name])) {
+                                map.removeControl(leafletControls[name]);
+                            }
+                            delete leafletControls[name];
+                        }
+                    }
+
+                    for (var newName in newControls) {
+                        var control;
+
+                        var controlType = isDefined(newControls[newName].type) ? newControls[newName].type : newName;
+
+                        if (!isValidControlType(controlType)) {
+                            $log.error(errorHeader + ' Invalid control type: ' + controlType + '.');
+                            return;
+                        }
+
+                        if (controlType !== 'custom') {
+                            control = createControl(controlType, newControls[newName]);
+                            map.addControl(control);
+                            leafletControls[newName] = control;
+                        } else {
+                            var customControlValue = newControls[newName];
+                            if (isArray(customControlValue)) {
+                                for (var i in customControlValue) {
+                                    var customControl = customControlValue[i];
+                                    map.addControl(customControl);
+                                    leafletControls[newName] = !isDefined(leafletControls[newName]) ? [customControl] : leafletControls[newName].concat([customControl]);
+                                }
+                            } else {
+                                map.addControl(customControlValue);
+                                leafletControls[newName] = customControlValue;
+                            }
+                        }
+                    }
+
+                });
+
+            });
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").directive("decorations", ["leafletLogger", "leafletHelpers", function(leafletLogger, leafletHelpers) {
+	var $log = leafletLogger;
+	return {
+		restrict: "A",
+		scope: false,
+		replace: false,
+		require: 'leaflet',
+
+		link: function(scope, element, attrs, controller) {
+			var leafletScope = controller.getLeafletScope(),
+				PolylineDecoratorPlugin = leafletHelpers.PolylineDecoratorPlugin,
+				isDefined = leafletHelpers.isDefined,
+				leafletDecorations = {};
+
+			/* Creates an "empty" decoration with a set of coordinates, but no pattern. */
+			function createDecoration(options) {
+				if (isDefined(options) && isDefined(options.coordinates)) {
+					if (!PolylineDecoratorPlugin.isLoaded()) {
+						$log.error('[AngularJS - Leaflet] The PolylineDecorator Plugin is not loaded.');
+					}
+				}
+
+				return L.polylineDecorator(options.coordinates);
+			}
+
+			/* Updates the path and the patterns for the provided decoration, and returns the decoration. */
+			function setDecorationOptions(decoration, options) {
+				if (isDefined(decoration) && isDefined(options)) {
+					if (isDefined(options.coordinates) && isDefined(options.patterns)) {
+						decoration.setPaths(options.coordinates);
+						decoration.setPatterns(options.patterns);
+						return decoration;
+					}
+				}
+			}
+
+			controller.getMap().then(function(map) {
+				leafletScope.$watch("decorations", function(newDecorations) {
+					for (var name in leafletDecorations) {
+						if (!isDefined(newDecorations[name]) || !angular.equals(newDecorations[name], leafletDecorations)) {
+							map.removeLayer(leafletDecorations[name]);
+							delete leafletDecorations[name];
+						}
+					}
+
+					for (var newName in newDecorations) {
+						var decorationData = newDecorations[newName],
+							newDecoration = createDecoration(decorationData);
+
+						if (isDefined(newDecoration)) {
+							leafletDecorations[newName] = newDecoration;
+							map.addLayer(newDecoration);
+							setDecorationOptions(newDecoration, decorationData);
+						}
+					}
+				}, true);
+			});
+		}
+	};
+}]);
+
+angular.module("leaflet-directive").directive('eventBroadcast', ["leafletLogger", "$rootScope", "leafletHelpers", "leafletEvents", "leafletIterators", function (leafletLogger, $rootScope, leafletHelpers, leafletEvents, leafletIterators) {
+    var $log = leafletLogger;
+    return {
+        restrict: "A",
+        scope: false,
+        replace: false,
+        require: 'leaflet',
+
+        link: function(scope, element, attrs, controller) {
+            var isObject = leafletHelpers.isObject,
+                isDefined = leafletHelpers.isDefined,
+                leafletScope  = controller.getLeafletScope(),
+                eventBroadcast = leafletScope.eventBroadcast,
+                availableMapEvents = leafletEvents.getAvailableMapEvents(),
+                addEvents = leafletEvents.addEvents;
+
+            controller.getMap().then(function(map) {
+
+                var mapEvents = [],
+                    logic = "broadcast";
+
+                // We have a possible valid object
+                if (!isDefined(eventBroadcast.map)) {
+                    // We do not have events enable/disable do we do nothing (all enabled by default)
+                    mapEvents = availableMapEvents;
+                } else if (!isObject(eventBroadcast.map)) {
+                    // Not a valid object
+                    $log.warn("[AngularJS - Leaflet] event-broadcast.map must be an object check your model.");
+                } else {
+                    // We have a possible valid map object
+                    // Event propadation logic
+                    if (eventBroadcast.map.logic !== "emit" && eventBroadcast.map.logic !== "broadcast") {
+                        // This is an error
+                        $log.warn("[AngularJS - Leaflet] Available event propagation logic are: 'emit' or 'broadcast'.");
+                    } else {
+                        logic = eventBroadcast.map.logic;
+                    }
+
+                    if (!(isObject(eventBroadcast.map.enable) && eventBroadcast.map.enable.length >= 0)) {
+                        $log.warn("[AngularJS - Leaflet] event-broadcast.map.enable must be an object check your model.");
+                    } else {
+                        // Enable events
+                        leafletIterators.each(eventBroadcast.map.enable, function(eventName) {
+                            // Do we have already the event enabled?
+                            if (mapEvents.indexOf(eventName) === -1 && availableMapEvents.indexOf(eventName) !== -1) {
+                                mapEvents.push(eventName);
+                            }
+                        });
+                    }
+
+                }
+                // as long as the map is removed in the root leaflet directive we
+                // do not need ot clean up the events as leaflet does it itself
+                addEvents(map, mapEvents, "eventName", leafletScope, logic);
+            });
+        }
+    };
+}]);
+
+angular.module("leaflet-directive")
+.directive('geojson', ["leafletLogger", "$rootScope", "leafletData", "leafletHelpers", "leafletWatchHelpers", "leafletDirectiveControlsHelpers", "leafletIterators", "leafletGeoJsonEvents", function (leafletLogger, $rootScope, leafletData, leafletHelpers,
+    leafletWatchHelpers, leafletDirectiveControlsHelpers,leafletIterators,
+    leafletGeoJsonEvents) {
+    var _maybeWatch = leafletWatchHelpers.maybeWatch,
+        _watchOptions = leafletHelpers.watchOptions,
+        _extendDirectiveControls = leafletDirectiveControlsHelpers.extend,
+        hlp = leafletHelpers,
+        $it = leafletIterators;
+        // $log = leafletLogger;
+
+    return {
+        restrict: "A",
+        scope: false,
+        replace: false,
+        require: 'leaflet',
+
+        link: function(scope, element, attrs, controller) {
+            var isDefined = leafletHelpers.isDefined,
+                leafletScope  = controller.getLeafletScope(),
+                leafletGeoJSON = {},
+                _hasSetLeafletData = false;
+
+            controller.getMap().then(function(map) {
+                var watchOptions = leafletScope.geojsonWatchOptions || _watchOptions;
+
+                var _hookUpEvents = function(geojson, maybeName){
+                    var onEachFeature;
+
+                    if (angular.isFunction(geojson.onEachFeature)) {
+                        onEachFeature = geojson.onEachFeature;
+                    } else {
+                        onEachFeature = function(feature, layer) {
+                            if (leafletHelpers.LabelPlugin.isLoaded() && isDefined(feature.properties.description)) {
+                                layer.bindLabel(feature.properties.description);
+                            }
+
+                            leafletGeoJsonEvents.bindEvents(layer, null, feature,
+                                leafletScope, maybeName,
+                                {resetStyleOnMouseout: geojson.resetStyleOnMouseout,
+                                mapId: attrs.id});
+                        };
+                    }
+                    return onEachFeature;
+                };
+
+                var isNested = (hlp.isDefined(attrs.geojsonNested) &&
+                    hlp.isTruthy(attrs.geojsonNested));
+
+                var _clean = function(){
+                    if(!leafletGeoJSON)
+                        return;
+                    var _remove = function(lObject) {
+                        if (isDefined(lObject) && map.hasLayer(lObject)) {
+                            map.removeLayer(lObject);
+                        }
+                    };
+                    if(isNested) {
+                        $it.each(leafletGeoJSON, function(lObject) {
+                            _remove(lObject);
+                        });
+                        return;
+                    }
+                    _remove(leafletGeoJSON);
+                };
+
+                var _addGeojson = function(model, maybeName){
+                    var geojson = angular.copy(model);
+                    if (!(isDefined(geojson) && isDefined(geojson.data))) {
+                        return;
+                    }
+                    var onEachFeature = _hookUpEvents(geojson, maybeName);
+
+                    if (!isDefined(geojson.options)) {
+                        //right here is why we use a clone / copy (we modify and thus)
+                        //would kick of a watcher.. we need to be more careful everywhere
+                        //for stuff like this
+                        geojson.options = {
+                            style: geojson.style,
+                            filter: geojson.filter,
+                            onEachFeature: onEachFeature,
+                            pointToLayer: geojson.pointToLayer
+                        };
+                    }
+
+                    var lObject = L.geoJson(geojson.data, geojson.options);
+
+                    if(maybeName && hlp.isString(maybeName)){
+                        leafletGeoJSON[maybeName] = lObject;
+                    }
+                    else{
+                        leafletGeoJSON = lObject;
+                    }
+
+                    lObject.addTo(map);
+
+                    if(!_hasSetLeafletData){//only do this once and play with the same ref forever
+                        _hasSetLeafletData = true;
+                        leafletData.setGeoJSON(leafletGeoJSON, attrs.id);
+                    }
+                };
+
+                var _create = function(model){
+                    _clean();
+                    if(isNested) {
+                        if(!model || !Object.keys(model).length)
+                            return;
+                        $it.each(model, function(m, name) {
+                            //name could be layerName and or groupName
+                            //for now it is not tied to a layer
+                            _addGeojson(m,name);
+                        });
+                        return;
+                    }
+                    _addGeojson(model);
+                };
+
+                _extendDirectiveControls(attrs.id, 'geojson', _create, _clean);
+
+                _maybeWatch(leafletScope,'geojson', watchOptions, function(geojson){
+                    _create(geojson);
+                });
+            });
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").directive('layercontrol', ["$filter", "leafletLogger", "leafletData", "leafletHelpers", function ($filter, leafletLogger, leafletData, leafletHelpers) {
+    var $log = leafletLogger;
+    return {
+        restrict: "E",
+        scope: {
+            icons: '=?',
+            autoHideOpacity: '=?', // Hide other opacity controls when one is activated.
+            showGroups: '=?', // Hide other opacity controls when one is activated.
+            title: '@',
+            baseTitle: '@',
+            overlaysTitle: '@'
+        },
+        replace: true,
+        transclude: false,
+        require: '^leaflet',
+        controller: ["$scope", "$element", "$sce", function ($scope, $element, $sce) {
+            $log.debug('[Angular Directive - Layers] layers', $scope, $element);
+            var safeApply = leafletHelpers.safeApply,
+            isDefined = leafletHelpers.isDefined;
+            angular.extend($scope, {
+                baselayer: '',
+                oldGroup: '',
+                layerProperties: {},
+                groupProperties: {},
+                rangeIsSupported: leafletHelpers.rangeIsSupported(),
+                changeBaseLayer: function(key, e) {
+                    leafletHelpers.safeApply($scope, function(scp) {
+                        scp.baselayer = key;
+                        leafletData.getMap().then(function(map) {
+                            leafletData.getLayers().then(function(leafletLayers) {
+                                if(map.hasLayer(leafletLayers.baselayers[key])) {
+                                    return;
+                                }
+                                for(var i in scp.layers.baselayers) {
+                                    scp.layers.baselayers[i].icon = scp.icons.unradio;
+                                    if(map.hasLayer(leafletLayers.baselayers[i])) {
+                                        map.removeLayer(leafletLayers.baselayers[i]);
+                                    }
+                                }
+                                map.addLayer(leafletLayers.baselayers[key]);
+                                scp.layers.baselayers[key].icon = $scope.icons.radio;
+                            });
+                        });
+                    });
+                    e.preventDefault();
+                },
+                moveLayer: function(ly, newIndex, e) {
+                    var delta = Object.keys($scope.layers.baselayers).length;
+                    if(newIndex >= (1+delta) && newIndex <= ($scope.overlaysArray.length+delta)) {
+                        var oldLy;
+                        for(var key in $scope.layers.overlays) {
+                            if($scope.layers.overlays[key].index === newIndex) {
+                                oldLy = $scope.layers.overlays[key];
+                                break;
+                            }
+                        }
+                        if(oldLy) {
+                            safeApply($scope, function() {
+                                oldLy.index = ly.index;
+                                ly.index = newIndex;
+                            });
+                        }
+                    }
+                    e.stopPropagation();
+                    e.preventDefault();
+                },
+                initIndex: function(layer, idx) {
+                    var delta = Object.keys($scope.layers.baselayers).length;
+                    layer.index = isDefined(layer.index)? layer.index:idx+delta+1;
+                },
+                initGroup: function(groupName) {
+                    $scope.groupProperties[groupName] = $scope.groupProperties[groupName]? $scope.groupProperties[groupName]:{};
+                },
+                toggleOpacity: function(e, layer) {
+                    if(layer.visible) {
+                        if($scope.autoHideOpacity && !$scope.layerProperties[layer.name].opacityControl) {
+                            for(var k in $scope.layerProperties) {
+                                $scope.layerProperties[k].opacityControl = false;
+                            }
+                        }
+                        $scope.layerProperties[layer.name].opacityControl = !$scope.layerProperties[layer.name].opacityControl;
+                    }
+                    e.stopPropagation();
+                    e.preventDefault();
+                },
+                toggleLegend: function(layer) {
+                    $scope.layerProperties[layer.name].showLegend = !$scope.layerProperties[layer.name].showLegend;
+                },
+                showLegend: function(layer) {
+                    return layer.legend && $scope.layerProperties[layer.name].showLegend;
+                },
+                unsafeHTML: function(html) {
+                    return $sce.trustAsHtml(html);
+                },
+                getOpacityIcon: function(layer) {
+                    return layer.visible && $scope.layerProperties[layer.name].opacityControl? $scope.icons.close:$scope.icons.open;
+                },
+                getGroupIcon: function(group) {
+                    return group.visible? $scope.icons.check:$scope.icons.uncheck;
+                },
+                changeOpacity: function(layer) {
+                    var op = $scope.layerProperties[layer.name].opacity;
+                    leafletData.getMap().then(function(map) {
+                        leafletData.getLayers().then(function(leafletLayers) {
+                            var ly;
+                            for(var k in $scope.layers.overlays) {
+                                if($scope.layers.overlays[k] === layer) {
+                                    ly = leafletLayers.overlays[k];
+                                    break;
+                                }
+                            }
+
+                            if(map.hasLayer(ly)) {
+                                if(ly.setOpacity) {
+                                    ly.setOpacity(op/100);
+                                }
+                                if(ly.getLayers && ly.eachLayer) {
+                                    ly.eachLayer(function(lay) {
+                                        if(lay.setOpacity) {
+                                            lay.setOpacity(op/100);
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    });
+                },
+                changeGroupVisibility: function(groupName) {
+                    if(!isDefined($scope.groupProperties[groupName])) {
+                        return;
+                    }
+                    var visible = $scope.groupProperties[groupName].visible;
+                    for(var k in $scope.layers.overlays) {
+                        var layer = $scope.layers.overlays[k];
+                        if(layer.group === groupName) {
+                            layer.visible = visible;
+                        }
+                    }
+                }
+            });
+
+            var div = $element.get(0);
+            if (!L.Browser.touch) {
+                L.DomEvent.disableClickPropagation(div);
+                L.DomEvent.on(div, 'mousewheel', L.DomEvent.stopPropagation);
+            } else {
+                L.DomEvent.on(div, 'click', L.DomEvent.stopPropagation);
+            }
+        }],
+        template:
+        '<div class="angular-leaflet-control-layers" ng-show="overlaysArray.length">' +
+            '<h4 ng-if="title">{{ title }}</h4>' +
+            '<div class="lf-baselayers">' +
+                '<h5 class="lf-title" ng-if="baseTitle">{{ baseTitle }}</h5>' +
+                '<div class="lf-row" ng-repeat="(key, layer) in baselayersArray">' +
+                    '<label class="lf-icon-bl" ng-click="changeBaseLayer(key, $event)">' +
+                        '<input class="leaflet-control-layers-selector" type="radio" name="lf-radio" ' +
+                            'ng-show="false" ng-checked="baselayer === key" ng-value="key" /> ' +
+                        '<i class="lf-icon lf-icon-radio" ng-class="layer.icon"></i>' +
+                        '<div class="lf-text">{{layer.name}}</div>' +
+                    '</label>' +
+                '</div>' +
+            '</div>' +
+            '<div class="lf-overlays">' +
+                '<h5 class="lf-title" ng-if="overlaysTitle">{{ overlaysTitle }}</h5>' +
+                '<div class="lf-container">' +
+                    '<div class="lf-row" ng-repeat="layer in (o = (overlaysArray | orderBy:\'index\':order))" ng-init="initIndex(layer, $index)">' +
+                        '<label class="lf-icon-ol-group" ng-if="showGroups &amp;&amp; layer.group &amp;&amp; layer.group != o[$index-1].group">' +
+                            '<input class="lf-control-layers-selector" type="checkbox" ng-show="false" ' +
+                                'ng-change="changeGroupVisibility(layer.group)" ng-model="groupProperties[layer.group].visible"/> ' +
+                            '<i class="lf-icon lf-icon-check" ng-class="getGroupIcon(groupProperties[layer.group])"></i>' +
+                            '<div class="lf-text">{{ layer.group }}</div>' +
+                        '</label>'+
+                        '<label class="lf-icon-ol">' +
+                            '<input class="lf-control-layers-selector" type="checkbox" ng-show="false" ng-model="layer.visible"/> ' +
+                            '<i class="lf-icon lf-icon-check" ng-class="layer.icon"></i>' +
+                            '<div class="lf-text">{{layer.name}}</div>' +
+                        '</label>'+
+                        '<div class="lf-icons">' +
+                            '<i class="lf-icon lf-up" ng-class="icons.up" ng-click="moveLayer(layer, layer.index - orderNumber, $event)"></i> ' +
+                            '<i class="lf-icon lf-down" ng-class="icons.down" ng-click="moveLayer(layer, layer.index + orderNumber, $event)"></i> ' +
+                            '<i class="lf-icon lf-toggle-legend" ng-class="icons.toggleLegend" ng-if="layer.legend" ng-click="toggleLegend(layer)"></i> ' +
+                            '<i class="lf-icon lf-open" ng-class="getOpacityIcon(layer)" ng-click="toggleOpacity($event, layer)"></i>' +
+                        '</div>' +
+                        '<div class="lf-legend" ng-if="showLegend(layer)" ng-bind-html="unsafeHTML(layer.legend)"></div>' +
+                        '<div class="lf-opacity clearfix" ng-if="layer.visible &amp;&amp; layerProperties[layer.name].opacityControl">' +
+                            '<label ng-if="rangeIsSupported" class="pull-left" style="width: 50%">0</label>' +
+                            '<label ng-if="rangeIsSupported" class="pull-left text-right" style="width: 50%">100</label>' +
+                            '<input ng-if="rangeIsSupported" class="clearfix" type="range" min="0" max="100" class="lf-opacity-control" ' +
+                                'ng-model="layerProperties[layer.name].opacity" ng-change="changeOpacity(layer)"/>' +
+                            '<h6 ng-if="!rangeIsSupported">Range is not supported in this browser</h6>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>',
+        link: function(scope, element, attrs, controller) {
+            var isDefined = leafletHelpers.isDefined,
+            leafletScope = controller.getLeafletScope(),
+            layers = leafletScope.layers;
+
+            scope.$watch('icons', function() {
+                var defaultIcons = {
+                    uncheck: 'fa fa-square-o',
+                    check: 'fa fa-check-square-o',
+                    radio: 'fa fa-dot-circle-o',
+                    unradio: 'fa fa-circle-o',
+                    up: 'fa fa-angle-up',
+                    down: 'fa fa-angle-down',
+                    open: 'fa fa-angle-double-down',
+                    close: 'fa fa-angle-double-up',
+                    toggleLegend: 'fa fa-pencil-square-o'
+                };
+                if(isDefined(scope.icons)) {
+                    angular.extend(defaultIcons, scope.icons);
+                    angular.extend(scope.icons, defaultIcons);
+                } else {
+                    scope.icons = defaultIcons;
+                }
+            });
+
+            // Setting layer stack order.
+            attrs.order = (isDefined(attrs.order) && (attrs.order === 'normal' || attrs.order === 'reverse'))? attrs.order:'normal';
+            scope.order = attrs.order === 'normal';
+            scope.orderNumber = attrs.order === 'normal'? -1:1;
+
+            scope.layers = layers;
+            controller.getMap().then(function(map) {
+                leafletScope.$watch('layers.baselayers', function(newBaseLayers) {
+                    var baselayersArray = {};
+                    leafletData.getLayers().then(function(leafletLayers) {
+                        var key;
+                        for(key in newBaseLayers) {
+                            var layer = newBaseLayers[key];
+                            layer.icon = scope.icons[map.hasLayer(leafletLayers.baselayers[key])? 'radio':'unradio'];
+                            baselayersArray[key] = layer;
+                        }
+                        scope.baselayersArray = baselayersArray;
+                    });
+                });
+
+                leafletScope.$watch('layers.overlays', function(newOverlayLayers) {
+                    var overlaysArray = [];
+                    var groupVisibleCount = {};
+                    leafletData.getLayers().then(function(leafletLayers) {
+                        var key;
+                        for(key in newOverlayLayers) {
+                            var layer = newOverlayLayers[key];
+                            layer.icon = scope.icons[(layer.visible? 'check':'uncheck')];
+                            overlaysArray.push(layer);
+                            if(!isDefined(scope.layerProperties[layer.name])) {
+                                scope.layerProperties[layer.name] = {
+                                    opacity: isDefined(layer.layerOptions.opacity)? layer.layerOptions.opacity*100:100,
+                                    opacityControl: false,
+                                    showLegend: true
+                                };
+                            }
+                            if(isDefined(layer.group)) {
+                                if(!isDefined(scope.groupProperties[layer.group])) {
+                                    scope.groupProperties[layer.group] = {
+                                        visible: false
+                                    };
+                                }
+                                groupVisibleCount[layer.group] = isDefined(groupVisibleCount[layer.group])? groupVisibleCount[layer.group]:{
+                                    count: 0,
+                                    visibles: 0
+                                };
+                                groupVisibleCount[layer.group].count++;
+                                if(layer.visible) {
+                                    groupVisibleCount[layer.group].visibles++;
+                                }
+                            }
+                            if(isDefined(layer.index) && leafletLayers.overlays[key].setZIndex) {
+                                leafletLayers.overlays[key].setZIndex(newOverlayLayers[key].index);
+                            }
+                        }
+
+                        for(key in groupVisibleCount) {
+                            scope.groupProperties[key].visible = groupVisibleCount[key].visibles === groupVisibleCount[key].count;
+                        }
+                        scope.overlaysArray = overlaysArray;
+                    });
+                }, true);
+            });
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").directive('layers', ["leafletLogger", "$q", "leafletData", "leafletHelpers", "leafletLayerHelpers", "leafletControlHelpers", function (leafletLogger, $q, leafletData, leafletHelpers, leafletLayerHelpers, leafletControlHelpers) {
+    // var $log = leafletLogger;
+    return {
+        restrict: "A",
+        scope: false,
+        replace: false,
+        require: 'leaflet',
+        controller: ["$scope", function ($scope) {
+            $scope._leafletLayers = $q.defer();
+            this.getLayers = function () {
+                return $scope._leafletLayers.promise;
+            };
+        }],
+        link: function(scope, element, attrs, controller){
+            var isDefined = leafletHelpers.isDefined,
+                leafletLayers = {},
+                leafletScope  = controller.getLeafletScope(),
+                layers = leafletScope.layers,
+                createLayer = leafletLayerHelpers.createLayer,
+                safeAddLayer = leafletLayerHelpers.safeAddLayer,
+                safeRemoveLayer = leafletLayerHelpers.safeRemoveLayer,
+                updateLayersControl = leafletControlHelpers.updateLayersControl,
+                isLayersControlVisible = false;
+
+            controller.getMap().then(function(map) {
+
+                // We have baselayers to add to the map
+                scope._leafletLayers.resolve(leafletLayers);
+                leafletData.setLayers(leafletLayers, attrs.id);
+
+                leafletLayers.baselayers = {};
+                leafletLayers.overlays = {};
+
+                var mapId = attrs.id;
+
+                // Setup all baselayers definitions
+                var oneVisibleLayer = false;
+                for (var layerName in layers.baselayers) {
+                    var newBaseLayer = createLayer(layers.baselayers[layerName]);
+                    if (!isDefined(newBaseLayer)) {
+                        delete layers.baselayers[layerName];
+                        continue;
+                    }
+                    leafletLayers.baselayers[layerName] = newBaseLayer;
+                    // Only add the visible layer to the map, layer control manages the addition to the map
+                    // of layers in its control
+                    if (layers.baselayers[layerName].top === true) {
+                        safeAddLayer(map, leafletLayers.baselayers[layerName]);
+                        oneVisibleLayer = true;
+                    }
+                }
+
+                // If there is no visible layer add first to the map
+                if (!oneVisibleLayer && Object.keys(leafletLayers.baselayers).length > 0) {
+                    safeAddLayer(map, leafletLayers.baselayers[Object.keys(layers.baselayers)[0]]);
+                }
+
+                // Setup the Overlays
+                for (layerName in layers.overlays) {
+                    if(layers.overlays[layerName].type === 'cartodb') {
+
+                    }
+                    var newOverlayLayer = createLayer(layers.overlays[layerName]);
+                    if (!isDefined(newOverlayLayer)) {
+                        delete layers.overlays[layerName];
+                        continue;
+                    }
+                    leafletLayers.overlays[layerName] = newOverlayLayer;
+                    // Only add the visible overlays to the map
+                    if (layers.overlays[layerName].visible === true) {
+                        safeAddLayer(map, leafletLayers.overlays[layerName]);
+                    }
+                }
+
+                // Watch for the base layers
+                leafletScope.$watch('layers.baselayers', function(newBaseLayers, oldBaseLayers) {
+                    if(angular.equals(newBaseLayers, oldBaseLayers)) {
+                        isLayersControlVisible = updateLayersControl(map, mapId, isLayersControlVisible, newBaseLayers, layers.overlays, leafletLayers);
+                        return true;
+                    }
+                    // Delete layers from the array
+                    for (var name in leafletLayers.baselayers) {
+                        if (!isDefined(newBaseLayers[name]) || newBaseLayers[name].doRefresh) {
+                            // Remove from the map if it's on it
+                            if (map.hasLayer(leafletLayers.baselayers[name])) {
+                                map.removeLayer(leafletLayers.baselayers[name]);
+                            }
+                            delete leafletLayers.baselayers[name];
+
+                            if (newBaseLayers[name] && newBaseLayers[name].doRefresh) {
+                                newBaseLayers[name].doRefresh = false;
+                            }
+                        }
+                    }
+                    // add new layers
+                    for (var newName in newBaseLayers) {
+                        if (!isDefined(leafletLayers.baselayers[newName])) {
+                            var testBaseLayer = createLayer(newBaseLayers[newName]);
+                            if (isDefined(testBaseLayer)) {
+                                leafletLayers.baselayers[newName] = testBaseLayer;
+                                // Only add the visible layer to the map
+                                if (newBaseLayers[newName].top === true) {
+                                    safeAddLayer(map, leafletLayers.baselayers[newName]);
+                                }
+                            }
+                        } else {
+                            if (newBaseLayers[newName].top === true && !map.hasLayer(leafletLayers.baselayers[newName])) {
+                                safeAddLayer(map, leafletLayers.baselayers[newName]);
+                            } else if (newBaseLayers[newName].top === false && map.hasLayer(leafletLayers.baselayers[newName])) {
+                                map.removeLayer(leafletLayers.baselayers[newName]);
+                            }
+                        }
+                    }
+
+                    //we have layers, so we need to make, at least, one active
+                    var found = false;
+                    // search for an active layer
+                    for (var key in leafletLayers.baselayers) {
+                        if (map.hasLayer(leafletLayers.baselayers[key])) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    // If there is no active layer make one active
+                    if (!found && Object.keys(leafletLayers.baselayers).length > 0) {
+                        safeAddLayer(map, leafletLayers.baselayers[Object.keys(leafletLayers.baselayers)[0]]);
+                    }
+
+                    // Only show the layers switch selector control if we have more than one baselayer + overlay
+                    isLayersControlVisible = updateLayersControl(map, mapId, isLayersControlVisible, newBaseLayers, layers.overlays, leafletLayers);
+                }, true);
+
+                // Watch for the overlay layers
+                leafletScope.$watch('layers.overlays', function(newOverlayLayers, oldOverlayLayers) {
+                    if(angular.equals(newOverlayLayers, oldOverlayLayers)) {
+                        isLayersControlVisible = updateLayersControl(map, mapId, isLayersControlVisible, layers.baselayers, newOverlayLayers, leafletLayers);
+                        return true;
+                    }
+
+                    // Delete layers from the array
+                    for (var name in leafletLayers.overlays) {
+                        if (!isDefined(newOverlayLayers[name]) || newOverlayLayers[name].doRefresh) {
+                            // Remove from the map if it's on it
+                            if (map.hasLayer(leafletLayers.overlays[name])) {
+                                // Safe remove when ArcGIS layers is loading.
+                                var options = isDefined(newOverlayLayers[name])?
+                                    newOverlayLayers[name].layerOptions:null;
+                                safeRemoveLayer(map, leafletLayers.overlays[name], options);
+                            }
+                            // TODO: Depending on the layer type we will have to delete what's included on it
+                            delete leafletLayers.overlays[name];
+
+                            if (newOverlayLayers[name] && newOverlayLayers[name].doRefresh) {
+                                newOverlayLayers[name].doRefresh = false;
+                            }
+                        }
+                    }
+
+                    // add new overlays
+                    for (var newName in newOverlayLayers) {
+                        if (!isDefined(leafletLayers.overlays[newName])) {
+                            var testOverlayLayer = createLayer(newOverlayLayers[newName]);
+                            if (!isDefined(testOverlayLayer)) {
+                                // If the layer creation fails, continue to the next overlay
+                                continue;
+                            }
+                            leafletLayers.overlays[newName] = testOverlayLayer;
+                            if (newOverlayLayers[newName].visible === true) {
+                                safeAddLayer(map, leafletLayers.overlays[newName]);
+                            }
+                        } else {
+                            // check for the .visible property to hide/show overLayers
+                            if (newOverlayLayers[newName].visible && !map.hasLayer(leafletLayers.overlays[newName])) {
+                                safeAddLayer(map, leafletLayers.overlays[newName]);
+                            } else if (newOverlayLayers[newName].visible === false && map.hasLayer(leafletLayers.overlays[newName])) {
+                                // Safe remove when ArcGIS layers is loading.
+                                safeRemoveLayer(map, leafletLayers.overlays[newName], newOverlayLayers[newName].layerOptions);
+                            }
+                        }
+
+                        //refresh heatmap data if present
+                        if (newOverlayLayers[newName].visible && map._loaded && newOverlayLayers[newName].data && newOverlayLayers[newName].type === "heatmap") {
+                            leafletLayers.overlays[newName].setData(newOverlayLayers[newName].data);
+                            leafletLayers.overlays[newName].update();
+                        }
+                    }
+
+                    // Only add the layers switch selector control if we have more than one baselayer + overlay
+                    isLayersControlVisible = updateLayersControl(map, mapId, isLayersControlVisible, layers.baselayers, newOverlayLayers, leafletLayers);
+                }, true);
+            });
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").directive('legend', ["leafletLogger", "$http", "leafletHelpers", "leafletLegendHelpers", function (leafletLogger, $http, leafletHelpers, leafletLegendHelpers) {
+        var $log = leafletLogger;
+        return {
+            restrict: "A",
+            scope: false,
+            replace: false,
+            require: 'leaflet',
+
+            link: function (scope, element, attrs, controller) {
+
+                var isArray = leafletHelpers.isArray,
+                    isDefined = leafletHelpers.isDefined,
+                    isFunction = leafletHelpers.isFunction,
+                    leafletScope = controller.getLeafletScope(),
+                    legend = leafletScope.legend;
+
+                var legendClass;
+                var position;
+                var leafletLegend;
+                var type;
+
+                leafletScope.$watch('legend', function (newLegend) {
+
+                    if (isDefined(newLegend)) {
+
+                        legendClass = newLegend.legendClass ? newLegend.legendClass : "legend";
+
+                        position = newLegend.position || 'bottomright';
+
+                        // default to arcgis
+                        type = newLegend.type || 'arcgis';
+                    }
+
+                }, true);
+
+                controller.getMap().then(function (map) {
+
+                    leafletScope.$watch('legend', function (newLegend) {
+
+                        if (!isDefined(newLegend)) {
+
+                            if (isDefined(leafletLegend)) {
+                                leafletLegend.removeFrom(map);
+                                leafletLegend= null;
+                            }
+
+                            return;
+                        }
+
+                        if (!isDefined(newLegend.url) && (type === 'arcgis') && (!isArray(newLegend.colors) || !isArray(newLegend.labels) || newLegend.colors.length !== newLegend.labels.length)) {
+
+                            $log.warn("[AngularJS - Leaflet] legend.colors and legend.labels must be set.");
+
+                            return;
+                        }
+
+                        if (isDefined(newLegend.url)) {
+
+                            $log.info("[AngularJS - Leaflet] loading legend service.");
+
+                            return;
+                        }
+
+                        if (isDefined(leafletLegend)) {
+                            leafletLegend.removeFrom(map);
+                            leafletLegend= null;
+                        }
+
+                        leafletLegend = L.control({
+                            position: position
+                        });
+                        if (type === 'arcgis') {
+                            leafletLegend.onAdd = leafletLegendHelpers.getOnAddArrayLegend(newLegend, legendClass);
+                        }
+                        leafletLegend.addTo(map);
+
+                    });
+
+                    leafletScope.$watch('legend.url', function (newURL) {
+
+                        if (!isDefined(newURL)) {
+                            return;
+                        }
+                        $http.get(newURL)
+                            .success(function (legendData) {
+
+                                if (isDefined(leafletLegend)) {
+
+                                    leafletLegendHelpers.updateLegend(leafletLegend.getContainer(), legendData, type, newURL);
+
+                                } else {
+
+                                    leafletLegend = L.control({
+                                        position: position
+                                    });
+                                    leafletLegend.onAdd = leafletLegendHelpers.getOnAddLegend(legendData, legendClass, type, newURL);
+                                    leafletLegend.addTo(map);
+                                }
+
+                                if (isDefined(legend.loadedData) && isFunction(legend.loadedData)) {
+                                    legend.loadedData();
+                                }
+                            })
+                            .error(function () {
+                                $log.warn('[AngularJS - Leaflet] legend.url not loaded.');
+                            });
+                    });
+
+                });
+            }
+        };
+    }]);
+
+angular.module("leaflet-directive").directive('markers',
+    ["leafletLogger", "$rootScope", "$q", "leafletData", "leafletHelpers", "leafletMapDefaults", "leafletMarkersHelpers", "leafletMarkerEvents", "leafletIterators", "leafletWatchHelpers", "leafletDirectiveControlsHelpers", function (leafletLogger, $rootScope, $q, leafletData, leafletHelpers, leafletMapDefaults,
+              leafletMarkersHelpers, leafletMarkerEvents, leafletIterators, leafletWatchHelpers,
+              leafletDirectiveControlsHelpers) {
+    //less terse vars to helpers
+    var isDefined = leafletHelpers.isDefined,
+        errorHeader = leafletHelpers.errorHeader,
+        Helpers = leafletHelpers,
+        isString = leafletHelpers.isString,
+        addMarkerWatcher = leafletMarkersHelpers.addMarkerWatcher,
+        updateMarker = leafletMarkersHelpers.updateMarker,
+        listenMarkerEvents = leafletMarkersHelpers.listenMarkerEvents,
+        addMarkerToGroup = leafletMarkersHelpers.addMarkerToGroup,
+        createMarker = leafletMarkersHelpers.createMarker,
+        deleteMarker = leafletMarkersHelpers.deleteMarker,
+        $it = leafletIterators,
+        _markersWatchOptions = leafletHelpers.watchOptions,
+        maybeWatch = leafletWatchHelpers.maybeWatch,
+        extendDirectiveControls = leafletDirectiveControlsHelpers.extend,
+        $log = leafletLogger;
+
+    var _getLMarker = function(leafletMarkers, name, maybeLayerName){
+        if(!Object.keys(leafletMarkers).length) return;
+        if(maybeLayerName && isString(maybeLayerName)){
+            if(!leafletMarkers[maybeLayerName] || !Object.keys(leafletMarkers[maybeLayerName]).length)
+                return;
+            return leafletMarkers[maybeLayerName][name];
+        }
+        return leafletMarkers[name];
+    };
+
+    var _setLMarker = function(lObject, leafletMarkers, name, maybeLayerName){
+        if(maybeLayerName && isString(maybeLayerName)){
+            if(!isDefined(leafletMarkers[maybeLayerName]))
+                leafletMarkers[maybeLayerName] = {};
+            leafletMarkers[maybeLayerName][name] = lObject;
+        }
+        else
+            leafletMarkers[name] = lObject;
+        return lObject;
+    };
+
+    var _maybeAddMarkerToLayer = function(layerName, layers, model, marker, doIndividualWatch, map){
+
+        if (!isString(layerName)) {
+            $log.error(errorHeader + ' A layername must be a string');
+            return false;
+        }
+
+        if (!isDefined(layers)) {
+            $log.error(errorHeader + ' You must add layers to the directive if the markers are going to use this functionality.');
+            return false;
+        }
+
+        if (!isDefined(layers.overlays) || !isDefined(layers.overlays[layerName])) {
+            $log.error(errorHeader +' A marker can only be added to a layer of type "group"');
+            return false;
+        }
+        var layerGroup = layers.overlays[layerName];
+        if (!(layerGroup instanceof L.LayerGroup || layerGroup instanceof L.FeatureGroup)) {
+            $log.error(errorHeader + ' Adding a marker to an overlay needs a overlay of the type "group" or "featureGroup"');
+            return false;
+        }
+
+        // The marker goes to a correct layer group, so first of all we add it
+        layerGroup.addLayer(marker);
+
+        // The marker is automatically added to the map depending on the visibility
+        // of the layer, so we only have to open the popup if the marker is in the map
+        if (!doIndividualWatch && map.hasLayer(marker) && model.focus === true) {
+            marker.openPopup();
+        }
+        return true;
+    };
+    //TODO: move to leafletMarkersHelpers??? or make a new class/function file (leafletMarkersHelpers is large already)
+    var _addMarkers = function(markersToRender, oldModels, map, layers, leafletMarkers, leafletScope,
+                               watchOptions, maybeLayerName, skips){
+        for (var newName in markersToRender) {
+            if(skips[newName])
+                continue;
+
+            if (newName.search("-") !== -1) {
+                $log.error('The marker can\'t use a "-" on his key name: "' + newName + '".');
+                continue;
+            }
+
+            var model = Helpers.copy(markersToRender[newName]);
+            var pathToMarker = Helpers.getObjectDotPath(maybeLayerName? [maybeLayerName, newName]: [newName]);
+            var maybeLMarker = _getLMarker(leafletMarkers,newName, maybeLayerName);
+            if (!isDefined(maybeLMarker)) {
+                //(nmccready) very important to not have model changes when lObject is changed
+                //this might be desirable in some cases but it causes two-way binding to lObject which is not ideal
+                //if it is left as the reference then all changes from oldModel vs newModel are ignored
+                //see _destroy (where modelDiff becomes meaningless if we do not copy here)
+                var marker = createMarker(model);
+                var layerName = (model? model.layer : undefined) || maybeLayerName; //original way takes pref
+                if (!isDefined(marker)) {
+                    $log.error(errorHeader + ' Received invalid data on the marker ' + newName + '.');
+                    continue;
+                }
+                _setLMarker(marker, leafletMarkers, newName, maybeLayerName);
+
+                // Bind message
+                if (isDefined(model.message)) {
+                    marker.bindPopup(model.message, model.popupOptions);
+                }
+
+                // Add the marker to a cluster group if needed
+                if (isDefined(model.group)) {
+                    var groupOptions = isDefined(model.groupOption) ? model.groupOption : null;
+                    addMarkerToGroup(marker, model.group, groupOptions, map);
+                }
+
+                // Show label if defined
+                if (Helpers.LabelPlugin.isLoaded() && isDefined(model.label) && isDefined(model.label.message)) {
+                    marker.bindLabel(model.label.message, model.label.options);
+                }
+
+                // Check if the marker should be added to a layer
+                if (isDefined(model) && (isDefined(model.layer) || isDefined(maybeLayerName))){
+
+                    var pass = _maybeAddMarkerToLayer(layerName, layers, model, marker,
+                        watchOptions.individual.doWatch, map);
+                    if(!pass)
+                        continue; //something went wrong move on in the loop
+                } else if (!isDefined(model.group)) {
+                    // We do not have a layer attr, so the marker goes to the map layer
+                    map.addLayer(marker);
+                    if (!watchOptions.individual.doWatch && model.focus === true) {
+                        marker.openPopup();
+                    }
+                }
+
+                if (watchOptions.individual.doWatch) {
+                    addMarkerWatcher(marker, pathToMarker, leafletScope, layers, map,
+                        watchOptions.individual.isDeep);
+                }
+
+                listenMarkerEvents(marker, model, leafletScope, watchOptions.individual.doWatch, map);
+                leafletMarkerEvents.bindEvents(marker, pathToMarker, model, leafletScope, layerName);
+            }
+            else {
+                var oldModel = isDefined(oldModel)? oldModels[newName] : undefined;
+                updateMarker(model, oldModel, maybeLMarker, pathToMarker, leafletScope, layers, map);
+            }
+        }
+    };
+    var _seeWhatWeAlreadyHave = function(markerModels, oldMarkerModels, lMarkers, isEqual, cb){
+        var hasLogged = false,
+            equals = false,
+            oldMarker,
+            newMarker;
+
+        var doCheckOldModel =  isDefined(oldMarkerModels);
+        for (var name in lMarkers) {
+            if(!hasLogged) {
+                $log.debug(errorHeader + "[markers] destroy: ");
+                hasLogged = true;
+            }
+
+            if(doCheckOldModel){
+                //might want to make the option (in watch options) to disable deep checking
+                //ie the options to only check !== (reference check) instead of angular.equals (slow)
+                newMarker = markerModels[name];
+                oldMarker = oldMarkerModels[name];
+                equals = angular.equals(newMarker,oldMarker) && isEqual;
+            }
+            if (!isDefined(markerModels) ||
+                !Object.keys(markerModels).length ||
+                !isDefined(markerModels[name]) ||
+                !Object.keys(markerModels[name]).length ||
+                equals) {
+                if(cb && Helpers.isFunction(cb))
+                    cb(newMarker, oldMarker, name);
+            }
+        }
+    };
+    var _destroy = function(markerModels, oldMarkerModels, lMarkers, map, layers){
+        _seeWhatWeAlreadyHave(markerModels, oldMarkerModels, lMarkers, false,
+            function(newMarker, oldMarker, lMarkerName){
+                $log.debug(errorHeader + '[marker] is deleting marker: ' + lMarkerName);
+                deleteMarker(lMarkers[lMarkerName], map, layers);
+                delete lMarkers[lMarkerName];
+            });
+    };
+
+    var _getNewModelsToSkipp =  function(newModels, oldModels, lMarkers){
+        var skips = {};
+        _seeWhatWeAlreadyHave(newModels, oldModels, lMarkers, true,
+            function(newMarker, oldMarker, lMarkerName){
+                $log.debug(errorHeader + '[marker] is already rendered, marker: ' + lMarkerName);
+                skips[lMarkerName] = newMarker;
+            });
+        return skips;
+    };
+
+    return {
+        restrict: "A",
+        scope: false,
+        replace: false,
+        require: ['leaflet', '?layers'],
+
+        link: function(scope, element, attrs, controller) {
+            var mapController = controller[0],
+                leafletScope  = mapController.getLeafletScope();
+
+            mapController.getMap().then(function(map) {
+                var leafletMarkers = {}, getLayers;
+
+                // If the layers attribute is used, we must wait until the layers are created
+                if (isDefined(controller[1])) {
+                    getLayers = controller[1].getLayers;
+                } else {
+                    getLayers = function() {
+                        var deferred = $q.defer();
+                        deferred.resolve();
+                        return deferred.promise;
+                    };
+                }
+
+                var watchOptions = leafletScope.markersWatchOptions || _markersWatchOptions;
+
+                // backwards compat
+                if(isDefined(attrs.watchMarkers))
+                    watchOptions.doWatch = watchOptions.individual.doWatch =
+                        (!isDefined(attrs.watchMarkers) || Helpers.isTruthy(attrs.watchMarkers));
+
+                var isNested = (isDefined(attrs.markersNested) && Helpers.isTruthy(attrs.markersNested));
+
+                getLayers().then(function(layers) {
+                    var _clean = function(models, oldModels){
+                        if(isNested) {
+                            $it.each(models, function(markerToMaybeDel, layerName) {
+                                var oldModel = isDefined(oldModel)? oldModels[layerName] : undefined;
+                                _destroy(markerToMaybeDel, oldModel, leafletMarkers[layerName], map, layers);
+                            });
+                            return;
+                        }
+                        _destroy(models, oldModels, leafletMarkers, map, layers);
+                    };
+
+                    var _create = function(models, oldModels){
+                        _clean(models, oldModels);
+                        var skips = null;
+                        if(isNested) {
+                            $it.each(models, function(markersToAdd, layerName) {
+                                var oldModel = isDefined(oldModel)? oldModels[layerName] : undefined;
+                                skips = _getNewModelsToSkipp(models[layerName], oldModel, leafletMarkers[layerName]);
+                                _addMarkers(markersToAdd, oldModels, map, layers, leafletMarkers, leafletScope,
+                                    watchOptions, layerName, skips);
+                            });
+                            return;
+                        }
+                        skips = _getNewModelsToSkipp(models, oldModels, leafletMarkers);
+                        _addMarkers(models, oldModels, map, layers, leafletMarkers, leafletScope,
+                            watchOptions, undefined, skips);
+                    };
+                    extendDirectiveControls(attrs.id, 'markers', _create, _clean);
+                    leafletData.setMarkers(leafletMarkers, attrs.id);
+
+                    maybeWatch(leafletScope,'markers', watchOptions, function(newMarkers, oldMarkers){
+                        _create(newMarkers, oldMarkers);
+                    });
+                });
+            });
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").directive('maxbounds', ["leafletLogger", "leafletMapDefaults", "leafletBoundsHelpers", "leafletHelpers", function (leafletLogger, leafletMapDefaults, leafletBoundsHelpers, leafletHelpers) {
+    // var $log = leafletLogger;
+    return {
+        restrict: "A",
+        scope: false,
+        replace: false,
+        require: 'leaflet',
+
+        link: function(scope, element, attrs, controller) {
+            var leafletScope  = controller.getLeafletScope(),
+                isValidBounds = leafletBoundsHelpers.isValidBounds,
+                isNumber = leafletHelpers.isNumber;
+
+
+            controller.getMap().then(function(map) {
+                leafletScope.$watch("maxbounds", function (maxbounds) {
+                    if (!isValidBounds(maxbounds)) {
+                        // Unset any previous maxbounds
+                        map.setMaxBounds();
+                        return;
+                    }
+
+                    var leafletBounds = leafletBoundsHelpers.createLeafletBounds(maxbounds);
+                    if(isNumber(maxbounds.pad)) {
+                      leafletBounds = leafletBounds.pad(maxbounds.pad);
+                    }
+
+                    map.setMaxBounds(leafletBounds);
+                    if (!attrs.center && !attrs.lfCenter) {
+                        map.fitBounds(leafletBounds);
+                    }
+                });
+            });
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").directive('paths', ["leafletLogger", "$q", "leafletData", "leafletMapDefaults", "leafletHelpers", "leafletPathsHelpers", "leafletEvents", function (leafletLogger, $q, leafletData, leafletMapDefaults, leafletHelpers, leafletPathsHelpers, leafletEvents) {
+    var $log = leafletLogger;
+    return {
+        restrict: "A",
+        scope: false,
+        replace: false,
+        require: ['leaflet', '?layers'],
+
+        link: function(scope, element, attrs, controller) {
+            var mapController = controller[0],
+                isDefined = leafletHelpers.isDefined,
+                isString = leafletHelpers.isString,
+                leafletScope  = mapController.getLeafletScope(),
+                paths     = leafletScope.paths,
+                createPath = leafletPathsHelpers.createPath,
+                bindPathEvents = leafletEvents.bindPathEvents,
+                setPathOptions = leafletPathsHelpers.setPathOptions;
+
+            mapController.getMap().then(function(map) {
+                var defaults = leafletMapDefaults.getDefaults(attrs.id),
+                    getLayers;
+
+                // If the layers attribute is used, we must wait until the layers are created
+                if (isDefined(controller[1])) {
+                    getLayers = controller[1].getLayers;
+                } else {
+                    getLayers = function() {
+                        var deferred = $q.defer();
+                        deferred.resolve();
+                        return deferred.promise;
+                    };
+                }
+
+                if (!isDefined(paths)) {
+                    return;
+                }
+
+                getLayers().then(function(layers) {
+
+                    var leafletPaths = {};
+                    leafletData.setPaths(leafletPaths, attrs.id);
+
+                    // Should we watch for every specific marker on the map?
+                    var shouldWatch = (!isDefined(attrs.watchPaths) || attrs.watchPaths === 'true');
+
+                    // Function for listening every single path once created
+                    var watchPathFn = function(leafletPath, name) {
+                        var clearWatch = leafletScope.$watch("paths[\""+name+"\"]", function(pathData, old) {
+                            if (!isDefined(pathData)) {
+                                if (isDefined(old.layer)) {
+                                    for (var i in layers.overlays) {
+                                        var overlay = layers.overlays[i];
+                                        overlay.removeLayer(leafletPath);
+                                    }
+                                }
+                                map.removeLayer(leafletPath);
+                                clearWatch();
+                                return;
+                            }
+                            setPathOptions(leafletPath, pathData.type, pathData);
+                        }, true);
+                    };
+
+                    leafletScope.$watchCollection("paths", function (newPaths) {
+
+                        // Delete paths (by name) from the array
+                        for (var name in leafletPaths) {
+                            if (!isDefined(newPaths[name])) {
+                                map.removeLayer(leafletPaths[name]);
+                                delete leafletPaths[name];
+                            }
+                        }
+
+                        // Create the new paths
+                        for (var newName in newPaths) {
+                            if (newName.search('\\$') === 0) {
+                                continue;
+                            }
+                            if (newName.search("-") !== -1) {
+                                $log.error('[AngularJS - Leaflet] The path name "' + newName + '" is not valid. It must not include "-" and a number.');
+                                continue;
+                            }
+
+                            if (!isDefined(leafletPaths[newName])) {
+                                var pathData = newPaths[newName];
+                                var newPath = createPath(newName, newPaths[newName], defaults);
+
+                                // bind popup if defined
+                                if (isDefined(newPath) && isDefined(pathData.message)) {
+                                    newPath.bindPopup(pathData.message, pathData.popupOptions);
+                                }
+
+                                // Show label if defined
+                                if (leafletHelpers.LabelPlugin.isLoaded() && isDefined(pathData.label) && isDefined(pathData.label.message)) {
+                                    newPath.bindLabel(pathData.label.message, pathData.label.options);
+                                }
+
+                                // Check if the marker should be added to a layer
+                                if (isDefined(pathData) && isDefined(pathData.layer)) {
+
+                                    if (!isString(pathData.layer)) {
+                                        $log.error('[AngularJS - Leaflet] A layername must be a string');
+                                        continue;
+                                    }
+                                    if (!isDefined(layers)) {
+                                        $log.error('[AngularJS - Leaflet] You must add layers to the directive if the markers are going to use this functionality.');
+                                        continue;
+                                    }
+
+                                    if (!isDefined(layers.overlays) || !isDefined(layers.overlays[pathData.layer])) {
+                                        $log.error('[AngularJS - Leaflet] A path can only be added to a layer of type "group"');
+                                        continue;
+                                    }
+                                    var layerGroup = layers.overlays[pathData.layer];
+                                    if (!(layerGroup instanceof L.LayerGroup || layerGroup instanceof L.FeatureGroup)) {
+                                        $log.error('[AngularJS - Leaflet] Adding a path to an overlay needs a overlay of the type "group" or "featureGroup"');
+                                        continue;
+                                    }
+
+                                    // Listen for changes on the new path
+                                    leafletPaths[newName] = newPath;
+                                    // The path goes to a correct layer group, so first of all we add it
+                                    layerGroup.addLayer(newPath);
+
+                                    if (shouldWatch) {
+                                        watchPathFn(newPath, newName);
+                                    } else {
+                                        setPathOptions(newPath, pathData.type, pathData);
+                                    }
+                                } else if (isDefined(newPath)) {
+                                    // Listen for changes on the new path
+                                    leafletPaths[newName] = newPath;
+                                    map.addLayer(newPath);
+
+                                    if (shouldWatch) {
+                                        watchPathFn(newPath, newName);
+                                    } else {
+                                        setPathOptions(newPath, pathData.type, pathData);
+                                    }
+                                }
+
+                                bindPathEvents(newPath, newName, pathData, leafletScope);
+                            }
+                        }
+                    });
+                });
+            });
+        }
+    };
+}]);
+
+angular.module("leaflet-directive").directive('tiles', ["leafletLogger", "leafletData", "leafletMapDefaults", "leafletHelpers", function (leafletLogger, leafletData, leafletMapDefaults, leafletHelpers) {
+    var $log = leafletLogger;
+    return {
+        restrict: "A",
+        scope: false,
+        replace: false,
+        require: 'leaflet',
+
+        link: function(scope, element, attrs, controller) {
+            var isDefined = leafletHelpers.isDefined,
+                leafletScope  = controller.getLeafletScope(),
+                tiles = leafletScope.tiles;
+
+            if (!isDefined(tiles) ||  !isDefined(tiles.url)) {
+                $log.warn("[AngularJS - Leaflet] The 'tiles' definition doesn't have the 'url' property.");
+                return;
+            }
+
+            controller.getMap().then(function(map) {
+                var defaults = leafletMapDefaults.getDefaults(attrs.id);
+                var tileLayerObj;
+                leafletScope.$watch("tiles", function(tiles) {
+                    var tileLayerOptions = defaults.tileLayerOptions;
+                    var tileLayerUrl = defaults.tileLayer;
+
+                    // If no valid tiles are in the scope, remove the last layer
+                    if (!isDefined(tiles.url) && isDefined(tileLayerObj)) {
+                        map.removeLayer(tileLayerObj);
+                        return;
+                    }
+
+                    // No leafletTiles object defined yet
+                    if (!isDefined(tileLayerObj)) {
+                        if (isDefined(tiles.options)) {
+                            angular.copy(tiles.options, tileLayerOptions);
+                        }
+
+                        if (isDefined(tiles.url)) {
+                            tileLayerUrl = tiles.url;
+                        }
+
+                        tileLayerObj = L.tileLayer(tileLayerUrl, tileLayerOptions);
+                        tileLayerObj.addTo(map);
+                        leafletData.setTiles(tileLayerObj, attrs.id);
+                        return;
+                    }
+
+                    // If the options of the tilelayer is changed, we need to redraw the layer
+                    if (isDefined(tiles.url) && isDefined(tiles.options) && !angular.equals(tiles.options, tileLayerOptions)) {
+                        map.removeLayer(tileLayerObj);
+                        tileLayerOptions = defaults.tileLayerOptions;
+                        angular.copy(tiles.options, tileLayerOptions);
+                        tileLayerUrl = tiles.url;
+                        tileLayerObj = L.tileLayer(tileLayerUrl, tileLayerOptions);
+                        tileLayerObj.addTo(map);
+                        leafletData.setTiles(tileLayerObj, attrs.id);
+                        return;
+                    }
+
+                    // Only the URL of the layer is changed, update the tiles object
+                    if (isDefined(tiles.url)) {
+                        tileLayerObj.setUrl(tiles.url);
+                    }
+                }, true);
+            });
+        }
+    };
+}]);
+
+/*
+    Create multiple similar directives for watchOptions to support directiveControl
+    instead. (when watches are disabled)
+    NgAnnotate does not work here due to the functional creation
+*/
+['markers', 'geojson'].forEach(function(name){
+    angular.module("leaflet-directive").directive(name + 'WatchOptions', [
+        '$log', '$rootScope', '$q', 'leafletData', 'leafletHelpers',
+        function (leafletLogger, $rootScope, $q, leafletData, leafletHelpers) {
+
+            var isDefined = leafletHelpers.isDefined,
+                errorHeader = leafletHelpers.errorHeader,
+                isObject = leafletHelpers.isObject,
+                _watchOptions = leafletHelpers.watchOptions,
+                $log = leafletLogger;
+
+            return {
+                restrict: "A",
+                scope: false,
+                replace: false,
+                require: ['leaflet'],
+
+                link: function (scope, element, attrs, controller) {
+                    var mapController = controller[0],
+                        leafletScope = mapController.getLeafletScope();
+
+                    mapController.getMap().then(function () {
+                        if (isDefined(scope[name + 'WatchOptions'])) {
+                            if (isObject(scope[name + 'WatchOptions']))
+                                angular.extend(_watchOptions, scope[name + 'WatchOptions']);
+                            else
+                                $log.error(errorHeader + '[' + name + 'WatchOptions] is not an object');
+                            leafletScope[name + 'WatchOptions'] = _watchOptions;
+                        }
+                    });
+                }
+            };
+    }]);
+});
+
+angular.module("leaflet-directive")
+.factory('leafletEventsHelpersFactory', ["$rootScope", "$q", "leafletLogger", "leafletHelpers", function ($rootScope, $q, leafletLogger, leafletHelpers) {
+        var safeApply = leafletHelpers.safeApply,
+            isDefined = leafletHelpers.isDefined,
+            isObject = leafletHelpers.isObject,
+            isArray = leafletHelpers.isArray,
+            errorHeader = leafletHelpers.errorHeader,
+            $log = leafletLogger;;
+
+        var EventsHelper = function(rootBroadcastName, lObjectType){
+            this.rootBroadcastName = rootBroadcastName;
+            //used to path/key out certain properties based on the type , "markers", "geojson"
+            this.lObjectType = lObjectType;
+        };
+
+        EventsHelper.prototype.getAvailableEvents = function(){return []};
+
+        /*
+         argument: name: Note this can be a single string or dot notation
+         Example:
+         markerModel : {
+         m1: { lat:_, lon: _}
+         }
+         //would yield name of
+         name = "m1"
+
+         If nested:
+         markerModel : {
+         cars: {
+         m1: { lat:_, lon: _}
+         }
+         }
+         //would yield name of
+         name = "cars.m1"
+         */
+        EventsHelper.prototype.genDispatchEvent = function(eventName, logic, leafletScope, lObject, name, model, layerName, extra) {
+            var _this = this;
+            return function (e) {
+                var broadcastName = _this.rootBroadcastName + '.' + eventName;
+                _this.fire(leafletScope, broadcastName, logic, e, e.target || lObject, model, name, layerName, extra);
+            };
+        };
+
+        EventsHelper.prototype.fire = function(scope, broadcastName, logic, event, lObject, model, modelName, layerName, extra){
+            // Safely broadcast the event
+            safeApply(scope, function(){
+                var toSend = {
+                    leafletEvent: event,
+                    leafletObject: lObject,
+                    modelName: modelName,
+                    model: model
+                };
+                if (isDefined(layerName))
+                    angular.extend(toSend, {layerName: layerName});
+
+                if (logic === "emit") {
+                  scope.$emit(broadcastName, toSend);
+                } else {
+                    $rootScope.$broadcast(broadcastName, toSend);
+                }
+            });
+        };
+
+        EventsHelper.prototype.bindEvents = function (lObject, name, model, leafletScope, layerName, extra) {
+            var events = [];
+            var logic = 'emit';
+            var _this = this;
+
+            if (!isDefined(leafletScope.eventBroadcast)) {
+                // Backward compatibility, if no event-broadcast attribute, all events are broadcasted
+                events = this.getAvailableEvents();
+            } else if (!isObject(leafletScope.eventBroadcast)) {
+                // Not a valid object
+                $log.error(errorHeader + "event-broadcast must be an object check your model.");
+            } else {
+                // We have a possible valid object
+                if (!isDefined(leafletScope.eventBroadcast[_this.lObjectType])) {
+                    // We do not have events enable/disable do we do nothing (all enabled by default)
+                    events = this.getAvailableEvents();
+                } else if (!isObject(leafletScope.eventBroadcast[_this.lObjectType])) {
+                    // Not a valid object
+                    $log.warn(errorHeader + 'event-broadcast.' + [_this.lObjectType]  + ' must be an object check your model.');
+                } else {
+                    // We have a possible valid map object
+                    // Event propadation logic
+                    if (isDefined(leafletScope.eventBroadcast[this.lObjectType].logic)) {
+                        // We take care of possible propagation logic
+                        if (leafletScope.eventBroadcast[_this.lObjectType].logic !== "emit" &&
+                            leafletScope.eventBroadcast[_this.lObjectType].logic !== "broadcast")
+                                $log.warn(errorHeader + "Available event propagation logic are: 'emit' or 'broadcast'.");
+                    }
+                    // Enable / Disable
+                    var eventsEnable = false, eventsDisable = false;
+                    if (isDefined(leafletScope.eventBroadcast[_this.lObjectType].enable) &&
+                        isArray(leafletScope.eventBroadcast[_this.lObjectType].enable))
+                            eventsEnable = true;
+                    if (isDefined(leafletScope.eventBroadcast[_this.lObjectType].disable) &&
+                        isArray(leafletScope.eventBroadcast[_this.lObjectType].disable))
+                            eventsDisable = true;
+
+                    if (eventsEnable && eventsDisable) {
+                        // Both are active, this is an error
+                        $log.warn(errorHeader + "can not enable and disable events at the same time");
+                    } else if (!eventsEnable && !eventsDisable) {
+                        // Both are inactive, this is an error
+                        $log.warn(errorHeader + "must enable or disable events");
+                    } else {
+                        // At this point the object is OK, lets enable or disable events
+                        if (eventsEnable) {
+                            // Enable events
+                            leafletScope.eventBroadcast[this.lObjectType].enable.forEach(function(eventName){
+                                // Do we have already the event enabled?
+                                if (events.indexOf(eventName) !== -1) {
+                                    // Repeated event, this is an error
+                                    $log.warn(errorHeader + "This event " + eventName + " is already enabled");
+                                } else {
+                                    // Does the event exists?
+                                    if (_this.getAvailableEvents().indexOf(eventName) === -1) {
+                                        // The event does not exists, this is an error
+                                        $log.warn(errorHeader + "This event " + eventName + " does not exist");
+                                    } else {
+                                        // All ok enable the event
+                                        events.push(eventName);
+                                    }
+                                }
+                            });
+                        } else {
+                            // Disable events
+                            events = this.getAvailableEvents();
+                            leafletScope.eventBroadcast[_this.lObjectType].disable.forEach(function(eventName) {
+                                var index = events.indexOf(eventName);
+                                if (index === -1) {
+                                    // The event does not exist
+                                    $log.warn(errorHeader + "This event " + eventName + " does not exist or has been already disabled");
+
+                                } else {
+                                    events.splice(index, 1);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+
+            events.forEach(function(eventName){
+                lObject.on(eventName,_this.genDispatchEvent(eventName, logic, leafletScope, lObject, name, model, layerName, extra));
+            });
+          return logic;
+        };
+
+        return EventsHelper;
+}])
+.service('leafletEventsHelpers', ["leafletEventsHelpersFactory", function(leafletEventsHelpersFactory){
+    return new leafletEventsHelpersFactory();
+}]);
+
+angular.module("leaflet-directive")
+.factory('leafletGeoJsonEvents', ["$rootScope", "$q", "leafletLogger", "leafletHelpers", "leafletEventsHelpersFactory", "leafletLabelEvents", "leafletData", function ($rootScope, $q, leafletLogger, leafletHelpers,
+  leafletEventsHelpersFactory, leafletLabelEvents, leafletData) {
+    var safeApply = leafletHelpers.safeApply,
+        EventsHelper = leafletEventsHelpersFactory;
+        // $log = leafletLogger;
+
+    var GeoJsonEvents = function(){
+      EventsHelper.call(this,'leafletDirectiveGeoJson', 'geojson');
+    };
+
+    GeoJsonEvents.prototype =  new EventsHelper();
+
+
+    GeoJsonEvents.prototype.genDispatchEvent = function(eventName, logic, leafletScope, lObject, name, model, layerName, extra) {
+        var base = EventsHelper.prototype.genDispatchEvent.call(this, eventName, logic, leafletScope, lObject, name, model, layerName),
+        _this = this;
+
+        return function(e){
+            if (eventName === 'mouseout') {
+                if (extra.resetStyleOnMouseout) {
+                    leafletData.getGeoJSON(extra.mapId)
+                    .then(function(leafletGeoJSON){
+                        //this is broken on nested needs to traverse or user layerName (nested)
+                        var lobj = layerName? leafletGeoJSON[layerName]: leafletGeoJSON;
+                        lobj.resetStyle(e.target);
+                    });
+
+                }
+                safeApply(leafletScope, function() {
+                    $rootScope.$broadcast(_this.rootBroadcastName + '.mouseout', e);
+                });
+            }
+            base(e); //common
+        };
+    };
+
+    GeoJsonEvents.prototype.getAvailableEvents = function(){ return [
+        'click',
+        'dblclick',
+        'mouseover',
+        'mouseout',
+        ];
+    };
+
+    return new GeoJsonEvents();
+}]);
+
+angular.module("leaflet-directive")
+.factory('leafletLabelEvents', ["$rootScope", "$q", "leafletLogger", "leafletHelpers", "leafletEventsHelpersFactory", function ($rootScope, $q, leafletLogger, leafletHelpers, leafletEventsHelpersFactory) {
+    var Helpers = leafletHelpers,
+        EventsHelper = leafletEventsHelpersFactory;
+        //$log = leafletLogger;
+
+        var LabelEvents = function(){
+          EventsHelper.call(this,'leafletDirectiveLabel', 'markers');
+        };
+        LabelEvents.prototype =  new EventsHelper();
+
+        LabelEvents.prototype.genDispatchEvent = function(eventName, logic, leafletScope, lObject, name, model, layerName) {
+            var markerName = name.replace('markers.', '');
+            return EventsHelper.prototype
+                .genDispatchEvent.call(this, eventName, logic, leafletScope, lObject, markerName, model, layerName);
+        };
+
+        LabelEvents.prototype.getAvailableEvents = function(){
+            return [
+                'click',
+                'dblclick',
+                'mousedown',
+                'mouseover',
+                'mouseout',
+                'contextmenu'
+            ];
+        };
+
+        LabelEvents.prototype.genEvents = function (eventName, logic, leafletScope, lObject, name, model, layerName) {
+            var _this = this;
+            var labelEvents = this.getAvailableEvents();
+            var scopeWatchName = Helpers.getObjectArrayPath("markers." + name);
+            labelEvents.forEach(function(eventName) {
+                lObject.label.on(eventName, _this.genDispatchEvent(
+                    eventName, logic, leafletScope, lObject.label, scopeWatchName, model, layerName));
+            });
+        };
+
+        LabelEvents.prototype.bindEvents = function (lObject, name, model, leafletScope, layerName) {};
+
+        return new LabelEvents();
+}]);
+
+angular.module("leaflet-directive")
+.factory('leafletMapEvents', ["$rootScope", "$q", "leafletLogger", "leafletHelpers", "leafletEventsHelpers", function ($rootScope, $q, leafletLogger, leafletHelpers, leafletEventsHelpers) {
+    var isDefined = leafletHelpers.isDefined,
+        fire = leafletEventsHelpers.fire,
+        $log = leafletLogger;
+
+    var _getAvailableMapEvents = function() {
+        return [
+            'click',
+            'dblclick',
+            'mousedown',
+            'mouseup',
+            'mouseover',
+            'mouseout',
+            'mousemove',
+            'contextmenu',
+            'focus',
+            'blur',
+            'preclick',
+            'load',
+            'unload',
+            'viewreset',
+            'movestart',
+            'move',
+            'moveend',
+            'dragstart',
+            'drag',
+            'dragend',
+            'zoomstart',
+            'zoomanim',
+            'zoomend',
+            'zoomlevelschange',
+            'resize',
+            'autopanstart',
+            'layeradd',
+            'layerremove',
+            'baselayerchange',
+            'overlayadd',
+            'overlayremove',
+            'locationfound',
+            'locationerror',
+            'popupopen',
+            'popupclose',
+            'draw:created',
+            'draw:edited',
+            'draw:deleted',
+            'draw:drawstart',
+            'draw:drawstop',
+            'draw:editstart',
+            'draw:editstop',
+            'draw:deletestart',
+            'draw:deletestop'
+        ];
+    };
+
+    var _genDispatchMapEvent = function(scope, eventName, logic) {
+        // (nmccready) We should consider passing mapId as an argument or using it from scope
+        return function(e) {
+            // Put together broadcast name
+            // (nmccready) We should consider passing mapId joining mapId to the broadcastName to keep the event unique. Same should be done for all directives so we know what map it comes from.
+            // problem with this is it will cause a minor bump and break backwards compat
+            var broadcastName = 'leafletDirectiveMap.' + eventName;
+            // Safely broadcast the event
+            fire(scope, broadcastName, logic, e, e.target, scope)
+        };
+    };
+
+    var _notifyCenterChangedToBounds = function(scope) {
+        scope.$broadcast("boundsChanged");
+    };
+
+    var _notifyCenterUrlHashChanged = function(scope, map, attrs, search) {
+        if (!isDefined(attrs.urlHashCenter)) {
+            return;
+        }
+        var center = map.getCenter();
+        var centerUrlHash = (center.lat).toFixed(4) + ":" + (center.lng).toFixed(4) + ":" + map.getZoom();
+        if (!isDefined(search.c) || search.c !== centerUrlHash) {
+            //$log.debug("notified new center...");
+            scope.$emit("centerUrlHash", centerUrlHash);
+        }
+    };
+
+    return {
+        getAvailableMapEvents: _getAvailableMapEvents,
+        genDispatchMapEvent: _genDispatchMapEvent,
+        notifyCenterChangedToBounds: _notifyCenterChangedToBounds,
+        notifyCenterUrlHashChanged: _notifyCenterUrlHashChanged
+    };
+}]);
+
+angular.module("leaflet-directive")
+.factory('leafletMarkerEvents', ["$rootScope", "$q", "leafletLogger", "leafletHelpers", "leafletEventsHelpersFactory", "leafletLabelEvents", function ($rootScope, $q, leafletLogger, leafletHelpers, leafletEventsHelpersFactory, leafletLabelEvents) {
+    var safeApply = leafletHelpers.safeApply,
+        isDefined = leafletHelpers.isDefined,
+        Helpers = leafletHelpers,
+        lblHelp = leafletLabelEvents,
+        EventsHelper = leafletEventsHelpersFactory,
+        $log = leafletLogger;
+
+    var MarkerEvents = function(){
+      EventsHelper.call(this,'leafletDirectiveMarker', 'markers');
+    };
+
+    MarkerEvents.prototype =  new EventsHelper();
+
+    MarkerEvents.prototype.genDispatchEvent = function(eventName, logic, leafletScope, lObject, name, model, layerName) {
+        var handle = EventsHelper.prototype
+            .genDispatchEvent.call(this, eventName, logic, leafletScope, lObject, name, model, layerName);
+        return function(e){
+            // Broadcast old marker click name for backwards compatibility
+            if (eventName === "click") {
+                safeApply(leafletScope, function () {
+                    $rootScope.$broadcast('leafletDirectiveMarkersClick', name);
+                });
+            } else if (eventName === 'dragend') {
+                safeApply(leafletScope, function () {
+                    model.lat = lObject.getLatLng().lat;
+                    model.lng = lObject.getLatLng().lng;
+                });
+                if (model.message && model.focus === true) {
+                    lObject.openPopup();
+                }
+            }
+            handle(e); //common
+        };
+    };
+
+    MarkerEvents.prototype.getAvailableEvents = function(){ return [
+        'click',
+        'dblclick',
+        'mousedown',
+        'mouseover',
+        'mouseout',
+        'contextmenu',
+        'dragstart',
+        'drag',
+        'dragend',
+        'move',
+        'remove',
+        'popupopen',
+        'popupclose',
+        'touchend',
+        'touchstart',
+        'touchmove',
+        'touchcancel',
+        'touchleave'
+        ];
+    };
+
+    MarkerEvents.prototype.bindEvents = function (lObject, name, model, leafletScope, layerName) {
+      var logic = EventsHelper.prototype.bindEvents.call(this,lObject, name, model, leafletScope, layerName);
+
+      if (Helpers.LabelPlugin.isLoaded() && isDefined(lObject.label)) {
+          lblHelp.genEvents(name, logic, leafletScope, lObject, model, layerName);
+      }
+    };
+
+    return new MarkerEvents();
+}]);
+
+angular.module("leaflet-directive")
+.factory('leafletPathEvents', ["$rootScope", "$q", "leafletLogger", "leafletHelpers", "leafletLabelEvents", "leafletEventsHelpers", function ($rootScope, $q, leafletLogger, leafletHelpers, leafletLabelEvents, leafletEventsHelpers) {
+    var isDefined = leafletHelpers.isDefined,
+        isObject = leafletHelpers.isObject,
+        Helpers = leafletHelpers,
+        errorHeader = leafletHelpers.errorHeader,
+        lblHelp = leafletLabelEvents,
+        fire = leafletEventsHelpers.fire,
+        $log = leafletLogger;
+
+    var _genDispatchPathEvent = function (eventName, logic, leafletScope, lObject, name, model, layerName) {
+        return function (e) {
+            var broadcastName = 'leafletDirectivePath.' + eventName;
+
+            fire(leafletScope, broadcastName, logic, e, e.target || lObject, model, name, layerName);
+        };
+    };
+
+    var _bindPathEvents = function (lObject, name, model, leafletScope) {
+        var pathEvents = [],
+            i,
+            eventName,
+            logic = "broadcast";
+
+        if (!isDefined(leafletScope.eventBroadcast)) {
+            // Backward compatibility, if no event-broadcast attribute, all events are broadcasted
+            pathEvents = _getAvailablePathEvents();
+        } else if (!isObject(leafletScope.eventBroadcast)) {
+            // Not a valid object
+            $log.error(errorHeader + "event-broadcast must be an object check your model.");
+        } else {
+            // We have a possible valid object
+            if (!isDefined(leafletScope.eventBroadcast.path)) {
+                // We do not have events enable/disable do we do nothing (all enabled by default)
+                pathEvents = _getAvailablePathEvents();
+            } else if (isObject(leafletScope.eventBroadcast.paths)) {
+                // Not a valid object
+                $log.warn(errorHeader + "event-broadcast.path must be an object check your model.");
+            } else {
+                // We have a possible valid map object
+                // Event propadation logic
+                if (leafletScope.eventBroadcast.path.logic !== undefined && leafletScope.eventBroadcast.path.logic !== null) {
+                    // We take care of possible propagation logic
+                    if (leafletScope.eventBroadcast.path.logic !== "emit" && leafletScope.eventBroadcast.path.logic !== "broadcast") {
+                        // This is an error
+                        $log.warn(errorHeader + "Available event propagation logic are: 'emit' or 'broadcast'.");
+                    } else if (leafletScope.eventBroadcast.path.logic === "emit") {
+                        logic = "emit";
+                    }
+                }
+                // Enable / Disable
+                var pathEventsEnable = false, pathEventsDisable = false;
+                if (leafletScope.eventBroadcast.path.enable !== undefined && leafletScope.eventBroadcast.path.enable !== null) {
+                    if (typeof leafletScope.eventBroadcast.path.enable === 'object') {
+                        pathEventsEnable = true;
+                    }
+                }
+                if (leafletScope.eventBroadcast.path.disable !== undefined && leafletScope.eventBroadcast.path.disable !== null) {
+                    if (typeof leafletScope.eventBroadcast.path.disable === 'object') {
+                        pathEventsDisable = true;
+                    }
+                }
+                if (pathEventsEnable && pathEventsDisable) {
+                    // Both are active, this is an error
+                    $log.warn(errorHeader + "can not enable and disable events at the same time");
+                } else if (!pathEventsEnable && !pathEventsDisable) {
+                    // Both are inactive, this is an error
+                    $log.warn(errorHeader + "must enable or disable events");
+                } else {
+                    // At this point the path object is OK, lets enable or disable events
+                    if (pathEventsEnable) {
+                        // Enable events
+                        for (i = 0; i < leafletScope.eventBroadcast.path.enable.length; i++) {
+                            eventName = leafletScope.eventBroadcast.path.enable[i];
+                            // Do we have already the event enabled?
+                            if (pathEvents.indexOf(eventName) !== -1) {
+                                // Repeated event, this is an error
+                                $log.warn(errorHeader + "This event " + eventName + " is already enabled");
+                            } else {
+                                // Does the event exists?
+                                if (_getAvailablePathEvents().indexOf(eventName) === -1) {
+                                    // The event does not exists, this is an error
+                                    $log.warn(errorHeader + "This event " + eventName + " does not exist");
+                                } else {
+                                    // All ok enable the event
+                                    pathEvents.push(eventName);
+                                }
+                            }
+                        }
+                    } else {
+                        // Disable events
+                        pathEvents = _getAvailablePathEvents();
+                        for (i = 0; i < leafletScope.eventBroadcast.path.disable.length; i++) {
+                            eventName = leafletScope.eventBroadcast.path.disable[i];
+                            var index = pathEvents.indexOf(eventName);
+                            if (index === -1) {
+                                // The event does not exist
+                                $log.warn(errorHeader + "This event " + eventName + " does not exist or has been already disabled");
+
+                            } else {
+                                pathEvents.splice(index, 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (i = 0; i < pathEvents.length; i++) {
+            eventName = pathEvents[i];
+            lObject.on(eventName, _genDispatchPathEvent(eventName, logic, leafletScope, pathEvents, name));
+        }
+
+        if (Helpers.LabelPlugin.isLoaded() && isDefined(lObject.label)) {
+            lblHelp.genEvents(name, logic, leafletScope, lObject, model);
+        }
+    };
+
+    var _getAvailablePathEvents = function () {
+        return [
+            'click',
+            'dblclick',
+            'mousedown',
+            'mouseover',
+            'mouseout',
+            'contextmenu',
+            'add',
+            'remove',
+            'popupopen',
+            'popupclose'
+        ];
+    };
+
+    return {
+        getAvailablePathEvents: _getAvailablePathEvents,
+        bindPathEvents: _bindPathEvents
+    };
+}]);
+
+}(angular));
+/*! @license Firebase v2.2.9
+    License: https://www.firebase.com/terms/terms-of-service.html */
+(function() {var g,aa=this;function n(a){return void 0!==a}function ba(){}function ca(a){a.vb=function(){return a.uf?a.uf:a.uf=new a}}
+function da(a){var b=typeof a;if("object"==b)if(a){if(a instanceof Array)return"array";if(a instanceof Object)return b;var c=Object.prototype.toString.call(a);if("[object Window]"==c)return"object";if("[object Array]"==c||"number"==typeof a.length&&"undefined"!=typeof a.splice&&"undefined"!=typeof a.propertyIsEnumerable&&!a.propertyIsEnumerable("splice"))return"array";if("[object Function]"==c||"undefined"!=typeof a.call&&"undefined"!=typeof a.propertyIsEnumerable&&!a.propertyIsEnumerable("call"))return"function"}else return"null";
+else if("function"==b&&"undefined"==typeof a.call)return"object";return b}function ea(a){return"array"==da(a)}function fa(a){var b=da(a);return"array"==b||"object"==b&&"number"==typeof a.length}function p(a){return"string"==typeof a}function ga(a){return"number"==typeof a}function ha(a){return"function"==da(a)}function ia(a){var b=typeof a;return"object"==b&&null!=a||"function"==b}function ja(a,b,c){return a.call.apply(a.bind,arguments)}
+function ka(a,b,c){if(!a)throw Error();if(2<arguments.length){var d=Array.prototype.slice.call(arguments,2);return function(){var c=Array.prototype.slice.call(arguments);Array.prototype.unshift.apply(c,d);return a.apply(b,c)}}return function(){return a.apply(b,arguments)}}function q(a,b,c){q=Function.prototype.bind&&-1!=Function.prototype.bind.toString().indexOf("native code")?ja:ka;return q.apply(null,arguments)}var la=Date.now||function(){return+new Date};
+function ma(a,b){function c(){}c.prototype=b.prototype;a.$g=b.prototype;a.prototype=new c;a.prototype.constructor=a;a.Wg=function(a,c,f){for(var h=Array(arguments.length-2),k=2;k<arguments.length;k++)h[k-2]=arguments[k];return b.prototype[c].apply(a,h)}};function r(a,b){for(var c in a)b.call(void 0,a[c],c,a)}function na(a,b){var c={},d;for(d in a)c[d]=b.call(void 0,a[d],d,a);return c}function oa(a,b){for(var c in a)if(!b.call(void 0,a[c],c,a))return!1;return!0}function pa(a){var b=0,c;for(c in a)b++;return b}function qa(a){for(var b in a)return b}function ra(a){var b=[],c=0,d;for(d in a)b[c++]=a[d];return b}function sa(a){var b=[],c=0,d;for(d in a)b[c++]=d;return b}function ta(a,b){for(var c in a)if(a[c]==b)return!0;return!1}
+function ua(a,b,c){for(var d in a)if(b.call(c,a[d],d,a))return d}function va(a,b){var c=ua(a,b,void 0);return c&&a[c]}function wa(a){for(var b in a)return!1;return!0}function xa(a){var b={},c;for(c in a)b[c]=a[c];return b}var ya="constructor hasOwnProperty isPrototypeOf propertyIsEnumerable toLocaleString toString valueOf".split(" ");
+function za(a,b){for(var c,d,e=1;e<arguments.length;e++){d=arguments[e];for(c in d)a[c]=d[c];for(var f=0;f<ya.length;f++)c=ya[f],Object.prototype.hasOwnProperty.call(d,c)&&(a[c]=d[c])}};function Aa(a){a=String(a);if(/^\s*$/.test(a)?0:/^[\],:{}\s\u2028\u2029]*$/.test(a.replace(/\\["\\\/bfnrtu]/g,"@").replace(/"[^"\\\n\r\u2028\u2029\x00-\x08\x0a-\x1f]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,"]").replace(/(?:^|:|,)(?:[\s\u2028\u2029]*\[)+/g,"")))try{return eval("("+a+")")}catch(b){}throw Error("Invalid JSON string: "+a);}function Ba(){this.Sd=void 0}
+function Ca(a,b,c){switch(typeof b){case "string":Da(b,c);break;case "number":c.push(isFinite(b)&&!isNaN(b)?b:"null");break;case "boolean":c.push(b);break;case "undefined":c.push("null");break;case "object":if(null==b){c.push("null");break}if(ea(b)){var d=b.length;c.push("[");for(var e="",f=0;f<d;f++)c.push(e),e=b[f],Ca(a,a.Sd?a.Sd.call(b,String(f),e):e,c),e=",";c.push("]");break}c.push("{");d="";for(f in b)Object.prototype.hasOwnProperty.call(b,f)&&(e=b[f],"function"!=typeof e&&(c.push(d),Da(f,c),
+c.push(":"),Ca(a,a.Sd?a.Sd.call(b,f,e):e,c),d=","));c.push("}");break;case "function":break;default:throw Error("Unknown type: "+typeof b);}}var Ea={'"':'\\"',"\\":"\\\\","/":"\\/","\b":"\\b","\f":"\\f","\n":"\\n","\r":"\\r","\t":"\\t","\x0B":"\\u000b"},Fa=/\uffff/.test("\uffff")?/[\\\"\x00-\x1f\x7f-\uffff]/g:/[\\\"\x00-\x1f\x7f-\xff]/g;
+function Da(a,b){b.push('"',a.replace(Fa,function(a){if(a in Ea)return Ea[a];var b=a.charCodeAt(0),e="\\u";16>b?e+="000":256>b?e+="00":4096>b&&(e+="0");return Ea[a]=e+b.toString(16)}),'"')};function Ga(){return Math.floor(2147483648*Math.random()).toString(36)+Math.abs(Math.floor(2147483648*Math.random())^la()).toString(36)};var Ha;a:{var Ia=aa.navigator;if(Ia){var Ja=Ia.userAgent;if(Ja){Ha=Ja;break a}}Ha=""};function Ka(){this.Wa=-1};function La(){this.Wa=-1;this.Wa=64;this.P=[];this.ne=[];this.Uf=[];this.Ld=[];this.Ld[0]=128;for(var a=1;a<this.Wa;++a)this.Ld[a]=0;this.ee=this.ac=0;this.reset()}ma(La,Ka);La.prototype.reset=function(){this.P[0]=1732584193;this.P[1]=4023233417;this.P[2]=2562383102;this.P[3]=271733878;this.P[4]=3285377520;this.ee=this.ac=0};
+function Ma(a,b,c){c||(c=0);var d=a.Uf;if(p(b))for(var e=0;16>e;e++)d[e]=b.charCodeAt(c)<<24|b.charCodeAt(c+1)<<16|b.charCodeAt(c+2)<<8|b.charCodeAt(c+3),c+=4;else for(e=0;16>e;e++)d[e]=b[c]<<24|b[c+1]<<16|b[c+2]<<8|b[c+3],c+=4;for(e=16;80>e;e++){var f=d[e-3]^d[e-8]^d[e-14]^d[e-16];d[e]=(f<<1|f>>>31)&4294967295}b=a.P[0];c=a.P[1];for(var h=a.P[2],k=a.P[3],l=a.P[4],m,e=0;80>e;e++)40>e?20>e?(f=k^c&(h^k),m=1518500249):(f=c^h^k,m=1859775393):60>e?(f=c&h|k&(c|h),m=2400959708):(f=c^h^k,m=3395469782),f=(b<<
+5|b>>>27)+f+l+m+d[e]&4294967295,l=k,k=h,h=(c<<30|c>>>2)&4294967295,c=b,b=f;a.P[0]=a.P[0]+b&4294967295;a.P[1]=a.P[1]+c&4294967295;a.P[2]=a.P[2]+h&4294967295;a.P[3]=a.P[3]+k&4294967295;a.P[4]=a.P[4]+l&4294967295}
+La.prototype.update=function(a,b){if(null!=a){n(b)||(b=a.length);for(var c=b-this.Wa,d=0,e=this.ne,f=this.ac;d<b;){if(0==f)for(;d<=c;)Ma(this,a,d),d+=this.Wa;if(p(a))for(;d<b;){if(e[f]=a.charCodeAt(d),++f,++d,f==this.Wa){Ma(this,e);f=0;break}}else for(;d<b;)if(e[f]=a[d],++f,++d,f==this.Wa){Ma(this,e);f=0;break}}this.ac=f;this.ee+=b}};var u=Array.prototype,Na=u.indexOf?function(a,b,c){return u.indexOf.call(a,b,c)}:function(a,b,c){c=null==c?0:0>c?Math.max(0,a.length+c):c;if(p(a))return p(b)&&1==b.length?a.indexOf(b,c):-1;for(;c<a.length;c++)if(c in a&&a[c]===b)return c;return-1},Oa=u.forEach?function(a,b,c){u.forEach.call(a,b,c)}:function(a,b,c){for(var d=a.length,e=p(a)?a.split(""):a,f=0;f<d;f++)f in e&&b.call(c,e[f],f,a)},Pa=u.filter?function(a,b,c){return u.filter.call(a,b,c)}:function(a,b,c){for(var d=a.length,e=[],f=0,h=p(a)?
+a.split(""):a,k=0;k<d;k++)if(k in h){var l=h[k];b.call(c,l,k,a)&&(e[f++]=l)}return e},Qa=u.map?function(a,b,c){return u.map.call(a,b,c)}:function(a,b,c){for(var d=a.length,e=Array(d),f=p(a)?a.split(""):a,h=0;h<d;h++)h in f&&(e[h]=b.call(c,f[h],h,a));return e},Ra=u.reduce?function(a,b,c,d){for(var e=[],f=1,h=arguments.length;f<h;f++)e.push(arguments[f]);d&&(e[0]=q(b,d));return u.reduce.apply(a,e)}:function(a,b,c,d){var e=c;Oa(a,function(c,h){e=b.call(d,e,c,h,a)});return e},Sa=u.every?function(a,b,
+c){return u.every.call(a,b,c)}:function(a,b,c){for(var d=a.length,e=p(a)?a.split(""):a,f=0;f<d;f++)if(f in e&&!b.call(c,e[f],f,a))return!1;return!0};function Ta(a,b){var c=Ua(a,b,void 0);return 0>c?null:p(a)?a.charAt(c):a[c]}function Ua(a,b,c){for(var d=a.length,e=p(a)?a.split(""):a,f=0;f<d;f++)if(f in e&&b.call(c,e[f],f,a))return f;return-1}function Va(a,b){var c=Na(a,b);0<=c&&u.splice.call(a,c,1)}function Wa(a,b,c){return 2>=arguments.length?u.slice.call(a,b):u.slice.call(a,b,c)}
+function Xa(a,b){a.sort(b||Ya)}function Ya(a,b){return a>b?1:a<b?-1:0};var Za=-1!=Ha.indexOf("Opera")||-1!=Ha.indexOf("OPR"),$a=-1!=Ha.indexOf("Trident")||-1!=Ha.indexOf("MSIE"),ab=-1!=Ha.indexOf("Gecko")&&-1==Ha.toLowerCase().indexOf("webkit")&&!(-1!=Ha.indexOf("Trident")||-1!=Ha.indexOf("MSIE")),bb=-1!=Ha.toLowerCase().indexOf("webkit");
+(function(){var a="",b;if(Za&&aa.opera)return a=aa.opera.version,ha(a)?a():a;ab?b=/rv\:([^\);]+)(\)|;)/:$a?b=/\b(?:MSIE|rv)[: ]([^\);]+)(\)|;)/:bb&&(b=/WebKit\/(\S+)/);b&&(a=(a=b.exec(Ha))?a[1]:"");return $a&&(b=(b=aa.document)?b.documentMode:void 0,b>parseFloat(a))?String(b):a})();var cb=null,db=null,eb=null;function fb(a,b){if(!fa(a))throw Error("encodeByteArray takes an array as a parameter");gb();for(var c=b?db:cb,d=[],e=0;e<a.length;e+=3){var f=a[e],h=e+1<a.length,k=h?a[e+1]:0,l=e+2<a.length,m=l?a[e+2]:0,t=f>>2,f=(f&3)<<4|k>>4,k=(k&15)<<2|m>>6,m=m&63;l||(m=64,h||(k=64));d.push(c[t],c[f],c[k],c[m])}return d.join("")}
+function gb(){if(!cb){cb={};db={};eb={};for(var a=0;65>a;a++)cb[a]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".charAt(a),db[a]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.".charAt(a),eb[db[a]]=a,62<=a&&(eb["ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".charAt(a)]=a)}};var hb=hb||"2.2.9";function v(a,b){return Object.prototype.hasOwnProperty.call(a,b)}function w(a,b){if(Object.prototype.hasOwnProperty.call(a,b))return a[b]}function ib(a,b){for(var c in a)Object.prototype.hasOwnProperty.call(a,c)&&b(c,a[c])}function jb(a){var b={};ib(a,function(a,d){b[a]=d});return b};function kb(a){var b=[];ib(a,function(a,d){ea(d)?Oa(d,function(d){b.push(encodeURIComponent(a)+"="+encodeURIComponent(d))}):b.push(encodeURIComponent(a)+"="+encodeURIComponent(d))});return b.length?"&"+b.join("&"):""}function lb(a){var b={};a=a.replace(/^\?/,"").split("&");Oa(a,function(a){a&&(a=a.split("="),b[a[0]]=a[1])});return b};function x(a,b,c,d){var e;d<b?e="at least "+b:d>c&&(e=0===c?"none":"no more than "+c);if(e)throw Error(a+" failed: Was called with "+d+(1===d?" argument.":" arguments.")+" Expects "+e+".");}function z(a,b,c){var d="";switch(b){case 1:d=c?"first":"First";break;case 2:d=c?"second":"Second";break;case 3:d=c?"third":"Third";break;case 4:d=c?"fourth":"Fourth";break;default:throw Error("errorPrefix called with argumentNumber > 4.  Need to update it?");}return a=a+" failed: "+(d+" argument ")}
+function A(a,b,c,d){if((!d||n(c))&&!ha(c))throw Error(z(a,b,d)+"must be a valid function.");}function mb(a,b,c){if(n(c)&&(!ia(c)||null===c))throw Error(z(a,b,!0)+"must be a valid context object.");};function nb(a){return"undefined"!==typeof JSON&&n(JSON.parse)?JSON.parse(a):Aa(a)}function B(a){if("undefined"!==typeof JSON&&n(JSON.stringify))a=JSON.stringify(a);else{var b=[];Ca(new Ba,a,b);a=b.join("")}return a};function ob(){this.Wd=C}ob.prototype.j=function(a){return this.Wd.Y(a)};ob.prototype.toString=function(){return this.Wd.toString()};function pb(){}pb.prototype.qf=function(){return null};pb.prototype.ze=function(){return null};var qb=new pb;function rb(a,b,c){this.Rf=a;this.Ka=b;this.Kd=c}rb.prototype.qf=function(a){var b=this.Ka.Q;if(sb(b,a))return b.j().J(a);b=null!=this.Kd?new tb(this.Kd,!0,!1):this.Ka.C();return this.Rf.xc(a,b)};rb.prototype.ze=function(a,b,c){var d=null!=this.Kd?this.Kd:ub(this.Ka);a=this.Rf.oe(d,b,1,c,a);return 0===a.length?null:a[0]};function vb(){this.ub=[]}function wb(a,b){for(var c=null,d=0;d<b.length;d++){var e=b[d],f=e.Zb();null===c||f.ca(c.Zb())||(a.ub.push(c),c=null);null===c&&(c=new xb(f));c.add(e)}c&&a.ub.push(c)}function yb(a,b,c){wb(a,c);zb(a,function(a){return a.ca(b)})}function Ab(a,b,c){wb(a,c);zb(a,function(a){return a.contains(b)||b.contains(a)})}
+function zb(a,b){for(var c=!0,d=0;d<a.ub.length;d++){var e=a.ub[d];if(e)if(e=e.Zb(),b(e)){for(var e=a.ub[d],f=0;f<e.vd.length;f++){var h=e.vd[f];if(null!==h){e.vd[f]=null;var k=h.Vb();Bb&&Cb("event: "+h.toString());Db(k)}}a.ub[d]=null}else c=!1}c&&(a.ub=[])}function xb(a){this.ra=a;this.vd=[]}xb.prototype.add=function(a){this.vd.push(a)};xb.prototype.Zb=function(){return this.ra};function D(a,b,c,d){this.type=a;this.Ja=b;this.Xa=c;this.Le=d;this.Qd=void 0}function Eb(a){return new D(Fb,a)}var Fb="value";function Gb(a,b,c,d){this.ve=b;this.$d=c;this.Qd=d;this.ud=a}Gb.prototype.Zb=function(){var a=this.$d.mc();return"value"===this.ud?a.path:a.parent().path};Gb.prototype.Ae=function(){return this.ud};Gb.prototype.Vb=function(){return this.ve.Vb(this)};Gb.prototype.toString=function(){return this.Zb().toString()+":"+this.ud+":"+B(this.$d.mf())};function Hb(a,b,c){this.ve=a;this.error=b;this.path=c}Hb.prototype.Zb=function(){return this.path};Hb.prototype.Ae=function(){return"cancel"};
+Hb.prototype.Vb=function(){return this.ve.Vb(this)};Hb.prototype.toString=function(){return this.path.toString()+":cancel"};function tb(a,b,c){this.w=a;this.ea=b;this.Ub=c}function Ib(a){return a.ea}function Jb(a,b){return b.e()?a.ea&&!a.Ub:sb(a,E(b))}function sb(a,b){return a.ea&&!a.Ub||a.w.Da(b)}tb.prototype.j=function(){return this.w};function Kb(a){this.eg=a;this.Dd=null}Kb.prototype.get=function(){var a=this.eg.get(),b=xa(a);if(this.Dd)for(var c in this.Dd)b[c]-=this.Dd[c];this.Dd=a;return b};function Lb(a,b){this.Nf={};this.fd=new Kb(a);this.ba=b;var c=1E4+2E4*Math.random();setTimeout(q(this.If,this),Math.floor(c))}Lb.prototype.If=function(){var a=this.fd.get(),b={},c=!1,d;for(d in a)0<a[d]&&v(this.Nf,d)&&(b[d]=a[d],c=!0);c&&this.ba.Ve(b);setTimeout(q(this.If,this),Math.floor(6E5*Math.random()))};function Mb(){this.Ec={}}function Nb(a,b,c){n(c)||(c=1);v(a.Ec,b)||(a.Ec[b]=0);a.Ec[b]+=c}Mb.prototype.get=function(){return xa(this.Ec)};var Ob={},Pb={};function Qb(a){a=a.toString();Ob[a]||(Ob[a]=new Mb);return Ob[a]}function Rb(a,b){var c=a.toString();Pb[c]||(Pb[c]=b());return Pb[c]};function F(a,b){this.name=a;this.S=b}function Sb(a,b){return new F(a,b)};function Tb(a,b){return Ub(a.name,b.name)}function Vb(a,b){return Ub(a,b)};function Wb(a,b,c){this.type=Xb;this.source=a;this.path=b;this.Ga=c}Wb.prototype.Xc=function(a){return this.path.e()?new Wb(this.source,G,this.Ga.J(a)):new Wb(this.source,H(this.path),this.Ga)};Wb.prototype.toString=function(){return"Operation("+this.path+": "+this.source.toString()+" overwrite: "+this.Ga.toString()+")"};function Yb(a,b){this.type=Zb;this.source=a;this.path=b}Yb.prototype.Xc=function(){return this.path.e()?new Yb(this.source,G):new Yb(this.source,H(this.path))};Yb.prototype.toString=function(){return"Operation("+this.path+": "+this.source.toString()+" listen_complete)"};function $b(a,b){this.La=a;this.wa=b?b:ac}g=$b.prototype;g.Oa=function(a,b){return new $b(this.La,this.wa.Oa(a,b,this.La).X(null,null,!1,null,null))};g.remove=function(a){return new $b(this.La,this.wa.remove(a,this.La).X(null,null,!1,null,null))};g.get=function(a){for(var b,c=this.wa;!c.e();){b=this.La(a,c.key);if(0===b)return c.value;0>b?c=c.left:0<b&&(c=c.right)}return null};
+function bc(a,b){for(var c,d=a.wa,e=null;!d.e();){c=a.La(b,d.key);if(0===c){if(d.left.e())return e?e.key:null;for(d=d.left;!d.right.e();)d=d.right;return d.key}0>c?d=d.left:0<c&&(e=d,d=d.right)}throw Error("Attempted to find predecessor key for a nonexistent key.  What gives?");}g.e=function(){return this.wa.e()};g.count=function(){return this.wa.count()};g.Sc=function(){return this.wa.Sc()};g.fc=function(){return this.wa.fc()};g.ia=function(a){return this.wa.ia(a)};
+g.Xb=function(a){return new cc(this.wa,null,this.La,!1,a)};g.Yb=function(a,b){return new cc(this.wa,a,this.La,!1,b)};g.$b=function(a,b){return new cc(this.wa,a,this.La,!0,b)};g.sf=function(a){return new cc(this.wa,null,this.La,!0,a)};function cc(a,b,c,d,e){this.Ud=e||null;this.Ge=d;this.Qa=[];for(e=1;!a.e();)if(e=b?c(a.key,b):1,d&&(e*=-1),0>e)a=this.Ge?a.left:a.right;else if(0===e){this.Qa.push(a);break}else this.Qa.push(a),a=this.Ge?a.right:a.left}
+function J(a){if(0===a.Qa.length)return null;var b=a.Qa.pop(),c;c=a.Ud?a.Ud(b.key,b.value):{key:b.key,value:b.value};if(a.Ge)for(b=b.left;!b.e();)a.Qa.push(b),b=b.right;else for(b=b.right;!b.e();)a.Qa.push(b),b=b.left;return c}function dc(a){if(0===a.Qa.length)return null;var b;b=a.Qa;b=b[b.length-1];return a.Ud?a.Ud(b.key,b.value):{key:b.key,value:b.value}}function ec(a,b,c,d,e){this.key=a;this.value=b;this.color=null!=c?c:!0;this.left=null!=d?d:ac;this.right=null!=e?e:ac}g=ec.prototype;
+g.X=function(a,b,c,d,e){return new ec(null!=a?a:this.key,null!=b?b:this.value,null!=c?c:this.color,null!=d?d:this.left,null!=e?e:this.right)};g.count=function(){return this.left.count()+1+this.right.count()};g.e=function(){return!1};g.ia=function(a){return this.left.ia(a)||a(this.key,this.value)||this.right.ia(a)};function fc(a){return a.left.e()?a:fc(a.left)}g.Sc=function(){return fc(this).key};g.fc=function(){return this.right.e()?this.key:this.right.fc()};
+g.Oa=function(a,b,c){var d,e;e=this;d=c(a,e.key);e=0>d?e.X(null,null,null,e.left.Oa(a,b,c),null):0===d?e.X(null,b,null,null,null):e.X(null,null,null,null,e.right.Oa(a,b,c));return gc(e)};function hc(a){if(a.left.e())return ac;a.left.fa()||a.left.left.fa()||(a=ic(a));a=a.X(null,null,null,hc(a.left),null);return gc(a)}
+g.remove=function(a,b){var c,d;c=this;if(0>b(a,c.key))c.left.e()||c.left.fa()||c.left.left.fa()||(c=ic(c)),c=c.X(null,null,null,c.left.remove(a,b),null);else{c.left.fa()&&(c=jc(c));c.right.e()||c.right.fa()||c.right.left.fa()||(c=kc(c),c.left.left.fa()&&(c=jc(c),c=kc(c)));if(0===b(a,c.key)){if(c.right.e())return ac;d=fc(c.right);c=c.X(d.key,d.value,null,null,hc(c.right))}c=c.X(null,null,null,null,c.right.remove(a,b))}return gc(c)};g.fa=function(){return this.color};
+function gc(a){a.right.fa()&&!a.left.fa()&&(a=lc(a));a.left.fa()&&a.left.left.fa()&&(a=jc(a));a.left.fa()&&a.right.fa()&&(a=kc(a));return a}function ic(a){a=kc(a);a.right.left.fa()&&(a=a.X(null,null,null,null,jc(a.right)),a=lc(a),a=kc(a));return a}function lc(a){return a.right.X(null,null,a.color,a.X(null,null,!0,null,a.right.left),null)}function jc(a){return a.left.X(null,null,a.color,null,a.X(null,null,!0,a.left.right,null))}
+function kc(a){return a.X(null,null,!a.color,a.left.X(null,null,!a.left.color,null,null),a.right.X(null,null,!a.right.color,null,null))}function mc(){}g=mc.prototype;g.X=function(){return this};g.Oa=function(a,b){return new ec(a,b,null)};g.remove=function(){return this};g.count=function(){return 0};g.e=function(){return!0};g.ia=function(){return!1};g.Sc=function(){return null};g.fc=function(){return null};g.fa=function(){return!1};var ac=new mc;function nc(a,b){return a&&"object"===typeof a?(K(".sv"in a,"Unexpected leaf node or priority contents"),b[a[".sv"]]):a}function oc(a,b){var c=new pc;qc(a,new L(""),function(a,e){c.nc(a,rc(e,b))});return c}function rc(a,b){var c=a.B().H(),c=nc(c,b),d;if(a.L()){var e=nc(a.Ca(),b);return e!==a.Ca()||c!==a.B().H()?new sc(e,M(c)):a}d=a;c!==a.B().H()&&(d=d.ga(new sc(c)));a.R(N,function(a,c){var e=rc(c,b);e!==c&&(d=d.O(a,e))});return d};function L(a,b){if(1==arguments.length){this.n=a.split("/");for(var c=0,d=0;d<this.n.length;d++)0<this.n[d].length&&(this.n[c]=this.n[d],c++);this.n.length=c;this.Z=0}else this.n=a,this.Z=b}function O(a,b){var c=E(a);if(null===c)return b;if(c===E(b))return O(H(a),H(b));throw Error("INTERNAL ERROR: innerPath ("+b+") is not within outerPath ("+a+")");}function E(a){return a.Z>=a.n.length?null:a.n[a.Z]}function tc(a){return a.n.length-a.Z}
+function H(a){var b=a.Z;b<a.n.length&&b++;return new L(a.n,b)}function uc(a){return a.Z<a.n.length?a.n[a.n.length-1]:null}g=L.prototype;g.toString=function(){for(var a="",b=this.Z;b<this.n.length;b++)""!==this.n[b]&&(a+="/"+this.n[b]);return a||"/"};g.slice=function(a){return this.n.slice(this.Z+(a||0))};g.parent=function(){if(this.Z>=this.n.length)return null;for(var a=[],b=this.Z;b<this.n.length-1;b++)a.push(this.n[b]);return new L(a,0)};
+g.u=function(a){for(var b=[],c=this.Z;c<this.n.length;c++)b.push(this.n[c]);if(a instanceof L)for(c=a.Z;c<a.n.length;c++)b.push(a.n[c]);else for(a=a.split("/"),c=0;c<a.length;c++)0<a[c].length&&b.push(a[c]);return new L(b,0)};g.e=function(){return this.Z>=this.n.length};g.ca=function(a){if(tc(this)!==tc(a))return!1;for(var b=this.Z,c=a.Z;b<=this.n.length;b++,c++)if(this.n[b]!==a.n[c])return!1;return!0};
+g.contains=function(a){var b=this.Z,c=a.Z;if(tc(this)>tc(a))return!1;for(;b<this.n.length;){if(this.n[b]!==a.n[c])return!1;++b;++c}return!0};var G=new L("");function vc(a,b){this.Ra=a.slice();this.Ha=Math.max(1,this.Ra.length);this.lf=b;for(var c=0;c<this.Ra.length;c++)this.Ha+=wc(this.Ra[c]);xc(this)}vc.prototype.push=function(a){0<this.Ra.length&&(this.Ha+=1);this.Ra.push(a);this.Ha+=wc(a);xc(this)};vc.prototype.pop=function(){var a=this.Ra.pop();this.Ha-=wc(a);0<this.Ra.length&&--this.Ha};
+function xc(a){if(768<a.Ha)throw Error(a.lf+"has a key path longer than 768 bytes ("+a.Ha+").");if(32<a.Ra.length)throw Error(a.lf+"path specified exceeds the maximum depth that can be written (32) or object contains a cycle "+yc(a));}function yc(a){return 0==a.Ra.length?"":"in property '"+a.Ra.join(".")+"'"};function zc(){this.wc={}}zc.prototype.set=function(a,b){null==b?delete this.wc[a]:this.wc[a]=b};zc.prototype.get=function(a){return v(this.wc,a)?this.wc[a]:null};zc.prototype.remove=function(a){delete this.wc[a]};zc.prototype.wf=!0;function Ac(a){this.Fc=a;this.Pd="firebase:"}g=Ac.prototype;g.set=function(a,b){null==b?this.Fc.removeItem(this.Pd+a):this.Fc.setItem(this.Pd+a,B(b))};g.get=function(a){a=this.Fc.getItem(this.Pd+a);return null==a?null:nb(a)};g.remove=function(a){this.Fc.removeItem(this.Pd+a)};g.wf=!1;g.toString=function(){return this.Fc.toString()};function Bc(a){try{if("undefined"!==typeof window&&"undefined"!==typeof window[a]){var b=window[a];b.setItem("firebase:sentinel","cache");b.removeItem("firebase:sentinel");return new Ac(b)}}catch(c){}return new zc}var Cc=Bc("localStorage"),P=Bc("sessionStorage");function Dc(a,b,c,d,e){this.host=a.toLowerCase();this.domain=this.host.substr(this.host.indexOf(".")+1);this.lb=b;this.Db=c;this.Ug=d;this.Od=e||"";this.Pa=Cc.get("host:"+a)||this.host}function Ec(a,b){b!==a.Pa&&(a.Pa=b,"s-"===a.Pa.substr(0,2)&&Cc.set("host:"+a.host,a.Pa))}Dc.prototype.toString=function(){var a=(this.lb?"https://":"http://")+this.host;this.Od&&(a+="<"+this.Od+">");return a};var Fc=function(){var a=1;return function(){return a++}}();function K(a,b){if(!a)throw Gc(b);}function Gc(a){return Error("Firebase ("+hb+") INTERNAL ASSERT FAILED: "+a)}
+function Hc(a){try{var b;if("undefined"!==typeof atob)b=atob(a);else{gb();for(var c=eb,d=[],e=0;e<a.length;){var f=c[a.charAt(e++)],h=e<a.length?c[a.charAt(e)]:0;++e;var k=e<a.length?c[a.charAt(e)]:64;++e;var l=e<a.length?c[a.charAt(e)]:64;++e;if(null==f||null==h||null==k||null==l)throw Error();d.push(f<<2|h>>4);64!=k&&(d.push(h<<4&240|k>>2),64!=l&&d.push(k<<6&192|l))}if(8192>d.length)b=String.fromCharCode.apply(null,d);else{a="";for(c=0;c<d.length;c+=8192)a+=String.fromCharCode.apply(null,Wa(d,c,
+c+8192));b=a}}return b}catch(m){Cb("base64Decode failed: ",m)}return null}function Ic(a){var b=Jc(a);a=new La;a.update(b);var b=[],c=8*a.ee;56>a.ac?a.update(a.Ld,56-a.ac):a.update(a.Ld,a.Wa-(a.ac-56));for(var d=a.Wa-1;56<=d;d--)a.ne[d]=c&255,c/=256;Ma(a,a.ne);for(d=c=0;5>d;d++)for(var e=24;0<=e;e-=8)b[c]=a.P[d]>>e&255,++c;return fb(b)}
+function Kc(a){for(var b="",c=0;c<arguments.length;c++)b=fa(arguments[c])?b+Kc.apply(null,arguments[c]):"object"===typeof arguments[c]?b+B(arguments[c]):b+arguments[c],b+=" ";return b}var Bb=null,Lc=!0;function Cb(a){!0===Lc&&(Lc=!1,null===Bb&&!0===P.get("logging_enabled")&&Mc(!0));if(Bb){var b=Kc.apply(null,arguments);Bb(b)}}function Nc(a){return function(){Cb(a,arguments)}}
+function Oc(a){if("undefined"!==typeof console){var b="FIREBASE INTERNAL ERROR: "+Kc.apply(null,arguments);"undefined"!==typeof console.error?console.error(b):console.log(b)}}function Pc(a){var b=Kc.apply(null,arguments);throw Error("FIREBASE FATAL ERROR: "+b);}function Q(a){if("undefined"!==typeof console){var b="FIREBASE WARNING: "+Kc.apply(null,arguments);"undefined"!==typeof console.warn?console.warn(b):console.log(b)}}
+function Qc(a){var b="",c="",d="",e="",f=!0,h="https",k=443;if(p(a)){var l=a.indexOf("//");0<=l&&(h=a.substring(0,l-1),a=a.substring(l+2));l=a.indexOf("/");-1===l&&(l=a.length);b=a.substring(0,l);e="";a=a.substring(l).split("/");for(l=0;l<a.length;l++)if(0<a[l].length){var m=a[l];try{m=decodeURIComponent(m.replace(/\+/g," "))}catch(t){}e+="/"+m}a=b.split(".");3===a.length?(c=a[1],d=a[0].toLowerCase()):2===a.length&&(c=a[0]);l=b.indexOf(":");0<=l&&(f="https"===h||"wss"===h,k=b.substring(l+1),isFinite(k)&&
+(k=String(k)),k=p(k)?/^\s*-?0x/i.test(k)?parseInt(k,16):parseInt(k,10):NaN)}return{host:b,port:k,domain:c,Rg:d,lb:f,scheme:h,$c:e}}function Rc(a){return ga(a)&&(a!=a||a==Number.POSITIVE_INFINITY||a==Number.NEGATIVE_INFINITY)}
+function Sc(a){if("complete"===document.readyState)a();else{var b=!1,c=function(){document.body?b||(b=!0,a()):setTimeout(c,Math.floor(10))};document.addEventListener?(document.addEventListener("DOMContentLoaded",c,!1),window.addEventListener("load",c,!1)):document.attachEvent&&(document.attachEvent("onreadystatechange",function(){"complete"===document.readyState&&c()}),window.attachEvent("onload",c))}}
+function Ub(a,b){if(a===b)return 0;if("[MIN_NAME]"===a||"[MAX_NAME]"===b)return-1;if("[MIN_NAME]"===b||"[MAX_NAME]"===a)return 1;var c=Tc(a),d=Tc(b);return null!==c?null!==d?0==c-d?a.length-b.length:c-d:-1:null!==d?1:a<b?-1:1}function Uc(a,b){if(b&&a in b)return b[a];throw Error("Missing required key ("+a+") in object: "+B(b));}
+function Vc(a){if("object"!==typeof a||null===a)return B(a);var b=[],c;for(c in a)b.push(c);b.sort();c="{";for(var d=0;d<b.length;d++)0!==d&&(c+=","),c+=B(b[d]),c+=":",c+=Vc(a[b[d]]);return c+"}"}function Wc(a,b){if(a.length<=b)return[a];for(var c=[],d=0;d<a.length;d+=b)d+b>a?c.push(a.substring(d,a.length)):c.push(a.substring(d,d+b));return c}function Xc(a,b){if(ea(a))for(var c=0;c<a.length;++c)b(c,a[c]);else r(a,b)}
+function Yc(a){K(!Rc(a),"Invalid JSON number");var b,c,d,e;0===a?(d=c=0,b=-Infinity===1/a?1:0):(b=0>a,a=Math.abs(a),a>=Math.pow(2,-1022)?(d=Math.min(Math.floor(Math.log(a)/Math.LN2),1023),c=d+1023,d=Math.round(a*Math.pow(2,52-d)-Math.pow(2,52))):(c=0,d=Math.round(a/Math.pow(2,-1074))));e=[];for(a=52;a;--a)e.push(d%2?1:0),d=Math.floor(d/2);for(a=11;a;--a)e.push(c%2?1:0),c=Math.floor(c/2);e.push(b?1:0);e.reverse();b=e.join("");c="";for(a=0;64>a;a+=8)d=parseInt(b.substr(a,8),2).toString(16),1===d.length&&
+(d="0"+d),c+=d;return c.toLowerCase()}var Zc=/^-?\d{1,10}$/;function Tc(a){return Zc.test(a)&&(a=Number(a),-2147483648<=a&&2147483647>=a)?a:null}function Db(a){try{a()}catch(b){setTimeout(function(){Q("Exception was thrown by user callback.",b.stack||"");throw b;},Math.floor(0))}}function R(a,b){if(ha(a)){var c=Array.prototype.slice.call(arguments,1).slice();Db(function(){a.apply(null,c)})}};function Jc(a){for(var b=[],c=0,d=0;d<a.length;d++){var e=a.charCodeAt(d);55296<=e&&56319>=e&&(e-=55296,d++,K(d<a.length,"Surrogate pair missing trail surrogate."),e=65536+(e<<10)+(a.charCodeAt(d)-56320));128>e?b[c++]=e:(2048>e?b[c++]=e>>6|192:(65536>e?b[c++]=e>>12|224:(b[c++]=e>>18|240,b[c++]=e>>12&63|128),b[c++]=e>>6&63|128),b[c++]=e&63|128)}return b}function wc(a){for(var b=0,c=0;c<a.length;c++){var d=a.charCodeAt(c);128>d?b++:2048>d?b+=2:55296<=d&&56319>=d?(b+=4,c++):b+=3}return b};function $c(a){var b={},c={},d={},e="";try{var f=a.split("."),b=nb(Hc(f[0])||""),c=nb(Hc(f[1])||""),e=f[2],d=c.d||{};delete c.d}catch(h){}return{Xg:b,Bc:c,data:d,Og:e}}function ad(a){a=$c(a).Bc;return"object"===typeof a&&a.hasOwnProperty("iat")?w(a,"iat"):null}function bd(a){a=$c(a);var b=a.Bc;return!!a.Og&&!!b&&"object"===typeof b&&b.hasOwnProperty("iat")};function cd(a){this.V=a;this.g=a.o.g}function dd(a,b,c,d){var e=[],f=[];Oa(b,function(b){"child_changed"===b.type&&a.g.Ad(b.Le,b.Ja)&&f.push(new D("child_moved",b.Ja,b.Xa))});ed(a,e,"child_removed",b,d,c);ed(a,e,"child_added",b,d,c);ed(a,e,"child_moved",f,d,c);ed(a,e,"child_changed",b,d,c);ed(a,e,Fb,b,d,c);return e}function ed(a,b,c,d,e,f){d=Pa(d,function(a){return a.type===c});Xa(d,q(a.fg,a));Oa(d,function(c){var d=fd(a,c,f);Oa(e,function(e){e.Kf(c.type)&&b.push(e.createEvent(d,a.V))})})}
+function fd(a,b,c){"value"!==b.type&&"child_removed"!==b.type&&(b.Qd=c.rf(b.Xa,b.Ja,a.g));return b}cd.prototype.fg=function(a,b){if(null==a.Xa||null==b.Xa)throw Gc("Should only compare child_ events.");return this.g.compare(new F(a.Xa,a.Ja),new F(b.Xa,b.Ja))};function gd(){this.bb={}}
+function hd(a,b){var c=b.type,d=b.Xa;K("child_added"==c||"child_changed"==c||"child_removed"==c,"Only child changes supported for tracking");K(".priority"!==d,"Only non-priority child changes can be tracked.");var e=w(a.bb,d);if(e){var f=e.type;if("child_added"==c&&"child_removed"==f)a.bb[d]=new D("child_changed",b.Ja,d,e.Ja);else if("child_removed"==c&&"child_added"==f)delete a.bb[d];else if("child_removed"==c&&"child_changed"==f)a.bb[d]=new D("child_removed",e.Le,d);else if("child_changed"==c&&
+"child_added"==f)a.bb[d]=new D("child_added",b.Ja,d);else if("child_changed"==c&&"child_changed"==f)a.bb[d]=new D("child_changed",b.Ja,d,e.Le);else throw Gc("Illegal combination of changes: "+b+" occurred after "+e);}else a.bb[d]=b};function id(a,b,c){this.Rb=a;this.qb=b;this.sb=c||null}g=id.prototype;g.Kf=function(a){return"value"===a};g.createEvent=function(a,b){var c=b.o.g;return new Gb("value",this,new S(a.Ja,b.mc(),c))};g.Vb=function(a){var b=this.sb;if("cancel"===a.Ae()){K(this.qb,"Raising a cancel event on a listener with no cancel callback");var c=this.qb;return function(){c.call(b,a.error)}}var d=this.Rb;return function(){d.call(b,a.$d)}};g.gf=function(a,b){return this.qb?new Hb(this,a,b):null};
+g.matches=function(a){return a instanceof id?a.Rb&&this.Rb?a.Rb===this.Rb&&a.sb===this.sb:!0:!1};g.tf=function(){return null!==this.Rb};function jd(a,b,c){this.ha=a;this.qb=b;this.sb=c}g=jd.prototype;g.Kf=function(a){a="children_added"===a?"child_added":a;return("children_removed"===a?"child_removed":a)in this.ha};g.gf=function(a,b){return this.qb?new Hb(this,a,b):null};
+g.createEvent=function(a,b){K(null!=a.Xa,"Child events should have a childName.");var c=b.mc().u(a.Xa);return new Gb(a.type,this,new S(a.Ja,c,b.o.g),a.Qd)};g.Vb=function(a){var b=this.sb;if("cancel"===a.Ae()){K(this.qb,"Raising a cancel event on a listener with no cancel callback");var c=this.qb;return function(){c.call(b,a.error)}}var d=this.ha[a.ud];return function(){d.call(b,a.$d,a.Qd)}};
+g.matches=function(a){if(a instanceof jd){if(!this.ha||!a.ha)return!0;if(this.sb===a.sb){var b=pa(a.ha);if(b===pa(this.ha)){if(1===b){var b=qa(a.ha),c=qa(this.ha);return c===b&&(!a.ha[b]||!this.ha[c]||a.ha[b]===this.ha[c])}return oa(this.ha,function(b,c){return a.ha[c]===b})}}}return!1};g.tf=function(){return null!==this.ha};function kd(a){this.g=a}g=kd.prototype;g.K=function(a,b,c,d,e,f){K(a.Jc(this.g),"A node must be indexed if only a child is updated");e=a.J(b);if(e.Y(d).ca(c.Y(d))&&e.e()==c.e())return a;null!=f&&(c.e()?a.Da(b)?hd(f,new D("child_removed",e,b)):K(a.L(),"A child remove without an old child only makes sense on a leaf node"):e.e()?hd(f,new D("child_added",c,b)):hd(f,new D("child_changed",c,b,e)));return a.L()&&c.e()?a:a.O(b,c).mb(this.g)};
+g.xa=function(a,b,c){null!=c&&(a.L()||a.R(N,function(a,e){b.Da(a)||hd(c,new D("child_removed",e,a))}),b.L()||b.R(N,function(b,e){if(a.Da(b)){var f=a.J(b);f.ca(e)||hd(c,new D("child_changed",e,b,f))}else hd(c,new D("child_added",e,b))}));return b.mb(this.g)};g.ga=function(a,b){return a.e()?C:a.ga(b)};g.Na=function(){return!1};g.Wb=function(){return this};function ld(a){this.Ce=new kd(a.g);this.g=a.g;var b;a.ma?(b=md(a),b=a.g.Pc(nd(a),b)):b=a.g.Tc();this.ed=b;a.pa?(b=od(a),a=a.g.Pc(pd(a),b)):a=a.g.Qc();this.Gc=a}g=ld.prototype;g.matches=function(a){return 0>=this.g.compare(this.ed,a)&&0>=this.g.compare(a,this.Gc)};g.K=function(a,b,c,d,e,f){this.matches(new F(b,c))||(c=C);return this.Ce.K(a,b,c,d,e,f)};
+g.xa=function(a,b,c){b.L()&&(b=C);var d=b.mb(this.g),d=d.ga(C),e=this;b.R(N,function(a,b){e.matches(new F(a,b))||(d=d.O(a,C))});return this.Ce.xa(a,d,c)};g.ga=function(a){return a};g.Na=function(){return!0};g.Wb=function(){return this.Ce};function qd(a){this.sa=new ld(a);this.g=a.g;K(a.ja,"Only valid if limit has been set");this.ka=a.ka;this.Jb=!rd(a)}g=qd.prototype;g.K=function(a,b,c,d,e,f){this.sa.matches(new F(b,c))||(c=C);return a.J(b).ca(c)?a:a.Eb()<this.ka?this.sa.Wb().K(a,b,c,d,e,f):sd(this,a,b,c,e,f)};
+g.xa=function(a,b,c){var d;if(b.L()||b.e())d=C.mb(this.g);else if(2*this.ka<b.Eb()&&b.Jc(this.g)){d=C.mb(this.g);b=this.Jb?b.$b(this.sa.Gc,this.g):b.Yb(this.sa.ed,this.g);for(var e=0;0<b.Qa.length&&e<this.ka;){var f=J(b),h;if(h=this.Jb?0>=this.g.compare(this.sa.ed,f):0>=this.g.compare(f,this.sa.Gc))d=d.O(f.name,f.S),e++;else break}}else{d=b.mb(this.g);d=d.ga(C);var k,l,m;if(this.Jb){b=d.sf(this.g);k=this.sa.Gc;l=this.sa.ed;var t=td(this.g);m=function(a,b){return t(b,a)}}else b=d.Xb(this.g),k=this.sa.ed,
+l=this.sa.Gc,m=td(this.g);for(var e=0,y=!1;0<b.Qa.length;)f=J(b),!y&&0>=m(k,f)&&(y=!0),(h=y&&e<this.ka&&0>=m(f,l))?e++:d=d.O(f.name,C)}return this.sa.Wb().xa(a,d,c)};g.ga=function(a){return a};g.Na=function(){return!0};g.Wb=function(){return this.sa.Wb()};
+function sd(a,b,c,d,e,f){var h;if(a.Jb){var k=td(a.g);h=function(a,b){return k(b,a)}}else h=td(a.g);K(b.Eb()==a.ka,"");var l=new F(c,d),m=a.Jb?ud(b,a.g):vd(b,a.g),t=a.sa.matches(l);if(b.Da(c)){for(var y=b.J(c),m=e.ze(a.g,m,a.Jb);null!=m&&(m.name==c||b.Da(m.name));)m=e.ze(a.g,m,a.Jb);e=null==m?1:h(m,l);if(t&&!d.e()&&0<=e)return null!=f&&hd(f,new D("child_changed",d,c,y)),b.O(c,d);null!=f&&hd(f,new D("child_removed",y,c));b=b.O(c,C);return null!=m&&a.sa.matches(m)?(null!=f&&hd(f,new D("child_added",
+m.S,m.name)),b.O(m.name,m.S)):b}return d.e()?b:t&&0<=h(m,l)?(null!=f&&(hd(f,new D("child_removed",m.S,m.name)),hd(f,new D("child_added",d,c))),b.O(c,d).O(m.name,C)):b};function wd(a,b){this.ke=a;this.dg=b}function yd(a){this.U=a}
+yd.prototype.ab=function(a,b,c,d){var e=new gd,f;if(b.type===Xb)b.source.xe?c=zd(this,a,b.path,b.Ga,c,d,e):(K(b.source.pf,"Unknown source."),f=b.source.bf,c=Ad(this,a,b.path,b.Ga,c,d,f,e));else if(b.type===Bd)b.source.xe?c=Cd(this,a,b.path,b.children,c,d,e):(K(b.source.pf,"Unknown source."),f=b.source.bf,c=Dd(this,a,b.path,b.children,c,d,f,e));else if(b.type===Ed)if(b.Vd)if(b=b.path,null!=c.tc(b))c=a;else{f=new rb(c,a,d);d=a.Q.j();if(b.e()||".priority"===E(b))Ib(a.C())?b=c.za(ub(a)):(b=a.C().j(),
+K(b instanceof T,"serverChildren would be complete if leaf node"),b=c.yc(b)),b=this.U.xa(d,b,e);else{var h=E(b),k=c.xc(h,a.C());null==k&&sb(a.C(),h)&&(k=d.J(h));b=null!=k?this.U.K(d,h,k,H(b),f,e):a.Q.j().Da(h)?this.U.K(d,h,C,H(b),f,e):d;b.e()&&Ib(a.C())&&(d=c.za(ub(a)),d.L()&&(b=this.U.xa(b,d,e)))}d=Ib(a.C())||null!=c.tc(G);c=Fd(a,b,d,this.U.Na())}else c=Gd(this,a,b.path,b.Qb,c,d,e);else if(b.type===Zb)d=b.path,b=a.C(),f=b.j(),h=b.ea||d.e(),c=Hd(this,new Id(a.Q,new tb(f,h,b.Ub)),d,c,qb,e);else throw Gc("Unknown operation type: "+
+b.type);e=ra(e.bb);d=c;b=d.Q;b.ea&&(f=b.j().L()||b.j().e(),h=Jd(a),(0<e.length||!a.Q.ea||f&&!b.j().ca(h)||!b.j().B().ca(h.B()))&&e.push(Eb(Jd(d))));return new wd(c,e)};
+function Hd(a,b,c,d,e,f){var h=b.Q;if(null!=d.tc(c))return b;var k;if(c.e())K(Ib(b.C()),"If change path is empty, we must have complete server data"),b.C().Ub?(e=ub(b),d=d.yc(e instanceof T?e:C)):d=d.za(ub(b)),f=a.U.xa(b.Q.j(),d,f);else{var l=E(c);if(".priority"==l)K(1==tc(c),"Can't have a priority with additional path components"),f=h.j(),k=b.C().j(),d=d.ld(c,f,k),f=null!=d?a.U.ga(f,d):h.j();else{var m=H(c);sb(h,l)?(k=b.C().j(),d=d.ld(c,h.j(),k),d=null!=d?h.j().J(l).K(m,d):h.j().J(l)):d=d.xc(l,b.C());
+f=null!=d?a.U.K(h.j(),l,d,m,e,f):h.j()}}return Fd(b,f,h.ea||c.e(),a.U.Na())}function Ad(a,b,c,d,e,f,h,k){var l=b.C();h=h?a.U:a.U.Wb();if(c.e())d=h.xa(l.j(),d,null);else if(h.Na()&&!l.Ub)d=l.j().K(c,d),d=h.xa(l.j(),d,null);else{var m=E(c);if(!Jb(l,c)&&1<tc(c))return b;var t=H(c);d=l.j().J(m).K(t,d);d=".priority"==m?h.ga(l.j(),d):h.K(l.j(),m,d,t,qb,null)}l=l.ea||c.e();b=new Id(b.Q,new tb(d,l,h.Na()));return Hd(a,b,c,e,new rb(e,b,f),k)}
+function zd(a,b,c,d,e,f,h){var k=b.Q;e=new rb(e,b,f);if(c.e())h=a.U.xa(b.Q.j(),d,h),a=Fd(b,h,!0,a.U.Na());else if(f=E(c),".priority"===f)h=a.U.ga(b.Q.j(),d),a=Fd(b,h,k.ea,k.Ub);else{c=H(c);var l=k.j().J(f);if(!c.e()){var m=e.qf(f);d=null!=m?".priority"===uc(c)&&m.Y(c.parent()).e()?m:m.K(c,d):C}l.ca(d)?a=b:(h=a.U.K(k.j(),f,d,c,e,h),a=Fd(b,h,k.ea,a.U.Na()))}return a}
+function Cd(a,b,c,d,e,f,h){var k=b;Kd(d,function(d,m){var t=c.u(d);sb(b.Q,E(t))&&(k=zd(a,k,t,m,e,f,h))});Kd(d,function(d,m){var t=c.u(d);sb(b.Q,E(t))||(k=zd(a,k,t,m,e,f,h))});return k}function Ld(a,b){Kd(b,function(b,d){a=a.K(b,d)});return a}
+function Dd(a,b,c,d,e,f,h,k){if(b.C().j().e()&&!Ib(b.C()))return b;var l=b;c=c.e()?d:Md(Nd,c,d);var m=b.C().j();c.children.ia(function(c,d){if(m.Da(c)){var I=b.C().j().J(c),I=Ld(I,d);l=Ad(a,l,new L(c),I,e,f,h,k)}});c.children.ia(function(c,d){var I=!sb(b.C(),c)&&null==d.value;m.Da(c)||I||(I=b.C().j().J(c),I=Ld(I,d),l=Ad(a,l,new L(c),I,e,f,h,k))});return l}
+function Gd(a,b,c,d,e,f,h){if(null!=e.tc(c))return b;var k=b.C();if(null!=d.value){if(c.e()&&k.ea||Jb(k,c))return Ad(a,b,c,k.j().Y(c),e,f,!1,h);if(c.e()){var l=Nd;k.j().R(Od,function(a,b){l=l.set(new L(a),b)});return Dd(a,b,c,l,e,f,!1,h)}return b}l=Nd;Kd(d,function(a){var b=c.u(a);Jb(k,b)&&(l=l.set(a,k.j().Y(b)))});return Dd(a,b,c,l,e,f,!1,h)};function Pd(){}var Qd={};function td(a){return q(a.compare,a)}Pd.prototype.Ad=function(a,b){return 0!==this.compare(new F("[MIN_NAME]",a),new F("[MIN_NAME]",b))};Pd.prototype.Tc=function(){return Rd};function Sd(a){this.cc=a}ma(Sd,Pd);g=Sd.prototype;g.Ic=function(a){return!a.J(this.cc).e()};g.compare=function(a,b){var c=a.S.J(this.cc),d=b.S.J(this.cc),c=c.Dc(d);return 0===c?Ub(a.name,b.name):c};g.Pc=function(a,b){var c=M(a),c=C.O(this.cc,c);return new F(b,c)};
+g.Qc=function(){var a=C.O(this.cc,Td);return new F("[MAX_NAME]",a)};g.toString=function(){return this.cc};function Ud(){}ma(Ud,Pd);g=Ud.prototype;g.compare=function(a,b){var c=a.S.B(),d=b.S.B(),c=c.Dc(d);return 0===c?Ub(a.name,b.name):c};g.Ic=function(a){return!a.B().e()};g.Ad=function(a,b){return!a.B().ca(b.B())};g.Tc=function(){return Rd};g.Qc=function(){return new F("[MAX_NAME]",new sc("[PRIORITY-POST]",Td))};g.Pc=function(a,b){var c=M(a);return new F(b,new sc("[PRIORITY-POST]",c))};
+g.toString=function(){return".priority"};var N=new Ud;function Vd(){}ma(Vd,Pd);g=Vd.prototype;g.compare=function(a,b){return Ub(a.name,b.name)};g.Ic=function(){throw Gc("KeyIndex.isDefinedOn not expected to be called.");};g.Ad=function(){return!1};g.Tc=function(){return Rd};g.Qc=function(){return new F("[MAX_NAME]",C)};g.Pc=function(a){K(p(a),"KeyIndex indexValue must always be a string.");return new F(a,C)};g.toString=function(){return".key"};var Od=new Vd;function Wd(){}ma(Wd,Pd);g=Wd.prototype;
+g.compare=function(a,b){var c=a.S.Dc(b.S);return 0===c?Ub(a.name,b.name):c};g.Ic=function(){return!0};g.Ad=function(a,b){return!a.ca(b)};g.Tc=function(){return Rd};g.Qc=function(){return Xd};g.Pc=function(a,b){var c=M(a);return new F(b,c)};g.toString=function(){return".value"};var Yd=new Wd;function Zd(){this.Tb=this.pa=this.Lb=this.ma=this.ja=!1;this.ka=0;this.Nb="";this.ec=null;this.yb="";this.bc=null;this.wb="";this.g=N}var $d=new Zd;function rd(a){return""===a.Nb?a.ma:"l"===a.Nb}function nd(a){K(a.ma,"Only valid if start has been set");return a.ec}function md(a){K(a.ma,"Only valid if start has been set");return a.Lb?a.yb:"[MIN_NAME]"}function pd(a){K(a.pa,"Only valid if end has been set");return a.bc}
+function od(a){K(a.pa,"Only valid if end has been set");return a.Tb?a.wb:"[MAX_NAME]"}function ae(a){var b=new Zd;b.ja=a.ja;b.ka=a.ka;b.ma=a.ma;b.ec=a.ec;b.Lb=a.Lb;b.yb=a.yb;b.pa=a.pa;b.bc=a.bc;b.Tb=a.Tb;b.wb=a.wb;b.g=a.g;return b}g=Zd.prototype;g.Ie=function(a){var b=ae(this);b.ja=!0;b.ka=a;b.Nb="";return b};g.Je=function(a){var b=ae(this);b.ja=!0;b.ka=a;b.Nb="l";return b};g.Ke=function(a){var b=ae(this);b.ja=!0;b.ka=a;b.Nb="r";return b};
+g.ae=function(a,b){var c=ae(this);c.ma=!0;n(a)||(a=null);c.ec=a;null!=b?(c.Lb=!0,c.yb=b):(c.Lb=!1,c.yb="");return c};g.td=function(a,b){var c=ae(this);c.pa=!0;n(a)||(a=null);c.bc=a;n(b)?(c.Tb=!0,c.wb=b):(c.Zg=!1,c.wb="");return c};function be(a,b){var c=ae(a);c.g=b;return c}function ce(a){var b={};a.ma&&(b.sp=a.ec,a.Lb&&(b.sn=a.yb));a.pa&&(b.ep=a.bc,a.Tb&&(b.en=a.wb));if(a.ja){b.l=a.ka;var c=a.Nb;""===c&&(c=rd(a)?"l":"r");b.vf=c}a.g!==N&&(b.i=a.g.toString());return b}
+function de(a){return!(a.ma||a.pa||a.ja)}function ee(a){var b={};if(de(a)&&a.g==N)return b;var c;a.g===N?c="$priority":a.g===Yd?c="$value":a.g===Od?c="$key":(K(a.g instanceof Sd,"Unrecognized index type!"),c=a.g.toString());b.orderBy=B(c);a.ma&&(b.startAt=B(a.ec),a.Lb&&(b.startAt+=","+B(a.yb)));a.pa&&(b.endAt=B(a.bc),a.Tb&&(b.endAt+=","+B(a.wb)));a.ja&&(rd(a)?b.limitToFirst=a.ka:b.limitToLast=a.ka);return b}g.toString=function(){return B(ce(this))};function fe(a,b){this.Bd=a;this.dc=b}fe.prototype.get=function(a){var b=w(this.Bd,a);if(!b)throw Error("No index defined for "+a);return b===Qd?null:b};function ge(a,b,c){var d=na(a.Bd,function(d,f){var h=w(a.dc,f);K(h,"Missing index implementation for "+f);if(d===Qd){if(h.Ic(b.S)){for(var k=[],l=c.Xb(Sb),m=J(l);m;)m.name!=b.name&&k.push(m),m=J(l);k.push(b);return he(k,td(h))}return Qd}h=c.get(b.name);k=d;h&&(k=k.remove(new F(b.name,h)));return k.Oa(b,b.S)});return new fe(d,a.dc)}
+function ie(a,b,c){var d=na(a.Bd,function(a){if(a===Qd)return a;var d=c.get(b.name);return d?a.remove(new F(b.name,d)):a});return new fe(d,a.dc)}var je=new fe({".priority":Qd},{".priority":N});function sc(a,b){this.A=a;K(n(this.A)&&null!==this.A,"LeafNode shouldn't be created with null/undefined value.");this.aa=b||C;ke(this.aa);this.Cb=null}var le=["object","boolean","number","string"];g=sc.prototype;g.L=function(){return!0};g.B=function(){return this.aa};g.ga=function(a){return new sc(this.A,a)};g.J=function(a){return".priority"===a?this.aa:C};g.Y=function(a){return a.e()?this:".priority"===E(a)?this.aa:C};g.Da=function(){return!1};g.rf=function(){return null};
+g.O=function(a,b){return".priority"===a?this.ga(b):b.e()&&".priority"!==a?this:C.O(a,b).ga(this.aa)};g.K=function(a,b){var c=E(a);if(null===c)return b;if(b.e()&&".priority"!==c)return this;K(".priority"!==c||1===tc(a),".priority must be the last token in a path");return this.O(c,C.K(H(a),b))};g.e=function(){return!1};g.Eb=function(){return 0};g.R=function(){return!1};g.H=function(a){return a&&!this.B().e()?{".value":this.Ca(),".priority":this.B().H()}:this.Ca()};
+g.hash=function(){if(null===this.Cb){var a="";this.aa.e()||(a+="priority:"+me(this.aa.H())+":");var b=typeof this.A,a=a+(b+":"),a="number"===b?a+Yc(this.A):a+this.A;this.Cb=Ic(a)}return this.Cb};g.Ca=function(){return this.A};g.Dc=function(a){if(a===C)return 1;if(a instanceof T)return-1;K(a.L(),"Unknown node type");var b=typeof a.A,c=typeof this.A,d=Na(le,b),e=Na(le,c);K(0<=d,"Unknown leaf type: "+b);K(0<=e,"Unknown leaf type: "+c);return d===e?"object"===c?0:this.A<a.A?-1:this.A===a.A?0:1:e-d};
+g.mb=function(){return this};g.Jc=function(){return!0};g.ca=function(a){return a===this?!0:a.L()?this.A===a.A&&this.aa.ca(a.aa):!1};g.toString=function(){return B(this.H(!0))};function T(a,b,c){this.m=a;(this.aa=b)&&ke(this.aa);a.e()&&K(!this.aa||this.aa.e(),"An empty node cannot have a priority");this.xb=c;this.Cb=null}g=T.prototype;g.L=function(){return!1};g.B=function(){return this.aa||C};g.ga=function(a){return this.m.e()?this:new T(this.m,a,this.xb)};g.J=function(a){if(".priority"===a)return this.B();a=this.m.get(a);return null===a?C:a};g.Y=function(a){var b=E(a);return null===b?this:this.J(b).Y(H(a))};g.Da=function(a){return null!==this.m.get(a)};
+g.O=function(a,b){K(b,"We should always be passing snapshot nodes");if(".priority"===a)return this.ga(b);var c=new F(a,b),d,e;b.e()?(d=this.m.remove(a),c=ie(this.xb,c,this.m)):(d=this.m.Oa(a,b),c=ge(this.xb,c,this.m));e=d.e()?C:this.aa;return new T(d,e,c)};g.K=function(a,b){var c=E(a);if(null===c)return b;K(".priority"!==E(a)||1===tc(a),".priority must be the last token in a path");var d=this.J(c).K(H(a),b);return this.O(c,d)};g.e=function(){return this.m.e()};g.Eb=function(){return this.m.count()};
+var ne=/^(0|[1-9]\d*)$/;g=T.prototype;g.H=function(a){if(this.e())return null;var b={},c=0,d=0,e=!0;this.R(N,function(f,h){b[f]=h.H(a);c++;e&&ne.test(f)?d=Math.max(d,Number(f)):e=!1});if(!a&&e&&d<2*c){var f=[],h;for(h in b)f[h]=b[h];return f}a&&!this.B().e()&&(b[".priority"]=this.B().H());return b};g.hash=function(){if(null===this.Cb){var a="";this.B().e()||(a+="priority:"+me(this.B().H())+":");this.R(N,function(b,c){var d=c.hash();""!==d&&(a+=":"+b+":"+d)});this.Cb=""===a?"":Ic(a)}return this.Cb};
+g.rf=function(a,b,c){return(c=oe(this,c))?(a=bc(c,new F(a,b)))?a.name:null:bc(this.m,a)};function ud(a,b){var c;c=(c=oe(a,b))?(c=c.Sc())&&c.name:a.m.Sc();return c?new F(c,a.m.get(c)):null}function vd(a,b){var c;c=(c=oe(a,b))?(c=c.fc())&&c.name:a.m.fc();return c?new F(c,a.m.get(c)):null}g.R=function(a,b){var c=oe(this,a);return c?c.ia(function(a){return b(a.name,a.S)}):this.m.ia(b)};g.Xb=function(a){return this.Yb(a.Tc(),a)};
+g.Yb=function(a,b){var c=oe(this,b);if(c)return c.Yb(a,function(a){return a});for(var c=this.m.Yb(a.name,Sb),d=dc(c);null!=d&&0>b.compare(d,a);)J(c),d=dc(c);return c};g.sf=function(a){return this.$b(a.Qc(),a)};g.$b=function(a,b){var c=oe(this,b);if(c)return c.$b(a,function(a){return a});for(var c=this.m.$b(a.name,Sb),d=dc(c);null!=d&&0<b.compare(d,a);)J(c),d=dc(c);return c};g.Dc=function(a){return this.e()?a.e()?0:-1:a.L()||a.e()?1:a===Td?-1:0};
+g.mb=function(a){if(a===Od||ta(this.xb.dc,a.toString()))return this;var b=this.xb,c=this.m;K(a!==Od,"KeyIndex always exists and isn't meant to be added to the IndexMap.");for(var d=[],e=!1,c=c.Xb(Sb),f=J(c);f;)e=e||a.Ic(f.S),d.push(f),f=J(c);d=e?he(d,td(a)):Qd;e=a.toString();c=xa(b.dc);c[e]=a;a=xa(b.Bd);a[e]=d;return new T(this.m,this.aa,new fe(a,c))};g.Jc=function(a){return a===Od||ta(this.xb.dc,a.toString())};
+g.ca=function(a){if(a===this)return!0;if(a.L())return!1;if(this.B().ca(a.B())&&this.m.count()===a.m.count()){var b=this.Xb(N);a=a.Xb(N);for(var c=J(b),d=J(a);c&&d;){if(c.name!==d.name||!c.S.ca(d.S))return!1;c=J(b);d=J(a)}return null===c&&null===d}return!1};function oe(a,b){return b===Od?null:a.xb.get(b.toString())}g.toString=function(){return B(this.H(!0))};function M(a,b){if(null===a)return C;var c=null;"object"===typeof a&&".priority"in a?c=a[".priority"]:"undefined"!==typeof b&&(c=b);K(null===c||"string"===typeof c||"number"===typeof c||"object"===typeof c&&".sv"in c,"Invalid priority type found: "+typeof c);"object"===typeof a&&".value"in a&&null!==a[".value"]&&(a=a[".value"]);if("object"!==typeof a||".sv"in a)return new sc(a,M(c));if(a instanceof Array){var d=C,e=a;r(e,function(a,b){if(v(e,b)&&"."!==b.substring(0,1)){var c=M(a);if(c.L()||!c.e())d=
+d.O(b,c)}});return d.ga(M(c))}var f=[],h=!1,k=a;ib(k,function(a){if("string"!==typeof a||"."!==a.substring(0,1)){var b=M(k[a]);b.e()||(h=h||!b.B().e(),f.push(new F(a,b)))}});if(0==f.length)return C;var l=he(f,Tb,function(a){return a.name},Vb);if(h){var m=he(f,td(N));return new T(l,M(c),new fe({".priority":m},{".priority":N}))}return new T(l,M(c),je)}var pe=Math.log(2);
+function qe(a){this.count=parseInt(Math.log(a+1)/pe,10);this.jf=this.count-1;this.cg=a+1&parseInt(Array(this.count+1).join("1"),2)}function re(a){var b=!(a.cg&1<<a.jf);a.jf--;return b}
+function he(a,b,c,d){function e(b,d){var f=d-b;if(0==f)return null;if(1==f){var m=a[b],t=c?c(m):m;return new ec(t,m.S,!1,null,null)}var m=parseInt(f/2,10)+b,f=e(b,m),y=e(m+1,d),m=a[m],t=c?c(m):m;return new ec(t,m.S,!1,f,y)}a.sort(b);var f=function(b){function d(b,h){var k=t-b,y=t;t-=b;var y=e(k+1,y),k=a[k],I=c?c(k):k,y=new ec(I,k.S,h,null,y);f?f.left=y:m=y;f=y}for(var f=null,m=null,t=a.length,y=0;y<b.count;++y){var I=re(b),xd=Math.pow(2,b.count-(y+1));I?d(xd,!1):(d(xd,!1),d(xd,!0))}return m}(new qe(a.length));
+return null!==f?new $b(d||b,f):new $b(d||b)}function me(a){return"number"===typeof a?"number:"+Yc(a):"string:"+a}function ke(a){if(a.L()){var b=a.H();K("string"===typeof b||"number"===typeof b||"object"===typeof b&&v(b,".sv"),"Priority must be a string or number.")}else K(a===Td||a.e(),"priority of unexpected type.");K(a===Td||a.B().e(),"Priority nodes can't have a priority of their own.")}var C=new T(new $b(Vb),null,je);function se(){T.call(this,new $b(Vb),C,je)}ma(se,T);g=se.prototype;
+g.Dc=function(a){return a===this?0:1};g.ca=function(a){return a===this};g.B=function(){return this};g.J=function(){return C};g.e=function(){return!1};var Td=new se,Rd=new F("[MIN_NAME]",C),Xd=new F("[MAX_NAME]",Td);function Id(a,b){this.Q=a;this.Yd=b}function Fd(a,b,c,d){return new Id(new tb(b,c,d),a.Yd)}function Jd(a){return a.Q.ea?a.Q.j():null}Id.prototype.C=function(){return this.Yd};function ub(a){return a.Yd.ea?a.Yd.j():null};function te(a,b){this.V=a;var c=a.o,d=new kd(c.g),c=de(c)?new kd(c.g):c.ja?new qd(c):new ld(c);this.Hf=new yd(c);var e=b.C(),f=b.Q,h=d.xa(C,e.j(),null),k=c.xa(C,f.j(),null);this.Ka=new Id(new tb(k,f.ea,c.Na()),new tb(h,e.ea,d.Na()));this.Ya=[];this.jg=new cd(a)}function ue(a){return a.V}g=te.prototype;g.C=function(){return this.Ka.C().j()};g.gb=function(a){var b=ub(this.Ka);return b&&(de(this.V.o)||!a.e()&&!b.J(E(a)).e())?b.Y(a):null};g.e=function(){return 0===this.Ya.length};g.Pb=function(a){this.Ya.push(a)};
+g.kb=function(a,b){var c=[];if(b){K(null==a,"A cancel should cancel all event registrations.");var d=this.V.path;Oa(this.Ya,function(a){(a=a.gf(b,d))&&c.push(a)})}if(a){for(var e=[],f=0;f<this.Ya.length;++f){var h=this.Ya[f];if(!h.matches(a))e.push(h);else if(a.tf()){e=e.concat(this.Ya.slice(f+1));break}}this.Ya=e}else this.Ya=[];return c};
+g.ab=function(a,b,c){a.type===Bd&&null!==a.source.Ib&&(K(ub(this.Ka),"We should always have a full cache before handling merges"),K(Jd(this.Ka),"Missing event cache, even though we have a server cache"));var d=this.Ka;a=this.Hf.ab(d,a,b,c);b=this.Hf;c=a.ke;K(c.Q.j().Jc(b.U.g),"Event snap not indexed");K(c.C().j().Jc(b.U.g),"Server snap not indexed");K(Ib(a.ke.C())||!Ib(d.C()),"Once a server snap is complete, it should never go back");this.Ka=a.ke;return ve(this,a.dg,a.ke.Q.j(),null)};
+function we(a,b){var c=a.Ka.Q,d=[];c.j().L()||c.j().R(N,function(a,b){d.push(new D("child_added",b,a))});c.ea&&d.push(Eb(c.j()));return ve(a,d,c.j(),b)}function ve(a,b,c,d){return dd(a.jg,b,c,d?[d]:a.Ya)};function xe(a,b,c){this.type=Bd;this.source=a;this.path=b;this.children=c}xe.prototype.Xc=function(a){if(this.path.e())return a=this.children.subtree(new L(a)),a.e()?null:a.value?new Wb(this.source,G,a.value):new xe(this.source,G,a);K(E(this.path)===a,"Can't get a merge for a child not on the path of the operation");return new xe(this.source,H(this.path),this.children)};xe.prototype.toString=function(){return"Operation("+this.path+": "+this.source.toString()+" merge: "+this.children.toString()+")"};function ye(a,b){this.f=Nc("p:rest:");this.F=a;this.Hb=b;this.Aa=null;this.$={}}function ze(a,b){if(n(b))return"tag$"+b;var c=a.o;K(de(c)&&c.g==N,"should have a tag if it's not a default query.");return a.path.toString()}g=ye.prototype;
+g.yf=function(a,b,c,d){var e=a.path.toString();this.f("Listen called for "+e+" "+a.va());var f=ze(a,c),h={};this.$[f]=h;a=ee(a.o);var k=this;Ae(this,e+".json",a,function(a,b){var t=b;404===a&&(a=t=null);null===a&&k.Hb(e,t,!1,c);w(k.$,f)===h&&d(a?401==a?"permission_denied":"rest_error:"+a:"ok",null)})};g.Pf=function(a,b){var c=ze(a,b);delete this.$[c]};g.N=function(a,b){this.Aa=a;var c=$c(a),d=c.data,c=c.Bc&&c.Bc.exp;b&&b("ok",{auth:d,expires:c})};g.he=function(a){this.Aa=null;a("ok",null)};g.Ne=function(){};
+g.Cf=function(){};g.Jd=function(){};g.put=function(){};g.zf=function(){};g.Ve=function(){};
+function Ae(a,b,c,d){c=c||{};c.format="export";a.Aa&&(c.auth=a.Aa);var e=(a.F.lb?"https://":"http://")+a.F.host+b+"?"+kb(c);a.f("Sending REST request for "+e);var f=new XMLHttpRequest;f.onreadystatechange=function(){if(d&&4===f.readyState){a.f("REST Response for "+e+" received. status:",f.status,"response:",f.responseText);var b=null;if(200<=f.status&&300>f.status){try{b=nb(f.responseText)}catch(c){Q("Failed to parse JSON response for "+e+": "+f.responseText)}d(null,b)}else 401!==f.status&&404!==
+f.status&&Q("Got unsuccessful REST response for "+e+" Status: "+f.status),d(f.status);d=null}};f.open("GET",e,!0);f.send()};function Be(a,b){this.value=a;this.children=b||Ce}var Ce=new $b(function(a,b){return a===b?0:a<b?-1:1});function De(a){var b=Nd;r(a,function(a,d){b=b.set(new L(d),a)});return b}g=Be.prototype;g.e=function(){return null===this.value&&this.children.e()};function Ee(a,b,c){if(null!=a.value&&c(a.value))return{path:G,value:a.value};if(b.e())return null;var d=E(b);a=a.children.get(d);return null!==a?(b=Ee(a,H(b),c),null!=b?{path:(new L(d)).u(b.path),value:b.value}:null):null}
+function Fe(a,b){return Ee(a,b,function(){return!0})}g.subtree=function(a){if(a.e())return this;var b=this.children.get(E(a));return null!==b?b.subtree(H(a)):Nd};g.set=function(a,b){if(a.e())return new Be(b,this.children);var c=E(a),d=(this.children.get(c)||Nd).set(H(a),b),c=this.children.Oa(c,d);return new Be(this.value,c)};
+g.remove=function(a){if(a.e())return this.children.e()?Nd:new Be(null,this.children);var b=E(a),c=this.children.get(b);return c?(a=c.remove(H(a)),b=a.e()?this.children.remove(b):this.children.Oa(b,a),null===this.value&&b.e()?Nd:new Be(this.value,b)):this};g.get=function(a){if(a.e())return this.value;var b=this.children.get(E(a));return b?b.get(H(a)):null};
+function Md(a,b,c){if(b.e())return c;var d=E(b);b=Md(a.children.get(d)||Nd,H(b),c);d=b.e()?a.children.remove(d):a.children.Oa(d,b);return new Be(a.value,d)}function Ge(a,b){return He(a,G,b)}function He(a,b,c){var d={};a.children.ia(function(a,f){d[a]=He(f,b.u(a),c)});return c(b,a.value,d)}function Ie(a,b,c){return Je(a,b,G,c)}function Je(a,b,c,d){var e=a.value?d(c,a.value):!1;if(e)return e;if(b.e())return null;e=E(b);return(a=a.children.get(e))?Je(a,H(b),c.u(e),d):null}
+function Ke(a,b,c){var d=G;if(!b.e()){var e=!0;a.value&&(e=c(d,a.value));!0===e&&(e=E(b),(a=a.children.get(e))&&Le(a,H(b),d.u(e),c))}}function Le(a,b,c,d){if(b.e())return a;a.value&&d(c,a.value);var e=E(b);return(a=a.children.get(e))?Le(a,H(b),c.u(e),d):Nd}function Kd(a,b){Me(a,G,b)}function Me(a,b,c){a.children.ia(function(a,e){Me(e,b.u(a),c)});a.value&&c(b,a.value)}function Ne(a,b){a.children.ia(function(a,d){d.value&&b(a,d.value)})}var Nd=new Be(null);
+Be.prototype.toString=function(){var a={};Kd(this,function(b,c){a[b.toString()]=c.toString()});return B(a)};function Oe(a,b,c){this.type=Ed;this.source=Pe;this.path=a;this.Qb=b;this.Vd=c}Oe.prototype.Xc=function(a){if(this.path.e()){if(null!=this.Qb.value)return K(this.Qb.children.e(),"affectedTree should not have overlapping affected paths."),this;a=this.Qb.subtree(new L(a));return new Oe(G,a,this.Vd)}K(E(this.path)===a,"operationForChild called for unrelated child.");return new Oe(H(this.path),this.Qb,this.Vd)};
+Oe.prototype.toString=function(){return"Operation("+this.path+": "+this.source.toString()+" ack write revert="+this.Vd+" affectedTree="+this.Qb+")"};var Xb=0,Bd=1,Ed=2,Zb=3;function Qe(a,b,c,d){this.xe=a;this.pf=b;this.Ib=c;this.bf=d;K(!d||b,"Tagged queries must be from server.")}var Pe=new Qe(!0,!1,null,!1),Re=new Qe(!1,!0,null,!1);Qe.prototype.toString=function(){return this.xe?"user":this.bf?"server(queryID="+this.Ib+")":"server"};function Se(a){this.W=a}var Te=new Se(new Be(null));function Ue(a,b,c){if(b.e())return new Se(new Be(c));var d=Fe(a.W,b);if(null!=d){var e=d.path,d=d.value;b=O(e,b);d=d.K(b,c);return new Se(a.W.set(e,d))}a=Md(a.W,b,new Be(c));return new Se(a)}function Ve(a,b,c){var d=a;ib(c,function(a,c){d=Ue(d,b.u(a),c)});return d}Se.prototype.Rd=function(a){if(a.e())return Te;a=Md(this.W,a,Nd);return new Se(a)};function We(a,b){var c=Fe(a.W,b);return null!=c?a.W.get(c.path).Y(O(c.path,b)):null}
+function Xe(a){var b=[],c=a.W.value;null!=c?c.L()||c.R(N,function(a,c){b.push(new F(a,c))}):a.W.children.ia(function(a,c){null!=c.value&&b.push(new F(a,c.value))});return b}function Ye(a,b){if(b.e())return a;var c=We(a,b);return null!=c?new Se(new Be(c)):new Se(a.W.subtree(b))}Se.prototype.e=function(){return this.W.e()};Se.prototype.apply=function(a){return Ze(G,this.W,a)};
+function Ze(a,b,c){if(null!=b.value)return c.K(a,b.value);var d=null;b.children.ia(function(b,f){".priority"===b?(K(null!==f.value,"Priority writes must always be leaf nodes"),d=f.value):c=Ze(a.u(b),f,c)});c.Y(a).e()||null===d||(c=c.K(a.u(".priority"),d));return c};function $e(){this.T=Te;this.na=[];this.Mc=-1}function af(a,b){for(var c=0;c<a.na.length;c++){var d=a.na[c];if(d.kd===b)return d}return null}g=$e.prototype;
+g.Rd=function(a){var b=Ua(this.na,function(b){return b.kd===a});K(0<=b,"removeWrite called with nonexistent writeId.");var c=this.na[b];this.na.splice(b,1);for(var d=c.visible,e=!1,f=this.na.length-1;d&&0<=f;){var h=this.na[f];h.visible&&(f>=b&&bf(h,c.path)?d=!1:c.path.contains(h.path)&&(e=!0));f--}if(d){if(e)this.T=cf(this.na,df,G),this.Mc=0<this.na.length?this.na[this.na.length-1].kd:-1;else if(c.Ga)this.T=this.T.Rd(c.path);else{var k=this;r(c.children,function(a,b){k.T=k.T.Rd(c.path.u(b))})}return!0}return!1};
+g.za=function(a,b,c,d){if(c||d){var e=Ye(this.T,a);return!d&&e.e()?b:d||null!=b||null!=We(e,G)?(e=cf(this.na,function(b){return(b.visible||d)&&(!c||!(0<=Na(c,b.kd)))&&(b.path.contains(a)||a.contains(b.path))},a),b=b||C,e.apply(b)):null}e=We(this.T,a);if(null!=e)return e;e=Ye(this.T,a);return e.e()?b:null!=b||null!=We(e,G)?(b=b||C,e.apply(b)):null};
+g.yc=function(a,b){var c=C,d=We(this.T,a);if(d)d.L()||d.R(N,function(a,b){c=c.O(a,b)});else if(b){var e=Ye(this.T,a);b.R(N,function(a,b){var d=Ye(e,new L(a)).apply(b);c=c.O(a,d)});Oa(Xe(e),function(a){c=c.O(a.name,a.S)})}else e=Ye(this.T,a),Oa(Xe(e),function(a){c=c.O(a.name,a.S)});return c};g.ld=function(a,b,c,d){K(c||d,"Either existingEventSnap or existingServerSnap must exist");a=a.u(b);if(null!=We(this.T,a))return null;a=Ye(this.T,a);return a.e()?d.Y(b):a.apply(d.Y(b))};
+g.xc=function(a,b,c){a=a.u(b);var d=We(this.T,a);return null!=d?d:sb(c,b)?Ye(this.T,a).apply(c.j().J(b)):null};g.tc=function(a){return We(this.T,a)};g.oe=function(a,b,c,d,e,f){var h;a=Ye(this.T,a);h=We(a,G);if(null==h)if(null!=b)h=a.apply(b);else return[];h=h.mb(f);if(h.e()||h.L())return[];b=[];a=td(f);e=e?h.$b(c,f):h.Yb(c,f);for(f=J(e);f&&b.length<d;)0!==a(f,c)&&b.push(f),f=J(e);return b};
+function bf(a,b){return a.Ga?a.path.contains(b):!!ua(a.children,function(c,d){return a.path.u(d).contains(b)})}function df(a){return a.visible}
+function cf(a,b,c){for(var d=Te,e=0;e<a.length;++e){var f=a[e];if(b(f)){var h=f.path;if(f.Ga)c.contains(h)?(h=O(c,h),d=Ue(d,h,f.Ga)):h.contains(c)&&(h=O(h,c),d=Ue(d,G,f.Ga.Y(h)));else if(f.children)if(c.contains(h))h=O(c,h),d=Ve(d,h,f.children);else{if(h.contains(c))if(h=O(h,c),h.e())d=Ve(d,G,f.children);else if(f=w(f.children,E(h)))f=f.Y(H(h)),d=Ue(d,G,f)}else throw Gc("WriteRecord should have .snap or .children");}}return d}function ef(a,b){this.Mb=a;this.W=b}g=ef.prototype;
+g.za=function(a,b,c){return this.W.za(this.Mb,a,b,c)};g.yc=function(a){return this.W.yc(this.Mb,a)};g.ld=function(a,b,c){return this.W.ld(this.Mb,a,b,c)};g.tc=function(a){return this.W.tc(this.Mb.u(a))};g.oe=function(a,b,c,d,e){return this.W.oe(this.Mb,a,b,c,d,e)};g.xc=function(a,b){return this.W.xc(this.Mb,a,b)};g.u=function(a){return new ef(this.Mb.u(a),this.W)};function ff(){this.ya={}}g=ff.prototype;g.e=function(){return wa(this.ya)};g.ab=function(a,b,c){var d=a.source.Ib;if(null!==d)return d=w(this.ya,d),K(null!=d,"SyncTree gave us an op for an invalid query."),d.ab(a,b,c);var e=[];r(this.ya,function(d){e=e.concat(d.ab(a,b,c))});return e};g.Pb=function(a,b,c,d,e){var f=a.va(),h=w(this.ya,f);if(!h){var h=c.za(e?d:null),k=!1;h?k=!0:(h=d instanceof T?c.yc(d):C,k=!1);h=new te(a,new Id(new tb(h,k,!1),new tb(d,e,!1)));this.ya[f]=h}h.Pb(b);return we(h,b)};
+g.kb=function(a,b,c){var d=a.va(),e=[],f=[],h=null!=gf(this);if("default"===d){var k=this;r(this.ya,function(a,d){f=f.concat(a.kb(b,c));a.e()&&(delete k.ya[d],de(a.V.o)||e.push(a.V))})}else{var l=w(this.ya,d);l&&(f=f.concat(l.kb(b,c)),l.e()&&(delete this.ya[d],de(l.V.o)||e.push(l.V)))}h&&null==gf(this)&&e.push(new U(a.k,a.path));return{Ig:e,kg:f}};function hf(a){return Pa(ra(a.ya),function(a){return!de(a.V.o)})}g.gb=function(a){var b=null;r(this.ya,function(c){b=b||c.gb(a)});return b};
+function jf(a,b){if(de(b.o))return gf(a);var c=b.va();return w(a.ya,c)}function gf(a){return va(a.ya,function(a){return de(a.V.o)})||null};function kf(a){this.ta=Nd;this.jb=new $e;this.af={};this.lc={};this.Nc=a}function lf(a,b,c,d,e){var f=a.jb,h=e;K(d>f.Mc,"Stacking an older write on top of newer ones");n(h)||(h=!0);f.na.push({path:b,Ga:c,kd:d,visible:h});h&&(f.T=Ue(f.T,b,c));f.Mc=d;return e?mf(a,new Wb(Pe,b,c)):[]}function nf(a,b,c,d){var e=a.jb;K(d>e.Mc,"Stacking an older merge on top of newer ones");e.na.push({path:b,children:c,kd:d,visible:!0});e.T=Ve(e.T,b,c);e.Mc=d;c=De(c);return mf(a,new xe(Pe,b,c))}
+function of(a,b,c){c=c||!1;var d=af(a.jb,b);if(a.jb.Rd(b)){var e=Nd;null!=d.Ga?e=e.set(G,!0):ib(d.children,function(a,b){e=e.set(new L(a),b)});return mf(a,new Oe(d.path,e,c))}return[]}function pf(a,b,c){c=De(c);return mf(a,new xe(Re,b,c))}function qf(a,b,c,d){d=rf(a,d);if(null!=d){var e=sf(d);d=e.path;e=e.Ib;b=O(d,b);c=new Wb(new Qe(!1,!0,e,!0),b,c);return tf(a,d,c)}return[]}
+function uf(a,b,c,d){if(d=rf(a,d)){var e=sf(d);d=e.path;e=e.Ib;b=O(d,b);c=De(c);c=new xe(new Qe(!1,!0,e,!0),b,c);return tf(a,d,c)}return[]}
+kf.prototype.Pb=function(a,b){var c=a.path,d=null,e=!1;Ke(this.ta,c,function(a,b){var f=O(a,c);d=b.gb(f);e=e||null!=gf(b);return!d});var f=this.ta.get(c);f?(e=e||null!=gf(f),d=d||f.gb(G)):(f=new ff,this.ta=this.ta.set(c,f));var h;null!=d?h=!0:(h=!1,d=C,Ne(this.ta.subtree(c),function(a,b){var c=b.gb(G);c&&(d=d.O(a,c))}));var k=null!=jf(f,a);if(!k&&!de(a.o)){var l=vf(a);K(!(l in this.lc),"View does not exist, but we have a tag");var m=wf++;this.lc[l]=m;this.af["_"+m]=l}h=f.Pb(a,b,new ef(c,this.jb),
+d,h);k||e||(f=jf(f,a),h=h.concat(xf(this,a,f)));return h};
+kf.prototype.kb=function(a,b,c){var d=a.path,e=this.ta.get(d),f=[];if(e&&("default"===a.va()||null!=jf(e,a))){f=e.kb(a,b,c);e.e()&&(this.ta=this.ta.remove(d));e=f.Ig;f=f.kg;b=-1!==Ua(e,function(a){return de(a.o)});var h=Ie(this.ta,d,function(a,b){return null!=gf(b)});if(b&&!h&&(d=this.ta.subtree(d),!d.e()))for(var d=yf(d),k=0;k<d.length;++k){var l=d[k],m=l.V,l=zf(this,l);this.Nc.Ye(m,Af(this,m),l.xd,l.G)}if(!h&&0<e.length&&!c)if(b)this.Nc.be(a,null);else{var t=this;Oa(e,function(a){a.va();var b=t.lc[vf(a)];
+t.Nc.be(a,b)})}Bf(this,e)}return f};kf.prototype.za=function(a,b){var c=this.jb,d=Ie(this.ta,a,function(b,c){var d=O(b,a);if(d=c.gb(d))return d});return c.za(a,d,b,!0)};function yf(a){return Ge(a,function(a,c,d){if(c&&null!=gf(c))return[gf(c)];var e=[];c&&(e=hf(c));r(d,function(a){e=e.concat(a)});return e})}function Bf(a,b){for(var c=0;c<b.length;++c){var d=b[c];if(!de(d.o)){var d=vf(d),e=a.lc[d];delete a.lc[d];delete a.af["_"+e]}}}
+function xf(a,b,c){var d=b.path,e=Af(a,b);c=zf(a,c);b=a.Nc.Ye(b,e,c.xd,c.G);d=a.ta.subtree(d);if(e)K(null==gf(d.value),"If we're adding a query, it shouldn't be shadowed");else for(e=Ge(d,function(a,b,c){if(!a.e()&&b&&null!=gf(b))return[ue(gf(b))];var d=[];b&&(d=d.concat(Qa(hf(b),function(a){return a.V})));r(c,function(a){d=d.concat(a)});return d}),d=0;d<e.length;++d)c=e[d],a.Nc.be(c,Af(a,c));return b}
+function zf(a,b){var c=b.V,d=Af(a,c);return{xd:function(){return(b.C()||C).hash()},G:function(b){if("ok"===b){if(d){var f=c.path;if(b=rf(a,d)){var h=sf(b);b=h.path;h=h.Ib;f=O(b,f);f=new Yb(new Qe(!1,!0,h,!0),f);b=tf(a,b,f)}else b=[]}else b=mf(a,new Yb(Re,c.path));return b}f="Unknown Error";"too_big"===b?f="The data requested exceeds the maximum size that can be accessed with a single request.":"permission_denied"==b?f="Client doesn't have permission to access the desired data.":"unavailable"==b&&
+(f="The service is unavailable");f=Error(b+": "+f);f.code=b.toUpperCase();return a.kb(c,null,f)}}}function vf(a){return a.path.toString()+"$"+a.va()}function sf(a){var b=a.indexOf("$");K(-1!==b&&b<a.length-1,"Bad queryKey.");return{Ib:a.substr(b+1),path:new L(a.substr(0,b))}}function rf(a,b){var c=a.af,d="_"+b;return d in c?c[d]:void 0}function Af(a,b){var c=vf(b);return w(a.lc,c)}var wf=1;
+function tf(a,b,c){var d=a.ta.get(b);K(d,"Missing sync point for query tag that we're tracking");return d.ab(c,new ef(b,a.jb),null)}function mf(a,b){return Cf(a,b,a.ta,null,new ef(G,a.jb))}function Cf(a,b,c,d,e){if(b.path.e())return Df(a,b,c,d,e);var f=c.get(G);null==d&&null!=f&&(d=f.gb(G));var h=[],k=E(b.path),l=b.Xc(k);if((c=c.children.get(k))&&l)var m=d?d.J(k):null,k=e.u(k),h=h.concat(Cf(a,l,c,m,k));f&&(h=h.concat(f.ab(b,e,d)));return h}
+function Df(a,b,c,d,e){var f=c.get(G);null==d&&null!=f&&(d=f.gb(G));var h=[];c.children.ia(function(c,f){var m=d?d.J(c):null,t=e.u(c),y=b.Xc(c);y&&(h=h.concat(Df(a,y,f,m,t)))});f&&(h=h.concat(f.ab(b,e,d)));return h};function Ef(){this.children={};this.nd=0;this.value=null}function Ff(a,b,c){this.Gd=a?a:"";this.Zc=b?b:null;this.w=c?c:new Ef}function Gf(a,b){for(var c=b instanceof L?b:new L(b),d=a,e;null!==(e=E(c));)d=new Ff(e,d,w(d.w.children,e)||new Ef),c=H(c);return d}g=Ff.prototype;g.Ca=function(){return this.w.value};function Hf(a,b){K("undefined"!==typeof b,"Cannot set value to undefined");a.w.value=b;If(a)}g.clear=function(){this.w.value=null;this.w.children={};this.w.nd=0;If(this)};
+g.wd=function(){return 0<this.w.nd};g.e=function(){return null===this.Ca()&&!this.wd()};g.R=function(a){var b=this;r(this.w.children,function(c,d){a(new Ff(d,b,c))})};function Jf(a,b,c,d){c&&!d&&b(a);a.R(function(a){Jf(a,b,!0,d)});c&&d&&b(a)}function Kf(a,b){for(var c=a.parent();null!==c&&!b(c);)c=c.parent()}g.path=function(){return new L(null===this.Zc?this.Gd:this.Zc.path()+"/"+this.Gd)};g.name=function(){return this.Gd};g.parent=function(){return this.Zc};
+function If(a){if(null!==a.Zc){var b=a.Zc,c=a.Gd,d=a.e(),e=v(b.w.children,c);d&&e?(delete b.w.children[c],b.w.nd--,If(b)):d||e||(b.w.children[c]=a.w,b.w.nd++,If(b))}};function Lf(a){K(ea(a)&&0<a.length,"Requires a non-empty array");this.Vf=a;this.Oc={}}Lf.prototype.ge=function(a,b){for(var c=this.Oc[a]||[],d=0;d<c.length;d++)c[d].zc.apply(c[d].Ma,Array.prototype.slice.call(arguments,1))};Lf.prototype.Fb=function(a,b,c){Mf(this,a);this.Oc[a]=this.Oc[a]||[];this.Oc[a].push({zc:b,Ma:c});(a=this.Be(a))&&b.apply(c,a)};Lf.prototype.hc=function(a,b,c){Mf(this,a);a=this.Oc[a]||[];for(var d=0;d<a.length;d++)if(a[d].zc===b&&(!c||c===a[d].Ma)){a.splice(d,1);break}};
+function Mf(a,b){K(Ta(a.Vf,function(a){return a===b}),"Unknown event: "+b)};var Nf=function(){var a=0,b=[];return function(c){var d=c===a;a=c;for(var e=Array(8),f=7;0<=f;f--)e[f]="-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(c%64),c=Math.floor(c/64);K(0===c,"Cannot push at time == 0");c=e.join("");if(d){for(f=11;0<=f&&63===b[f];f--)b[f]=0;b[f]++}else for(f=0;12>f;f++)b[f]=Math.floor(64*Math.random());for(f=0;12>f;f++)c+="-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(b[f]);K(20===c.length,"nextPushId: Length should be 20.");
+return c}}();function Of(){Lf.call(this,["online"]);this.jc=!0;if("undefined"!==typeof window&&"undefined"!==typeof window.addEventListener){var a=this;window.addEventListener("online",function(){a.jc||(a.jc=!0,a.ge("online",!0))},!1);window.addEventListener("offline",function(){a.jc&&(a.jc=!1,a.ge("online",!1))},!1)}}ma(Of,Lf);Of.prototype.Be=function(a){K("online"===a,"Unknown event type: "+a);return[this.jc]};ca(Of);function Pf(){Lf.call(this,["visible"]);var a,b;"undefined"!==typeof document&&"undefined"!==typeof document.addEventListener&&("undefined"!==typeof document.hidden?(b="visibilitychange",a="hidden"):"undefined"!==typeof document.mozHidden?(b="mozvisibilitychange",a="mozHidden"):"undefined"!==typeof document.msHidden?(b="msvisibilitychange",a="msHidden"):"undefined"!==typeof document.webkitHidden&&(b="webkitvisibilitychange",a="webkitHidden"));this.Ob=!0;if(b){var c=this;document.addEventListener(b,
+function(){var b=!document[a];b!==c.Ob&&(c.Ob=b,c.ge("visible",b))},!1)}}ma(Pf,Lf);Pf.prototype.Be=function(a){K("visible"===a,"Unknown event type: "+a);return[this.Ob]};ca(Pf);var Qf=/[\[\].#$\/\u0000-\u001F\u007F]/,Rf=/[\[\].#$\u0000-\u001F\u007F]/,Sf=/^[a-zA-Z][a-zA-Z._\-+]+$/;function Tf(a){return p(a)&&0!==a.length&&!Qf.test(a)}function Uf(a){return null===a||p(a)||ga(a)&&!Rc(a)||ia(a)&&v(a,".sv")}function Vf(a,b,c,d){d&&!n(b)||Wf(z(a,1,d),b,c)}
+function Wf(a,b,c){c instanceof L&&(c=new vc(c,a));if(!n(b))throw Error(a+"contains undefined "+yc(c));if(ha(b))throw Error(a+"contains a function "+yc(c)+" with contents: "+b.toString());if(Rc(b))throw Error(a+"contains "+b.toString()+" "+yc(c));if(p(b)&&b.length>10485760/3&&10485760<wc(b))throw Error(a+"contains a string greater than 10485760 utf8 bytes "+yc(c)+" ('"+b.substring(0,50)+"...')");if(ia(b)){var d=!1,e=!1;ib(b,function(b,h){if(".value"===b)d=!0;else if(".priority"!==b&&".sv"!==b&&(e=
+!0,!Tf(b)))throw Error(a+" contains an invalid key ("+b+") "+yc(c)+'.  Keys must be non-empty strings and can\'t contain ".", "#", "$", "/", "[", or "]"');c.push(b);Wf(a,h,c);c.pop()});if(d&&e)throw Error(a+' contains ".value" child '+yc(c)+" in addition to actual children.");}}
+function Xf(a,b,c){if(!ia(b)||ea(b))throw Error(z(a,1,!1)+" must be an Object containing the children to replace.");if(v(b,".value"))throw Error(z(a,1,!1)+' must not contain ".value".  To overwrite with a leaf value, just use .set() instead.');Vf(a,b,c,!1)}
+function Yf(a,b,c){if(Rc(c))throw Error(z(a,b,!1)+"is "+c.toString()+", but must be a valid Firebase priority (a string, finite number, server value, or null).");if(!Uf(c))throw Error(z(a,b,!1)+"must be a valid Firebase priority (a string, finite number, server value, or null).");}
+function Zf(a,b,c){if(!c||n(b))switch(b){case "value":case "child_added":case "child_removed":case "child_changed":case "child_moved":break;default:throw Error(z(a,1,c)+'must be a valid event type: "value", "child_added", "child_removed", "child_changed", or "child_moved".');}}function $f(a,b,c,d){if((!d||n(c))&&!Tf(c))throw Error(z(a,b,d)+'was an invalid key: "'+c+'".  Firebase keys must be non-empty strings and can\'t contain ".", "#", "$", "/", "[", or "]").');}
+function ag(a,b){if(!p(b)||0===b.length||Rf.test(b))throw Error(z(a,1,!1)+'was an invalid path: "'+b+'". Paths must be non-empty strings and can\'t contain ".", "#", "$", "[", or "]"');}function bg(a,b){if(".info"===E(b))throw Error(a+" failed: Can't modify data under /.info/");}function cg(a,b){if(!p(b))throw Error(z(a,1,!1)+"must be a valid credential (a string).");}function dg(a,b,c){if(!p(c))throw Error(z(a,b,!1)+"must be a valid string.");}
+function eg(a,b){dg(a,1,b);if(!Sf.test(b))throw Error(z(a,1,!1)+"'"+b+"' is not a valid authentication provider.");}function fg(a,b,c,d){if(!d||n(c))if(!ia(c)||null===c)throw Error(z(a,b,d)+"must be a valid object.");}function gg(a,b,c){if(!ia(b)||!v(b,c))throw Error(z(a,1,!1)+'must contain the key "'+c+'"');if(!p(w(b,c)))throw Error(z(a,1,!1)+'must contain the key "'+c+'" with type "string"');};function hg(){this.set={}}g=hg.prototype;g.add=function(a,b){this.set[a]=null!==b?b:!0};g.contains=function(a){return v(this.set,a)};g.get=function(a){return this.contains(a)?this.set[a]:void 0};g.remove=function(a){delete this.set[a]};g.clear=function(){this.set={}};g.e=function(){return wa(this.set)};g.count=function(){return pa(this.set)};function ig(a,b){r(a.set,function(a,d){b(d,a)})}g.keys=function(){var a=[];r(this.set,function(b,c){a.push(c)});return a};function pc(){this.m=this.A=null}pc.prototype.find=function(a){if(null!=this.A)return this.A.Y(a);if(a.e()||null==this.m)return null;var b=E(a);a=H(a);return this.m.contains(b)?this.m.get(b).find(a):null};pc.prototype.nc=function(a,b){if(a.e())this.A=b,this.m=null;else if(null!==this.A)this.A=this.A.K(a,b);else{null==this.m&&(this.m=new hg);var c=E(a);this.m.contains(c)||this.m.add(c,new pc);c=this.m.get(c);a=H(a);c.nc(a,b)}};
+function jg(a,b){if(b.e())return a.A=null,a.m=null,!0;if(null!==a.A){if(a.A.L())return!1;var c=a.A;a.A=null;c.R(N,function(b,c){a.nc(new L(b),c)});return jg(a,b)}return null!==a.m?(c=E(b),b=H(b),a.m.contains(c)&&jg(a.m.get(c),b)&&a.m.remove(c),a.m.e()?(a.m=null,!0):!1):!0}function qc(a,b,c){null!==a.A?c(b,a.A):a.R(function(a,e){var f=new L(b.toString()+"/"+a);qc(e,f,c)})}pc.prototype.R=function(a){null!==this.m&&ig(this.m,function(b,c){a(b,c)})};var kg="auth.firebase.com";function lg(a,b,c){this.od=a||{};this.fe=b||{};this.$a=c||{};this.od.remember||(this.od.remember="default")}var mg=["remember","redirectTo"];function ng(a){var b={},c={};ib(a||{},function(a,e){0<=Na(mg,a)?b[a]=e:c[a]=e});return new lg(b,{},c)};function og(a,b){this.Re=["session",a.Od,a.Db].join(":");this.ce=b}og.prototype.set=function(a,b){if(!b)if(this.ce.length)b=this.ce[0];else throw Error("fb.login.SessionManager : No storage options available!");b.set(this.Re,a)};og.prototype.get=function(){var a=Qa(this.ce,q(this.og,this)),a=Pa(a,function(a){return null!==a});Xa(a,function(a,c){return ad(c.token)-ad(a.token)});return 0<a.length?a.shift():null};og.prototype.og=function(a){try{var b=a.get(this.Re);if(b&&b.token)return b}catch(c){}return null};
+og.prototype.clear=function(){var a=this;Oa(this.ce,function(b){b.remove(a.Re)})};function pg(){return"undefined"!==typeof navigator&&"string"===typeof navigator.userAgent?navigator.userAgent:""}function qg(){return"undefined"!==typeof window&&!!(window.cordova||window.phonegap||window.PhoneGap)&&/ios|iphone|ipod|ipad|android|blackberry|iemobile/i.test(pg())}function rg(){return"undefined"!==typeof location&&/^file:\//.test(location.href)}
+function sg(a){var b=pg();if(""===b)return!1;if("Microsoft Internet Explorer"===navigator.appName){if((b=b.match(/MSIE ([0-9]{1,}[\.0-9]{0,})/))&&1<b.length)return parseFloat(b[1])>=a}else if(-1<b.indexOf("Trident")&&(b=b.match(/rv:([0-9]{2,2}[\.0-9]{0,})/))&&1<b.length)return parseFloat(b[1])>=a;return!1};function tg(){var a=window.opener.frames,b;for(b=a.length-1;0<=b;b--)try{if(a[b].location.protocol===window.location.protocol&&a[b].location.host===window.location.host&&"__winchan_relay_frame"===a[b].name)return a[b]}catch(c){}return null}function ug(a,b,c){a.attachEvent?a.attachEvent("on"+b,c):a.addEventListener&&a.addEventListener(b,c,!1)}function vg(a,b,c){a.detachEvent?a.detachEvent("on"+b,c):a.removeEventListener&&a.removeEventListener(b,c,!1)}
+function wg(a){/^https?:\/\//.test(a)||(a=window.location.href);var b=/^(https?:\/\/[\-_a-zA-Z\.0-9:]+)/.exec(a);return b?b[1]:a}function xg(a){var b="";try{a=a.replace("#","");var c=lb(a);c&&v(c,"__firebase_request_key")&&(b=w(c,"__firebase_request_key"))}catch(d){}return b}function yg(){var a=Qc(kg);return a.scheme+"://"+a.host+"/v2"}function zg(a){return yg()+"/"+a+"/auth/channel"};function Ag(a){var b=this;this.Ac=a;this.de="*";sg(8)?this.Rc=this.zd=tg():(this.Rc=window.opener,this.zd=window);if(!b.Rc)throw"Unable to find relay frame";ug(this.zd,"message",q(this.ic,this));ug(this.zd,"message",q(this.Bf,this));try{Bg(this,{a:"ready"})}catch(c){ug(this.Rc,"load",function(){Bg(b,{a:"ready"})})}ug(window,"unload",q(this.zg,this))}function Bg(a,b){b=B(b);sg(8)?a.Rc.doPost(b,a.de):a.Rc.postMessage(b,a.de)}
+Ag.prototype.ic=function(a){var b=this,c;try{c=nb(a.data)}catch(d){}c&&"request"===c.a&&(vg(window,"message",this.ic),this.de=a.origin,this.Ac&&setTimeout(function(){b.Ac(b.de,c.d,function(a,c){b.bg=!c;b.Ac=void 0;Bg(b,{a:"response",d:a,forceKeepWindowOpen:c})})},0))};Ag.prototype.zg=function(){try{vg(this.zd,"message",this.Bf)}catch(a){}this.Ac&&(Bg(this,{a:"error",d:"unknown closed window"}),this.Ac=void 0);try{window.close()}catch(b){}};Ag.prototype.Bf=function(a){if(this.bg&&"die"===a.data)try{window.close()}catch(b){}};function Cg(a){this.pc=Ga()+Ga()+Ga();this.Ef=a}Cg.prototype.open=function(a,b){P.set("redirect_request_id",this.pc);P.set("redirect_request_id",this.pc);b.requestId=this.pc;b.redirectTo=b.redirectTo||window.location.href;a+=(/\?/.test(a)?"":"?")+kb(b);window.location=a};Cg.isAvailable=function(){return!rg()&&!qg()};Cg.prototype.Cc=function(){return"redirect"};var Dg={NETWORK_ERROR:"Unable to contact the Firebase server.",SERVER_ERROR:"An unknown server error occurred.",TRANSPORT_UNAVAILABLE:"There are no login transports available for the requested method.",REQUEST_INTERRUPTED:"The browser redirected the page before the login request could complete.",USER_CANCELLED:"The user cancelled authentication."};function Eg(a){var b=Error(w(Dg,a),a);b.code=a;return b};function Fg(a){var b;(b=!a.window_features)||(b=pg(),b=-1!==b.indexOf("Fennec/")||-1!==b.indexOf("Firefox/")&&-1!==b.indexOf("Android"));b&&(a.window_features=void 0);a.window_name||(a.window_name="_blank");this.options=a}
+Fg.prototype.open=function(a,b,c){function d(a){h&&(document.body.removeChild(h),h=void 0);t&&(t=clearInterval(t));vg(window,"message",e);vg(window,"unload",d);if(m&&!a)try{m.close()}catch(b){k.postMessage("die",l)}m=k=void 0}function e(a){if(a.origin===l)try{var b=nb(a.data);"ready"===b.a?k.postMessage(y,l):"error"===b.a?(d(!1),c&&(c(b.d),c=null)):"response"===b.a&&(d(b.forceKeepWindowOpen),c&&(c(null,b.d),c=null))}catch(e){}}var f=sg(8),h,k;if(!this.options.relay_url)return c(Error("invalid arguments: origin of url and relay_url must match"));
+var l=wg(a);if(l!==wg(this.options.relay_url))c&&setTimeout(function(){c(Error("invalid arguments: origin of url and relay_url must match"))},0);else{f&&(h=document.createElement("iframe"),h.setAttribute("src",this.options.relay_url),h.style.display="none",h.setAttribute("name","__winchan_relay_frame"),document.body.appendChild(h),k=h.contentWindow);a+=(/\?/.test(a)?"":"?")+kb(b);var m=window.open(a,this.options.window_name,this.options.window_features);k||(k=m);var t=setInterval(function(){m&&m.closed&&
+(d(!1),c&&(c(Eg("USER_CANCELLED")),c=null))},500),y=B({a:"request",d:b});ug(window,"unload",d);ug(window,"message",e)}};
+Fg.isAvailable=function(){var a;if(a="postMessage"in window&&!rg())(a=qg()||"undefined"!==typeof navigator&&(!!pg().match(/Windows Phone/)||!!window.Windows&&/^ms-appx:/.test(location.href)))||(a=pg(),a="undefined"!==typeof navigator&&"undefined"!==typeof window&&!!(a.match(/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/i)||a.match(/CriOS/)||a.match(/Twitter for iPhone/)||a.match(/FBAN\/FBIOS/)||window.navigator.standalone)),a=!a;return a&&!pg().match(/PhantomJS/)};Fg.prototype.Cc=function(){return"popup"};function Gg(a){a.method||(a.method="GET");a.headers||(a.headers={});a.headers.content_type||(a.headers.content_type="application/json");a.headers.content_type=a.headers.content_type.toLowerCase();this.options=a}
+Gg.prototype.open=function(a,b,c){function d(){c&&(c(Eg("REQUEST_INTERRUPTED")),c=null)}var e=new XMLHttpRequest,f=this.options.method.toUpperCase(),h;ug(window,"beforeunload",d);e.onreadystatechange=function(){if(c&&4===e.readyState){var a;if(200<=e.status&&300>e.status){try{a=nb(e.responseText)}catch(b){}c(null,a)}else 500<=e.status&&600>e.status?c(Eg("SERVER_ERROR")):c(Eg("NETWORK_ERROR"));c=null;vg(window,"beforeunload",d)}};if("GET"===f)a+=(/\?/.test(a)?"":"?")+kb(b),h=null;else{var k=this.options.headers.content_type;
+"application/json"===k&&(h=B(b));"application/x-www-form-urlencoded"===k&&(h=kb(b))}e.open(f,a,!0);a={"X-Requested-With":"XMLHttpRequest",Accept:"application/json;text/plain"};za(a,this.options.headers);for(var l in a)e.setRequestHeader(l,a[l]);e.send(h)};Gg.isAvailable=function(){var a;if(a=!!window.XMLHttpRequest)a=pg(),a=!(a.match(/MSIE/)||a.match(/Trident/))||sg(10);return a};Gg.prototype.Cc=function(){return"json"};function Hg(a){this.pc=Ga()+Ga()+Ga();this.Ef=a}
+Hg.prototype.open=function(a,b,c){function d(){c&&(c(Eg("USER_CANCELLED")),c=null)}var e=this,f=Qc(kg),h;b.requestId=this.pc;b.redirectTo=f.scheme+"://"+f.host+"/blank/page.html";a+=/\?/.test(a)?"":"?";a+=kb(b);(h=window.open(a,"_blank","location=no"))&&ha(h.addEventListener)?(h.addEventListener("loadstart",function(a){var b;if(b=a&&a.url)a:{try{var m=document.createElement("a");m.href=a.url;b=m.host===f.host&&"/blank/page.html"===m.pathname;break a}catch(t){}b=!1}b&&(a=xg(a.url),h.removeEventListener("exit",
+d),h.close(),a=new lg(null,null,{requestId:e.pc,requestKey:a}),e.Ef.requestWithCredential("/auth/session",a,c),c=null)}),h.addEventListener("exit",d)):c(Eg("TRANSPORT_UNAVAILABLE"))};Hg.isAvailable=function(){return qg()};Hg.prototype.Cc=function(){return"redirect"};function Ig(a){a.callback_parameter||(a.callback_parameter="callback");this.options=a;window.__firebase_auth_jsonp=window.__firebase_auth_jsonp||{}}
+Ig.prototype.open=function(a,b,c){function d(){c&&(c(Eg("REQUEST_INTERRUPTED")),c=null)}function e(){setTimeout(function(){window.__firebase_auth_jsonp[f]=void 0;wa(window.__firebase_auth_jsonp)&&(window.__firebase_auth_jsonp=void 0);try{var a=document.getElementById(f);a&&a.parentNode.removeChild(a)}catch(b){}},1);vg(window,"beforeunload",d)}var f="fn"+(new Date).getTime()+Math.floor(99999*Math.random());b[this.options.callback_parameter]="__firebase_auth_jsonp."+f;a+=(/\?/.test(a)?"":"?")+kb(b);
+ug(window,"beforeunload",d);window.__firebase_auth_jsonp[f]=function(a){c&&(c(null,a),c=null);e()};Jg(f,a,c)};
+function Jg(a,b,c){setTimeout(function(){try{var d=document.createElement("script");d.type="text/javascript";d.id=a;d.async=!0;d.src=b;d.onerror=function(){var b=document.getElementById(a);null!==b&&b.parentNode.removeChild(b);c&&c(Eg("NETWORK_ERROR"))};var e=document.getElementsByTagName("head");(e&&0!=e.length?e[0]:document.documentElement).appendChild(d)}catch(f){c&&c(Eg("NETWORK_ERROR"))}},0)}Ig.isAvailable=function(){return"undefined"!==typeof document&&null!=document.createElement};
+Ig.prototype.Cc=function(){return"json"};function Kg(a,b,c,d){Lf.call(this,["auth_status"]);this.F=a;this.ef=b;this.Tg=c;this.Me=d;this.sc=new og(a,[Cc,P]);this.nb=null;this.Te=!1;Lg(this)}ma(Kg,Lf);g=Kg.prototype;g.ye=function(){return this.nb||null};function Lg(a){P.get("redirect_request_id")&&Mg(a);var b=a.sc.get();b&&b.token?(Ng(a,b),a.ef(b.token,function(c,d){Og(a,c,d,!1,b.token,b)},function(b,d){Pg(a,"resumeSession()",b,d)})):Ng(a,null)}
+function Qg(a,b,c,d,e,f){"firebaseio-demo.com"===a.F.domain&&Q("Firebase authentication is not supported on demo Firebases (*.firebaseio-demo.com). To secure your Firebase, create a production Firebase at https://www.firebase.com.");a.ef(b,function(f,k){Og(a,f,k,!0,b,c,d||{},e)},function(b,c){Pg(a,"auth()",b,c,f)})}function Rg(a,b){a.sc.clear();Ng(a,null);a.Tg(function(a,d){if("ok"===a)R(b,null);else{var e=(a||"error").toUpperCase(),f=e;d&&(f+=": "+d);f=Error(f);f.code=e;R(b,f)}})}
+function Og(a,b,c,d,e,f,h,k){"ok"===b?(d&&(b=c.auth,f.auth=b,f.expires=c.expires,f.token=bd(e)?e:"",c=null,b&&v(b,"uid")?c=w(b,"uid"):v(f,"uid")&&(c=w(f,"uid")),f.uid=c,c="custom",b&&v(b,"provider")?c=w(b,"provider"):v(f,"provider")&&(c=w(f,"provider")),f.provider=c,a.sc.clear(),bd(e)&&(h=h||{},c=Cc,"sessionOnly"===h.remember&&(c=P),"none"!==h.remember&&a.sc.set(f,c)),Ng(a,f)),R(k,null,f)):(a.sc.clear(),Ng(a,null),f=a=(b||"error").toUpperCase(),c&&(f+=": "+c),f=Error(f),f.code=a,R(k,f))}
+function Pg(a,b,c,d,e){Q(b+" was canceled: "+d);a.sc.clear();Ng(a,null);a=Error(d);a.code=c.toUpperCase();R(e,a)}function Sg(a,b,c,d,e){Tg(a);c=new lg(d||{},{},c||{});Ug(a,[Gg,Ig],"/auth/"+b,c,e)}
+function Vg(a,b,c,d){Tg(a);var e=[Fg,Hg];c=ng(c);"anonymous"===b||"password"===b?setTimeout(function(){R(d,Eg("TRANSPORT_UNAVAILABLE"))},0):(c.fe.window_features="menubar=yes,modal=yes,alwaysRaised=yeslocation=yes,resizable=yes,scrollbars=yes,status=yes,height=625,width=625,top="+("object"===typeof screen?.5*(screen.height-625):0)+",left="+("object"===typeof screen?.5*(screen.width-625):0),c.fe.relay_url=zg(a.F.Db),c.fe.requestWithCredential=q(a.qc,a),Ug(a,e,"/auth/"+b,c,d))}
+function Mg(a){var b=P.get("redirect_request_id");if(b){var c=P.get("redirect_client_options");P.remove("redirect_request_id");P.remove("redirect_client_options");var d=[Gg,Ig],b={requestId:b,requestKey:xg(document.location.hash)},c=new lg(c,{},b);a.Te=!0;try{document.location.hash=document.location.hash.replace(/&__firebase_request_key=([a-zA-z0-9]*)/,"")}catch(e){}Ug(a,d,"/auth/session",c,function(){this.Te=!1}.bind(a))}}
+g.te=function(a,b){Tg(this);var c=ng(a);c.$a._method="POST";this.qc("/users",c,function(a,c){a?R(b,a):R(b,a,c)})};g.Ue=function(a,b){var c=this;Tg(this);var d="/users/"+encodeURIComponent(a.email),e=ng(a);e.$a._method="DELETE";this.qc(d,e,function(a,d){!a&&d&&d.uid&&c.nb&&c.nb.uid&&c.nb.uid===d.uid&&Rg(c);R(b,a)})};g.qe=function(a,b){Tg(this);var c="/users/"+encodeURIComponent(a.email)+"/password",d=ng(a);d.$a._method="PUT";d.$a.password=a.newPassword;this.qc(c,d,function(a){R(b,a)})};
+g.pe=function(a,b){Tg(this);var c="/users/"+encodeURIComponent(a.oldEmail)+"/email",d=ng(a);d.$a._method="PUT";d.$a.email=a.newEmail;d.$a.password=a.password;this.qc(c,d,function(a){R(b,a)})};g.We=function(a,b){Tg(this);var c="/users/"+encodeURIComponent(a.email)+"/password",d=ng(a);d.$a._method="POST";this.qc(c,d,function(a){R(b,a)})};g.qc=function(a,b,c){Wg(this,[Gg,Ig],a,b,c)};
+function Ug(a,b,c,d,e){Wg(a,b,c,d,function(b,c){!b&&c&&c.token&&c.uid?Qg(a,c.token,c,d.od,function(a,b){a?R(e,a):R(e,null,b)}):R(e,b||Eg("UNKNOWN_ERROR"))})}
+function Wg(a,b,c,d,e){b=Pa(b,function(a){return"function"===typeof a.isAvailable&&a.isAvailable()});0===b.length?setTimeout(function(){R(e,Eg("TRANSPORT_UNAVAILABLE"))},0):(b=new (b.shift())(d.fe),d=jb(d.$a),d.v="js-"+hb,d.transport=b.Cc(),d.suppress_status_codes=!0,a=yg()+"/"+a.F.Db+c,b.open(a,d,function(a,b){if(a)R(e,a);else if(b&&b.error){var c=Error(b.error.message);c.code=b.error.code;c.details=b.error.details;R(e,c)}else R(e,null,b)}))}
+function Ng(a,b){var c=null!==a.nb||null!==b;a.nb=b;c&&a.ge("auth_status",b);a.Me(null!==b)}g.Be=function(a){K("auth_status"===a,'initial event must be of type "auth_status"');return this.Te?null:[this.nb]};function Tg(a){var b=a.F;if("firebaseio.com"!==b.domain&&"firebaseio-demo.com"!==b.domain&&"auth.firebase.com"===kg)throw Error("This custom Firebase server ('"+a.F.domain+"') does not support delegated login.");};function Xg(a){this.ic=a;this.Nd=[];this.Sb=0;this.re=-1;this.Gb=null}function Yg(a,b,c){a.re=b;a.Gb=c;a.re<a.Sb&&(a.Gb(),a.Gb=null)}function Zg(a,b,c){for(a.Nd[b]=c;a.Nd[a.Sb];){var d=a.Nd[a.Sb];delete a.Nd[a.Sb];for(var e=0;e<d.length;++e)if(d[e]){var f=a;Db(function(){f.ic(d[e])})}if(a.Sb===a.re){a.Gb&&(clearTimeout(a.Gb),a.Gb(),a.Gb=null);break}a.Sb++}};function $g(a,b,c){this.se=a;this.f=Nc(a);this.ob=this.pb=0;this.Va=Qb(b);this.Zd=c;this.Hc=!1;this.jd=function(a){b.host!==b.Pa&&(a.ns=b.Db);var c=[],f;for(f in a)a.hasOwnProperty(f)&&c.push(f+"="+a[f]);return(b.lb?"https://":"http://")+b.Pa+"/.lp?"+c.join("&")}}var ah,bh;
+$g.prototype.open=function(a,b){this.hf=0;this.la=b;this.Af=new Xg(a);this.Ab=!1;var c=this;this.rb=setTimeout(function(){c.f("Timed out trying to connect.");c.hb();c.rb=null},Math.floor(3E4));Sc(function(){if(!c.Ab){c.Ta=new ch(function(a,b,d,k,l){dh(c,arguments);if(c.Ta)if(c.rb&&(clearTimeout(c.rb),c.rb=null),c.Hc=!0,"start"==a)c.id=b,c.Gf=d;else if("close"===a)b?(c.Ta.Xd=!1,Yg(c.Af,b,function(){c.hb()})):c.hb();else throw Error("Unrecognized command received: "+a);},function(a,b){dh(c,arguments);
+Zg(c.Af,a,b)},function(){c.hb()},c.jd);var a={start:"t"};a.ser=Math.floor(1E8*Math.random());c.Ta.ie&&(a.cb=c.Ta.ie);a.v="5";c.Zd&&(a.s=c.Zd);"undefined"!==typeof location&&location.href&&-1!==location.href.indexOf("firebaseio.com")&&(a.r="f");a=c.jd(a);c.f("Connecting via long-poll to "+a);eh(c.Ta,a,function(){})}})};
+$g.prototype.start=function(){var a=this.Ta,b=this.Gf;a.sg=this.id;a.tg=b;for(a.me=!0;fh(a););a=this.id;b=this.Gf;this.gc=document.createElement("iframe");var c={dframe:"t"};c.id=a;c.pw=b;this.gc.src=this.jd(c);this.gc.style.display="none";document.body.appendChild(this.gc)};
+$g.isAvailable=function(){return ah||!bh&&"undefined"!==typeof document&&null!=document.createElement&&!("object"===typeof window&&window.chrome&&window.chrome.extension&&!/^chrome/.test(window.location.href))&&!("object"===typeof Windows&&"object"===typeof Windows.Vg)&&!0};g=$g.prototype;g.Ed=function(){};g.dd=function(){this.Ab=!0;this.Ta&&(this.Ta.close(),this.Ta=null);this.gc&&(document.body.removeChild(this.gc),this.gc=null);this.rb&&(clearTimeout(this.rb),this.rb=null)};
+g.hb=function(){this.Ab||(this.f("Longpoll is closing itself"),this.dd(),this.la&&(this.la(this.Hc),this.la=null))};g.close=function(){this.Ab||(this.f("Longpoll is being closed."),this.dd())};g.send=function(a){a=B(a);this.pb+=a.length;Nb(this.Va,"bytes_sent",a.length);a=Jc(a);a=fb(a,!0);a=Wc(a,1840);for(var b=0;b<a.length;b++){var c=this.Ta;c.ad.push({Kg:this.hf,Sg:a.length,kf:a[b]});c.me&&fh(c);this.hf++}};function dh(a,b){var c=B(b).length;a.ob+=c;Nb(a.Va,"bytes_received",c)}
+function ch(a,b,c,d){this.jd=d;this.ib=c;this.Qe=new hg;this.ad=[];this.ue=Math.floor(1E8*Math.random());this.Xd=!0;this.ie=Fc();window["pLPCommand"+this.ie]=a;window["pRTLPCB"+this.ie]=b;a=document.createElement("iframe");a.style.display="none";if(document.body){document.body.appendChild(a);try{a.contentWindow.document||Cb("No IE domain setting required")}catch(e){a.src="javascript:void((function(){document.open();document.domain='"+document.domain+"';document.close();})())"}}else throw"Document body has not initialized. Wait to initialize Firebase until after the document is ready.";
+a.contentDocument?a.fb=a.contentDocument:a.contentWindow?a.fb=a.contentWindow.document:a.document&&(a.fb=a.document);this.Ea=a;a="";this.Ea.src&&"javascript:"===this.Ea.src.substr(0,11)&&(a='<script>document.domain="'+document.domain+'";\x3c/script>');a="<html><body>"+a+"</body></html>";try{this.Ea.fb.open(),this.Ea.fb.write(a),this.Ea.fb.close()}catch(f){Cb("frame writing exception"),f.stack&&Cb(f.stack),Cb(f)}}
+ch.prototype.close=function(){this.me=!1;if(this.Ea){this.Ea.fb.body.innerHTML="";var a=this;setTimeout(function(){null!==a.Ea&&(document.body.removeChild(a.Ea),a.Ea=null)},Math.floor(0))}var b=this.ib;b&&(this.ib=null,b())};
+function fh(a){if(a.me&&a.Xd&&a.Qe.count()<(0<a.ad.length?2:1)){a.ue++;var b={};b.id=a.sg;b.pw=a.tg;b.ser=a.ue;for(var b=a.jd(b),c="",d=0;0<a.ad.length;)if(1870>=a.ad[0].kf.length+30+c.length){var e=a.ad.shift(),c=c+"&seg"+d+"="+e.Kg+"&ts"+d+"="+e.Sg+"&d"+d+"="+e.kf;d++}else break;gh(a,b+c,a.ue);return!0}return!1}function gh(a,b,c){function d(){a.Qe.remove(c);fh(a)}a.Qe.add(c,1);var e=setTimeout(d,Math.floor(25E3));eh(a,b,function(){clearTimeout(e);d()})}
+function eh(a,b,c){setTimeout(function(){try{if(a.Xd){var d=a.Ea.fb.createElement("script");d.type="text/javascript";d.async=!0;d.src=b;d.onload=d.onreadystatechange=function(){var a=d.readyState;a&&"loaded"!==a&&"complete"!==a||(d.onload=d.onreadystatechange=null,d.parentNode&&d.parentNode.removeChild(d),c())};d.onerror=function(){Cb("Long-poll script failed to load: "+b);a.Xd=!1;a.close()};a.Ea.fb.body.appendChild(d)}}catch(e){}},Math.floor(1))};var hh=null;"undefined"!==typeof MozWebSocket?hh=MozWebSocket:"undefined"!==typeof WebSocket&&(hh=WebSocket);function ih(a,b,c){this.se=a;this.f=Nc(this.se);this.frames=this.Kc=null;this.ob=this.pb=this.cf=0;this.Va=Qb(b);this.eb=(b.lb?"wss://":"ws://")+b.Pa+"/.ws?v=5";"undefined"!==typeof location&&location.href&&-1!==location.href.indexOf("firebaseio.com")&&(this.eb+="&r=f");b.host!==b.Pa&&(this.eb=this.eb+"&ns="+b.Db);c&&(this.eb=this.eb+"&s="+c)}var jh;
+ih.prototype.open=function(a,b){this.ib=b;this.xg=a;this.f("Websocket connecting to "+this.eb);this.Hc=!1;Cc.set("previous_websocket_failure",!0);try{this.ua=new hh(this.eb)}catch(c){this.f("Error instantiating WebSocket.");var d=c.message||c.data;d&&this.f(d);this.hb();return}var e=this;this.ua.onopen=function(){e.f("Websocket connected.");e.Hc=!0};this.ua.onclose=function(){e.f("Websocket connection was disconnected.");e.ua=null;e.hb()};this.ua.onmessage=function(a){if(null!==e.ua)if(a=a.data,e.ob+=
+a.length,Nb(e.Va,"bytes_received",a.length),kh(e),null!==e.frames)lh(e,a);else{a:{K(null===e.frames,"We already have a frame buffer");if(6>=a.length){var b=Number(a);if(!isNaN(b)){e.cf=b;e.frames=[];a=null;break a}}e.cf=1;e.frames=[]}null!==a&&lh(e,a)}};this.ua.onerror=function(a){e.f("WebSocket error.  Closing connection.");(a=a.message||a.data)&&e.f(a);e.hb()}};ih.prototype.start=function(){};
+ih.isAvailable=function(){var a=!1;if("undefined"!==typeof navigator&&navigator.userAgent){var b=navigator.userAgent.match(/Android ([0-9]{0,}\.[0-9]{0,})/);b&&1<b.length&&4.4>parseFloat(b[1])&&(a=!0)}return!a&&null!==hh&&!jh};ih.responsesRequiredToBeHealthy=2;ih.healthyTimeout=3E4;g=ih.prototype;g.Ed=function(){Cc.remove("previous_websocket_failure")};function lh(a,b){a.frames.push(b);if(a.frames.length==a.cf){var c=a.frames.join("");a.frames=null;c=nb(c);a.xg(c)}}
+g.send=function(a){kh(this);a=B(a);this.pb+=a.length;Nb(this.Va,"bytes_sent",a.length);a=Wc(a,16384);1<a.length&&this.ua.send(String(a.length));for(var b=0;b<a.length;b++)this.ua.send(a[b])};g.dd=function(){this.Ab=!0;this.Kc&&(clearInterval(this.Kc),this.Kc=null);this.ua&&(this.ua.close(),this.ua=null)};g.hb=function(){this.Ab||(this.f("WebSocket is closing itself"),this.dd(),this.ib&&(this.ib(this.Hc),this.ib=null))};g.close=function(){this.Ab||(this.f("WebSocket is being closed"),this.dd())};
+function kh(a){clearInterval(a.Kc);a.Kc=setInterval(function(){a.ua&&a.ua.send("0");kh(a)},Math.floor(45E3))};function mh(a){nh(this,a)}var oh=[$g,ih];function nh(a,b){var c=ih&&ih.isAvailable(),d=c&&!(Cc.wf||!0===Cc.get("previous_websocket_failure"));b.Ug&&(c||Q("wss:// URL used, but browser isn't known to support websockets.  Trying anyway."),d=!0);if(d)a.gd=[ih];else{var e=a.gd=[];Xc(oh,function(a,b){b&&b.isAvailable()&&e.push(b)})}}function ph(a){if(0<a.gd.length)return a.gd[0];throw Error("No transports available");};function qh(a,b,c,d,e,f){this.id=a;this.f=Nc("c:"+this.id+":");this.ic=c;this.Wc=d;this.la=e;this.Oe=f;this.F=b;this.Md=[];this.ff=0;this.Of=new mh(b);this.Ua=0;this.f("Connection created");rh(this)}
+function rh(a){var b=ph(a.Of);a.I=new b("c:"+a.id+":"+a.ff++,a.F);a.Se=b.responsesRequiredToBeHealthy||0;var c=sh(a,a.I),d=th(a,a.I);a.hd=a.I;a.cd=a.I;a.D=null;a.Bb=!1;setTimeout(function(){a.I&&a.I.open(c,d)},Math.floor(0));b=b.healthyTimeout||0;0<b&&(a.yd=setTimeout(function(){a.yd=null;a.Bb||(a.I&&102400<a.I.ob?(a.f("Connection exceeded healthy timeout but has received "+a.I.ob+" bytes.  Marking connection healthy."),a.Bb=!0,a.I.Ed()):a.I&&10240<a.I.pb?a.f("Connection exceeded healthy timeout but has sent "+
+a.I.pb+" bytes.  Leaving connection alive."):(a.f("Closing unhealthy connection after timeout."),a.close()))},Math.floor(b)))}function th(a,b){return function(c){b===a.I?(a.I=null,c||0!==a.Ua?1===a.Ua&&a.f("Realtime connection lost."):(a.f("Realtime connection failed."),"s-"===a.F.Pa.substr(0,2)&&(Cc.remove("host:"+a.F.host),a.F.Pa=a.F.host)),a.close()):b===a.D?(a.f("Secondary connection lost."),c=a.D,a.D=null,a.hd!==c&&a.cd!==c||a.close()):a.f("closing an old connection")}}
+function sh(a,b){return function(c){if(2!=a.Ua)if(b===a.cd){var d=Uc("t",c);c=Uc("d",c);if("c"==d){if(d=Uc("t",c),"d"in c)if(c=c.d,"h"===d){var d=c.ts,e=c.v,f=c.h;a.Zd=c.s;Ec(a.F,f);0==a.Ua&&(a.I.start(),uh(a,a.I,d),"5"!==e&&Q("Protocol version mismatch detected"),c=a.Of,(c=1<c.gd.length?c.gd[1]:null)&&vh(a,c))}else if("n"===d){a.f("recvd end transmission on primary");a.cd=a.D;for(c=0;c<a.Md.length;++c)a.Id(a.Md[c]);a.Md=[];wh(a)}else"s"===d?(a.f("Connection shutdown command received. Shutting down..."),
+a.Oe&&(a.Oe(c),a.Oe=null),a.la=null,a.close()):"r"===d?(a.f("Reset packet received.  New host: "+c),Ec(a.F,c),1===a.Ua?a.close():(xh(a),rh(a))):"e"===d?Oc("Server Error: "+c):"o"===d?(a.f("got pong on primary."),yh(a),zh(a)):Oc("Unknown control packet command: "+d)}else"d"==d&&a.Id(c)}else if(b===a.D)if(d=Uc("t",c),c=Uc("d",c),"c"==d)"t"in c&&(c=c.t,"a"===c?Ah(a):"r"===c?(a.f("Got a reset on secondary, closing it"),a.D.close(),a.hd!==a.D&&a.cd!==a.D||a.close()):"o"===c&&(a.f("got pong on secondary."),
+a.Mf--,Ah(a)));else if("d"==d)a.Md.push(c);else throw Error("Unknown protocol layer: "+d);else a.f("message on old connection")}}qh.prototype.Fa=function(a){Bh(this,{t:"d",d:a})};function wh(a){a.hd===a.D&&a.cd===a.D&&(a.f("cleaning up and promoting a connection: "+a.D.se),a.I=a.D,a.D=null)}
+function Ah(a){0>=a.Mf?(a.f("Secondary connection is healthy."),a.Bb=!0,a.D.Ed(),a.D.start(),a.f("sending client ack on secondary"),a.D.send({t:"c",d:{t:"a",d:{}}}),a.f("Ending transmission on primary"),a.I.send({t:"c",d:{t:"n",d:{}}}),a.hd=a.D,wh(a)):(a.f("sending ping on secondary."),a.D.send({t:"c",d:{t:"p",d:{}}}))}qh.prototype.Id=function(a){yh(this);this.ic(a)};function yh(a){a.Bb||(a.Se--,0>=a.Se&&(a.f("Primary connection is healthy."),a.Bb=!0,a.I.Ed()))}
+function vh(a,b){a.D=new b("c:"+a.id+":"+a.ff++,a.F,a.Zd);a.Mf=b.responsesRequiredToBeHealthy||0;a.D.open(sh(a,a.D),th(a,a.D));setTimeout(function(){a.D&&(a.f("Timed out trying to upgrade."),a.D.close())},Math.floor(6E4))}function uh(a,b,c){a.f("Realtime connection established.");a.I=b;a.Ua=1;a.Wc&&(a.Wc(c),a.Wc=null);0===a.Se?(a.f("Primary connection is healthy."),a.Bb=!0):setTimeout(function(){zh(a)},Math.floor(5E3))}
+function zh(a){a.Bb||1!==a.Ua||(a.f("sending ping on primary."),Bh(a,{t:"c",d:{t:"p",d:{}}}))}function Bh(a,b){if(1!==a.Ua)throw"Connection is not connected";a.hd.send(b)}qh.prototype.close=function(){2!==this.Ua&&(this.f("Closing realtime connection."),this.Ua=2,xh(this),this.la&&(this.la(),this.la=null))};function xh(a){a.f("Shutting down all connections");a.I&&(a.I.close(),a.I=null);a.D&&(a.D.close(),a.D=null);a.yd&&(clearTimeout(a.yd),a.yd=null)};function Ch(a,b,c,d){this.id=Dh++;this.f=Nc("p:"+this.id+":");this.xf=this.Fe=!1;this.$={};this.qa=[];this.Yc=0;this.Vc=[];this.oa=!1;this.Za=1E3;this.Fd=3E5;this.Hb=b;this.Uc=c;this.Pe=d;this.F=a;this.tb=this.Aa=this.Ia=this.Xe=null;this.Ob=!1;this.Td={};this.Jg=0;this.nf=!0;this.Lc=this.He=null;Eh(this,0);Pf.vb().Fb("visible",this.Ag,this);-1===a.host.indexOf("fblocal")&&Of.vb().Fb("online",this.yg,this)}var Dh=0,Fh=0;g=Ch.prototype;
+g.Fa=function(a,b,c){var d=++this.Jg;a={r:d,a:a,b:b};this.f(B(a));K(this.oa,"sendRequest call when we're not connected not allowed.");this.Ia.Fa(a);c&&(this.Td[d]=c)};g.yf=function(a,b,c,d){var e=a.va(),f=a.path.toString();this.f("Listen called for "+f+" "+e);this.$[f]=this.$[f]||{};K(!this.$[f][e],"listen() called twice for same path/queryId.");a={G:d,xd:b,Gg:a,tag:c};this.$[f][e]=a;this.oa&&Gh(this,a)};
+function Gh(a,b){var c=b.Gg,d=c.path.toString(),e=c.va();a.f("Listen on "+d+" for "+e);var f={p:d};b.tag&&(f.q=ce(c.o),f.t=b.tag);f.h=b.xd();a.Fa("q",f,function(f){var k=f.d,l=f.s;if(k&&"object"===typeof k&&v(k,"w")){var m=w(k,"w");ea(m)&&0<=Na(m,"no_index")&&Q("Using an unspecified index. Consider adding "+('".indexOn": "'+c.o.g.toString()+'"')+" at "+c.path.toString()+" to your security rules for better performance")}(a.$[d]&&a.$[d][e])===b&&(a.f("listen response",f),"ok"!==l&&Hh(a,d,e),b.G&&b.G(l,
+k))})}g.N=function(a,b,c){this.Aa={gg:a,of:!1,zc:b,md:c};this.f("Authenticating using credential: "+a);Ih(this);(b=40==a.length)||(a=$c(a).Bc,b="object"===typeof a&&!0===w(a,"admin"));b&&(this.f("Admin auth credential detected.  Reducing max reconnect time."),this.Fd=3E4)};g.he=function(a){delete this.Aa;this.oa&&this.Fa("unauth",{},function(b){a(b.s,b.d)})};
+function Ih(a){var b=a.Aa;a.oa&&b&&a.Fa("auth",{cred:b.gg},function(c){var d=c.s;c=c.d||"error";"ok"!==d&&a.Aa===b&&delete a.Aa;b.of?"ok"!==d&&b.md&&b.md(d,c):(b.of=!0,b.zc&&b.zc(d,c))})}g.Pf=function(a,b){var c=a.path.toString(),d=a.va();this.f("Unlisten called for "+c+" "+d);if(Hh(this,c,d)&&this.oa){var e=ce(a.o);this.f("Unlisten on "+c+" for "+d);c={p:c};b&&(c.q=e,c.t=b);this.Fa("n",c)}};g.Ne=function(a,b,c){this.oa?Jh(this,"o",a,b,c):this.Vc.push({$c:a,action:"o",data:b,G:c})};
+g.Cf=function(a,b,c){this.oa?Jh(this,"om",a,b,c):this.Vc.push({$c:a,action:"om",data:b,G:c})};g.Jd=function(a,b){this.oa?Jh(this,"oc",a,null,b):this.Vc.push({$c:a,action:"oc",data:null,G:b})};function Jh(a,b,c,d,e){c={p:c,d:d};a.f("onDisconnect "+b,c);a.Fa(b,c,function(a){e&&setTimeout(function(){e(a.s,a.d)},Math.floor(0))})}g.put=function(a,b,c,d){Kh(this,"p",a,b,c,d)};g.zf=function(a,b,c,d){Kh(this,"m",a,b,c,d)};
+function Kh(a,b,c,d,e,f){d={p:c,d:d};n(f)&&(d.h=f);a.qa.push({action:b,Jf:d,G:e});a.Yc++;b=a.qa.length-1;a.oa?Lh(a,b):a.f("Buffering put: "+c)}function Lh(a,b){var c=a.qa[b].action,d=a.qa[b].Jf,e=a.qa[b].G;a.qa[b].Hg=a.oa;a.Fa(c,d,function(d){a.f(c+" response",d);delete a.qa[b];a.Yc--;0===a.Yc&&(a.qa=[]);e&&e(d.s,d.d)})}g.Ve=function(a){this.oa&&(a={c:a},this.f("reportStats",a),this.Fa("s",a,function(a){"ok"!==a.s&&this.f("reportStats","Error sending stats: "+a.d)}))};
+g.Id=function(a){if("r"in a){this.f("from server: "+B(a));var b=a.r,c=this.Td[b];c&&(delete this.Td[b],c(a.b))}else{if("error"in a)throw"A server-side error has occurred: "+a.error;"a"in a&&(b=a.a,c=a.b,this.f("handleServerMessage",b,c),"d"===b?this.Hb(c.p,c.d,!1,c.t):"m"===b?this.Hb(c.p,c.d,!0,c.t):"c"===b?Mh(this,c.p,c.q):"ac"===b?(a=c.s,b=c.d,c=this.Aa,delete this.Aa,c&&c.md&&c.md(a,b)):"sd"===b?this.Xe?this.Xe(c):"msg"in c&&"undefined"!==typeof console&&console.log("FIREBASE: "+c.msg.replace("\n",
+"\nFIREBASE: ")):Oc("Unrecognized action received from server: "+B(b)+"\nAre you using the latest client?"))}};g.Wc=function(a){this.f("connection ready");this.oa=!0;this.Lc=(new Date).getTime();this.Pe({serverTimeOffset:a-(new Date).getTime()});this.nf&&(a={},a["sdk.js."+hb.replace(/\./g,"-")]=1,qg()&&(a["framework.cordova"]=1),this.Ve(a));Nh(this);this.nf=!1;this.Uc(!0)};
+function Eh(a,b){K(!a.Ia,"Scheduling a connect when we're already connected/ing?");a.tb&&clearTimeout(a.tb);a.tb=setTimeout(function(){a.tb=null;Oh(a)},Math.floor(b))}g.Ag=function(a){a&&!this.Ob&&this.Za===this.Fd&&(this.f("Window became visible.  Reducing delay."),this.Za=1E3,this.Ia||Eh(this,0));this.Ob=a};g.yg=function(a){a?(this.f("Browser went online."),this.Za=1E3,this.Ia||Eh(this,0)):(this.f("Browser went offline.  Killing connection."),this.Ia&&this.Ia.close())};
+g.Df=function(){this.f("data client disconnected");this.oa=!1;this.Ia=null;for(var a=0;a<this.qa.length;a++){var b=this.qa[a];b&&"h"in b.Jf&&b.Hg&&(b.G&&b.G("disconnect"),delete this.qa[a],this.Yc--)}0===this.Yc&&(this.qa=[]);this.Td={};Ph(this)&&(this.Ob?this.Lc&&(3E4<(new Date).getTime()-this.Lc&&(this.Za=1E3),this.Lc=null):(this.f("Window isn't visible.  Delaying reconnect."),this.Za=this.Fd,this.He=(new Date).getTime()),a=Math.max(0,this.Za-((new Date).getTime()-this.He)),a*=Math.random(),this.f("Trying to reconnect in "+
+a+"ms"),Eh(this,a),this.Za=Math.min(this.Fd,1.3*this.Za));this.Uc(!1)};function Oh(a){if(Ph(a)){a.f("Making a connection attempt");a.He=(new Date).getTime();a.Lc=null;var b=q(a.Id,a),c=q(a.Wc,a),d=q(a.Df,a),e=a.id+":"+Fh++;a.Ia=new qh(e,a.F,b,c,d,function(b){Q(b+" ("+a.F.toString()+")");a.xf=!0})}}g.zb=function(){this.Fe=!0;this.Ia?this.Ia.close():(this.tb&&(clearTimeout(this.tb),this.tb=null),this.oa&&this.Df())};g.rc=function(){this.Fe=!1;this.Za=1E3;this.Ia||Eh(this,0)};
+function Mh(a,b,c){c=c?Qa(c,function(a){return Vc(a)}).join("$"):"default";(a=Hh(a,b,c))&&a.G&&a.G("permission_denied")}function Hh(a,b,c){b=(new L(b)).toString();var d;n(a.$[b])?(d=a.$[b][c],delete a.$[b][c],0===pa(a.$[b])&&delete a.$[b]):d=void 0;return d}function Nh(a){Ih(a);r(a.$,function(b){r(b,function(b){Gh(a,b)})});for(var b=0;b<a.qa.length;b++)a.qa[b]&&Lh(a,b);for(;a.Vc.length;)b=a.Vc.shift(),Jh(a,b.action,b.$c,b.data,b.G)}function Ph(a){var b;b=Of.vb().jc;return!a.xf&&!a.Fe&&b};var V={mg:function(){ah=jh=!0}};V.forceLongPolling=V.mg;V.ng=function(){bh=!0};V.forceWebSockets=V.ng;V.Ng=function(a,b){a.k.Sa.Xe=b};V.setSecurityDebugCallback=V.Ng;V.Ze=function(a,b){a.k.Ze(b)};V.stats=V.Ze;V.$e=function(a,b){a.k.$e(b)};V.statsIncrementCounter=V.$e;V.sd=function(a){return a.k.sd};V.dataUpdateCount=V.sd;V.qg=function(a,b){a.k.Ee=b};V.interceptServerData=V.qg;V.wg=function(a){new Ag(a)};V.onPopupOpen=V.wg;V.Lg=function(a){kg=a};V.setAuthenticationServer=V.Lg;function S(a,b,c){this.w=a;this.V=b;this.g=c}S.prototype.H=function(){x("Firebase.DataSnapshot.val",0,0,arguments.length);return this.w.H()};S.prototype.val=S.prototype.H;S.prototype.mf=function(){x("Firebase.DataSnapshot.exportVal",0,0,arguments.length);return this.w.H(!0)};S.prototype.exportVal=S.prototype.mf;S.prototype.lg=function(){x("Firebase.DataSnapshot.exists",0,0,arguments.length);return!this.w.e()};S.prototype.exists=S.prototype.lg;
+S.prototype.u=function(a){x("Firebase.DataSnapshot.child",0,1,arguments.length);ga(a)&&(a=String(a));ag("Firebase.DataSnapshot.child",a);var b=new L(a),c=this.V.u(b);return new S(this.w.Y(b),c,N)};S.prototype.child=S.prototype.u;S.prototype.Da=function(a){x("Firebase.DataSnapshot.hasChild",1,1,arguments.length);ag("Firebase.DataSnapshot.hasChild",a);var b=new L(a);return!this.w.Y(b).e()};S.prototype.hasChild=S.prototype.Da;
+S.prototype.B=function(){x("Firebase.DataSnapshot.getPriority",0,0,arguments.length);return this.w.B().H()};S.prototype.getPriority=S.prototype.B;S.prototype.forEach=function(a){x("Firebase.DataSnapshot.forEach",1,1,arguments.length);A("Firebase.DataSnapshot.forEach",1,a,!1);if(this.w.L())return!1;var b=this;return!!this.w.R(this.g,function(c,d){return a(new S(d,b.V.u(c),N))})};S.prototype.forEach=S.prototype.forEach;
+S.prototype.wd=function(){x("Firebase.DataSnapshot.hasChildren",0,0,arguments.length);return this.w.L()?!1:!this.w.e()};S.prototype.hasChildren=S.prototype.wd;S.prototype.name=function(){Q("Firebase.DataSnapshot.name() being deprecated. Please use Firebase.DataSnapshot.key() instead.");x("Firebase.DataSnapshot.name",0,0,arguments.length);return this.key()};S.prototype.name=S.prototype.name;S.prototype.key=function(){x("Firebase.DataSnapshot.key",0,0,arguments.length);return this.V.key()};
+S.prototype.key=S.prototype.key;S.prototype.Eb=function(){x("Firebase.DataSnapshot.numChildren",0,0,arguments.length);return this.w.Eb()};S.prototype.numChildren=S.prototype.Eb;S.prototype.mc=function(){x("Firebase.DataSnapshot.ref",0,0,arguments.length);return this.V};S.prototype.ref=S.prototype.mc;function Qh(a,b){this.F=a;this.Va=Qb(a);this.fd=null;this.da=new vb;this.Hd=1;this.Sa=null;b||0<=("object"===typeof window&&window.navigator&&window.navigator.userAgent||"").search(/googlebot|google webmaster tools|bingbot|yahoo! slurp|baiduspider|yandexbot|duckduckbot/i)?(this.ba=new ye(this.F,q(this.Hb,this)),setTimeout(q(this.Uc,this,!0),0)):this.ba=this.Sa=new Ch(this.F,q(this.Hb,this),q(this.Uc,this),q(this.Pe,this));this.Qg=Rb(a,q(function(){return new Lb(this.Va,this.ba)},this));this.uc=new Ff;
+this.De=new ob;var c=this;this.Cd=new kf({Ye:function(a,b,f,h){b=[];f=c.De.j(a.path);f.e()||(b=mf(c.Cd,new Wb(Re,a.path,f)),setTimeout(function(){h("ok")},0));return b},be:ba});Rh(this,"connected",!1);this.la=new pc;this.N=new Kg(a,q(this.ba.N,this.ba),q(this.ba.he,this.ba),q(this.Me,this));this.sd=0;this.Ee=null;this.M=new kf({Ye:function(a,b,f,h){c.ba.yf(a,f,b,function(b,e){var f=h(b,e);Ab(c.da,a.path,f)});return[]},be:function(a,b){c.ba.Pf(a,b)}})}g=Qh.prototype;
+g.toString=function(){return(this.F.lb?"https://":"http://")+this.F.host};g.name=function(){return this.F.Db};function Sh(a){a=a.De.j(new L(".info/serverTimeOffset")).H()||0;return(new Date).getTime()+a}function Th(a){a=a={timestamp:Sh(a)};a.timestamp=a.timestamp||(new Date).getTime();return a}
+g.Hb=function(a,b,c,d){this.sd++;var e=new L(a);b=this.Ee?this.Ee(a,b):b;a=[];d?c?(b=na(b,function(a){return M(a)}),a=uf(this.M,e,b,d)):(b=M(b),a=qf(this.M,e,b,d)):c?(d=na(b,function(a){return M(a)}),a=pf(this.M,e,d)):(d=M(b),a=mf(this.M,new Wb(Re,e,d)));d=e;0<a.length&&(d=Uh(this,e));Ab(this.da,d,a)};g.Uc=function(a){Rh(this,"connected",a);!1===a&&Vh(this)};g.Pe=function(a){var b=this;Xc(a,function(a,d){Rh(b,d,a)})};g.Me=function(a){Rh(this,"authenticated",a)};
+function Rh(a,b,c){b=new L("/.info/"+b);c=M(c);var d=a.De;d.Wd=d.Wd.K(b,c);c=mf(a.Cd,new Wb(Re,b,c));Ab(a.da,b,c)}g.Kb=function(a,b,c,d){this.f("set",{path:a.toString(),value:b,Yg:c});var e=Th(this);b=M(b,c);var e=rc(b,e),f=this.Hd++,e=lf(this.M,a,e,f,!0);wb(this.da,e);var h=this;this.ba.put(a.toString(),b.H(!0),function(b,c){var e="ok"===b;e||Q("set at "+a+" failed: "+b);e=of(h.M,f,!e);Ab(h.da,a,e);Wh(d,b,c)});e=Xh(this,a);Uh(this,e);Ab(this.da,e,[])};
+g.update=function(a,b,c){this.f("update",{path:a.toString(),value:b});var d=!0,e=Th(this),f={};r(b,function(a,b){d=!1;var c=M(a);f[b]=rc(c,e)});if(d)Cb("update() called with empty data.  Don't do anything."),Wh(c,"ok");else{var h=this.Hd++,k=nf(this.M,a,f,h);wb(this.da,k);var l=this;this.ba.zf(a.toString(),b,function(b,d){var e="ok"===b;e||Q("update at "+a+" failed: "+b);var e=of(l.M,h,!e),f=a;0<e.length&&(f=Uh(l,a));Ab(l.da,f,e);Wh(c,b,d)});b=Xh(this,a);Uh(this,b);Ab(this.da,a,[])}};
+function Vh(a){a.f("onDisconnectEvents");var b=Th(a),c=[];qc(oc(a.la,b),G,function(b,e){c=c.concat(mf(a.M,new Wb(Re,b,e)));var f=Xh(a,b);Uh(a,f)});a.la=new pc;Ab(a.da,G,c)}g.Jd=function(a,b){var c=this;this.ba.Jd(a.toString(),function(d,e){"ok"===d&&jg(c.la,a);Wh(b,d,e)})};function Yh(a,b,c,d){var e=M(c);a.ba.Ne(b.toString(),e.H(!0),function(c,h){"ok"===c&&a.la.nc(b,e);Wh(d,c,h)})}function Zh(a,b,c,d,e){var f=M(c,d);a.ba.Ne(b.toString(),f.H(!0),function(c,d){"ok"===c&&a.la.nc(b,f);Wh(e,c,d)})}
+function $h(a,b,c,d){var e=!0,f;for(f in c)e=!1;e?(Cb("onDisconnect().update() called with empty data.  Don't do anything."),Wh(d,"ok")):a.ba.Cf(b.toString(),c,function(e,f){if("ok"===e)for(var l in c){var m=M(c[l]);a.la.nc(b.u(l),m)}Wh(d,e,f)})}function ai(a,b,c){c=".info"===E(b.path)?a.Cd.Pb(b,c):a.M.Pb(b,c);yb(a.da,b.path,c)}g.zb=function(){this.Sa&&this.Sa.zb()};g.rc=function(){this.Sa&&this.Sa.rc()};
+g.Ze=function(a){if("undefined"!==typeof console){a?(this.fd||(this.fd=new Kb(this.Va)),a=this.fd.get()):a=this.Va.get();var b=Ra(sa(a),function(a,b){return Math.max(b.length,a)},0),c;for(c in a){for(var d=a[c],e=c.length;e<b+2;e++)c+=" ";console.log(c+d)}}};g.$e=function(a){Nb(this.Va,a);this.Qg.Nf[a]=!0};g.f=function(a){var b="";this.Sa&&(b=this.Sa.id+":");Cb(b,arguments)};
+function Wh(a,b,c){a&&Db(function(){if("ok"==b)a(null);else{var d=(b||"error").toUpperCase(),e=d;c&&(e+=": "+c);e=Error(e);e.code=d;a(e)}})};function bi(a,b,c,d,e){function f(){}a.f("transaction on "+b);var h=new U(a,b);h.Fb("value",f);c={path:b,update:c,G:d,status:null,Ff:Fc(),df:e,Lf:0,je:function(){h.hc("value",f)},le:null,Ba:null,pd:null,qd:null,rd:null};d=a.M.za(b,void 0)||C;c.pd=d;d=c.update(d.H());if(n(d)){Wf("transaction failed: Data returned ",d,c.path);c.status=1;e=Gf(a.uc,b);var k=e.Ca()||[];k.push(c);Hf(e,k);"object"===typeof d&&null!==d&&v(d,".priority")?(k=w(d,".priority"),K(Uf(k),"Invalid priority returned by transaction. Priority must be a valid string, finite number, server value, or null.")):
+k=(a.M.za(b)||C).B().H();e=Th(a);d=M(d,k);e=rc(d,e);c.qd=d;c.rd=e;c.Ba=a.Hd++;c=lf(a.M,b,e,c.Ba,c.df);Ab(a.da,b,c);ci(a)}else c.je(),c.qd=null,c.rd=null,c.G&&(a=new S(c.pd,new U(a,c.path),N),c.G(null,!1,a))}function ci(a,b){var c=b||a.uc;b||di(a,c);if(null!==c.Ca()){var d=ei(a,c);K(0<d.length,"Sending zero length transaction queue");Sa(d,function(a){return 1===a.status})&&fi(a,c.path(),d)}else c.wd()&&c.R(function(b){ci(a,b)})}
+function fi(a,b,c){for(var d=Qa(c,function(a){return a.Ba}),e=a.M.za(b,d)||C,d=e,e=e.hash(),f=0;f<c.length;f++){var h=c[f];K(1===h.status,"tryToSendTransactionQueue_: items in queue should all be run.");h.status=2;h.Lf++;var k=O(b,h.path),d=d.K(k,h.qd)}d=d.H(!0);a.ba.put(b.toString(),d,function(d){a.f("transaction put response",{path:b.toString(),status:d});var e=[];if("ok"===d){d=[];for(f=0;f<c.length;f++){c[f].status=3;e=e.concat(of(a.M,c[f].Ba));if(c[f].G){var h=c[f].rd,k=new U(a,c[f].path);d.push(q(c[f].G,
+null,null,!0,new S(h,k,N)))}c[f].je()}di(a,Gf(a.uc,b));ci(a);Ab(a.da,b,e);for(f=0;f<d.length;f++)Db(d[f])}else{if("datastale"===d)for(f=0;f<c.length;f++)c[f].status=4===c[f].status?5:1;else for(Q("transaction at "+b.toString()+" failed: "+d),f=0;f<c.length;f++)c[f].status=5,c[f].le=d;Uh(a,b)}},e)}function Uh(a,b){var c=gi(a,b),d=c.path(),c=ei(a,c);hi(a,c,d);return d}
+function hi(a,b,c){if(0!==b.length){for(var d=[],e=[],f=Qa(b,function(a){return a.Ba}),h=0;h<b.length;h++){var k=b[h],l=O(c,k.path),m=!1,t;K(null!==l,"rerunTransactionsUnderNode_: relativePath should not be null.");if(5===k.status)m=!0,t=k.le,e=e.concat(of(a.M,k.Ba,!0));else if(1===k.status)if(25<=k.Lf)m=!0,t="maxretry",e=e.concat(of(a.M,k.Ba,!0));else{var y=a.M.za(k.path,f)||C;k.pd=y;var I=b[h].update(y.H());n(I)?(Wf("transaction failed: Data returned ",I,k.path),l=M(I),"object"===typeof I&&null!=
+I&&v(I,".priority")||(l=l.ga(y.B())),y=k.Ba,I=Th(a),I=rc(l,I),k.qd=l,k.rd=I,k.Ba=a.Hd++,Va(f,y),e=e.concat(lf(a.M,k.path,I,k.Ba,k.df)),e=e.concat(of(a.M,y,!0))):(m=!0,t="nodata",e=e.concat(of(a.M,k.Ba,!0)))}Ab(a.da,c,e);e=[];m&&(b[h].status=3,setTimeout(b[h].je,Math.floor(0)),b[h].G&&("nodata"===t?(k=new U(a,b[h].path),d.push(q(b[h].G,null,null,!1,new S(b[h].pd,k,N)))):d.push(q(b[h].G,null,Error(t),!1,null))))}di(a,a.uc);for(h=0;h<d.length;h++)Db(d[h]);ci(a)}}
+function gi(a,b){for(var c,d=a.uc;null!==(c=E(b))&&null===d.Ca();)d=Gf(d,c),b=H(b);return d}function ei(a,b){var c=[];ii(a,b,c);c.sort(function(a,b){return a.Ff-b.Ff});return c}function ii(a,b,c){var d=b.Ca();if(null!==d)for(var e=0;e<d.length;e++)c.push(d[e]);b.R(function(b){ii(a,b,c)})}function di(a,b){var c=b.Ca();if(c){for(var d=0,e=0;e<c.length;e++)3!==c[e].status&&(c[d]=c[e],d++);c.length=d;Hf(b,0<c.length?c:null)}b.R(function(b){di(a,b)})}
+function Xh(a,b){var c=gi(a,b).path(),d=Gf(a.uc,b);Kf(d,function(b){ji(a,b)});ji(a,d);Jf(d,function(b){ji(a,b)});return c}
+function ji(a,b){var c=b.Ca();if(null!==c){for(var d=[],e=[],f=-1,h=0;h<c.length;h++)4!==c[h].status&&(2===c[h].status?(K(f===h-1,"All SENT items should be at beginning of queue."),f=h,c[h].status=4,c[h].le="set"):(K(1===c[h].status,"Unexpected transaction status in abort"),c[h].je(),e=e.concat(of(a.M,c[h].Ba,!0)),c[h].G&&d.push(q(c[h].G,null,Error("set"),!1,null))));-1===f?Hf(b,null):c.length=f+1;Ab(a.da,b.path(),e);for(h=0;h<d.length;h++)Db(d[h])}};function W(){this.oc={};this.Qf=!1}W.prototype.zb=function(){for(var a in this.oc)this.oc[a].zb()};W.prototype.rc=function(){for(var a in this.oc)this.oc[a].rc()};W.prototype.we=function(){this.Qf=!0};ca(W);W.prototype.interrupt=W.prototype.zb;W.prototype.resume=W.prototype.rc;function X(a,b){this.bd=a;this.ra=b}X.prototype.cancel=function(a){x("Firebase.onDisconnect().cancel",0,1,arguments.length);A("Firebase.onDisconnect().cancel",1,a,!0);this.bd.Jd(this.ra,a||null)};X.prototype.cancel=X.prototype.cancel;X.prototype.remove=function(a){x("Firebase.onDisconnect().remove",0,1,arguments.length);bg("Firebase.onDisconnect().remove",this.ra);A("Firebase.onDisconnect().remove",1,a,!0);Yh(this.bd,this.ra,null,a)};X.prototype.remove=X.prototype.remove;
+X.prototype.set=function(a,b){x("Firebase.onDisconnect().set",1,2,arguments.length);bg("Firebase.onDisconnect().set",this.ra);Vf("Firebase.onDisconnect().set",a,this.ra,!1);A("Firebase.onDisconnect().set",2,b,!0);Yh(this.bd,this.ra,a,b)};X.prototype.set=X.prototype.set;
+X.prototype.Kb=function(a,b,c){x("Firebase.onDisconnect().setWithPriority",2,3,arguments.length);bg("Firebase.onDisconnect().setWithPriority",this.ra);Vf("Firebase.onDisconnect().setWithPriority",a,this.ra,!1);Yf("Firebase.onDisconnect().setWithPriority",2,b);A("Firebase.onDisconnect().setWithPriority",3,c,!0);Zh(this.bd,this.ra,a,b,c)};X.prototype.setWithPriority=X.prototype.Kb;
+X.prototype.update=function(a,b){x("Firebase.onDisconnect().update",1,2,arguments.length);bg("Firebase.onDisconnect().update",this.ra);if(ea(a)){for(var c={},d=0;d<a.length;++d)c[""+d]=a[d];a=c;Q("Passing an Array to Firebase.onDisconnect().update() is deprecated. Use set() if you want to overwrite the existing data, or an Object with integer keys if you really do want to only update some of the children.")}Xf("Firebase.onDisconnect().update",a,this.ra);A("Firebase.onDisconnect().update",2,b,!0);
+$h(this.bd,this.ra,a,b)};X.prototype.update=X.prototype.update;function Y(a,b,c,d){this.k=a;this.path=b;this.o=c;this.kc=d}
+function ki(a){var b=null,c=null;a.ma&&(b=nd(a));a.pa&&(c=pd(a));if(a.g===Od){if(a.ma){if("[MIN_NAME]"!=md(a))throw Error("Query: When ordering by key, you may only pass one argument to startAt(), endAt(), or equalTo().");if("string"!==typeof b)throw Error("Query: When ordering by key, the argument passed to startAt(), endAt(),or equalTo() must be a string.");}if(a.pa){if("[MAX_NAME]"!=od(a))throw Error("Query: When ordering by key, you may only pass one argument to startAt(), endAt(), or equalTo().");if("string"!==
+typeof c)throw Error("Query: When ordering by key, the argument passed to startAt(), endAt(),or equalTo() must be a string.");}}else if(a.g===N){if(null!=b&&!Uf(b)||null!=c&&!Uf(c))throw Error("Query: When ordering by priority, the first argument passed to startAt(), endAt(), or equalTo() must be a valid priority value (null, a number, or a string).");}else if(K(a.g instanceof Sd||a.g===Yd,"unknown index type."),null!=b&&"object"===typeof b||null!=c&&"object"===typeof c)throw Error("Query: First argument passed to startAt(), endAt(), or equalTo() cannot be an object.");
+}function li(a){if(a.ma&&a.pa&&a.ja&&(!a.ja||""===a.Nb))throw Error("Query: Can't combine startAt(), endAt(), and limit(). Use limitToFirst() or limitToLast() instead.");}function mi(a,b){if(!0===a.kc)throw Error(b+": You can't combine multiple orderBy calls.");}g=Y.prototype;g.mc=function(){x("Query.ref",0,0,arguments.length);return new U(this.k,this.path)};
+g.Fb=function(a,b,c,d){x("Query.on",2,4,arguments.length);Zf("Query.on",a,!1);A("Query.on",2,b,!1);var e=ni("Query.on",c,d);if("value"===a)ai(this.k,this,new id(b,e.cancel||null,e.Ma||null));else{var f={};f[a]=b;ai(this.k,this,new jd(f,e.cancel,e.Ma))}return b};
+g.hc=function(a,b,c){x("Query.off",0,3,arguments.length);Zf("Query.off",a,!0);A("Query.off",2,b,!0);mb("Query.off",3,c);var d=null,e=null;"value"===a?d=new id(b||null,null,c||null):a&&(b&&(e={},e[a]=b),d=new jd(e,null,c||null));e=this.k;d=".info"===E(this.path)?e.Cd.kb(this,d):e.M.kb(this,d);yb(e.da,this.path,d)};
+g.Bg=function(a,b){function c(h){f&&(f=!1,e.hc(a,c),b.call(d.Ma,h))}x("Query.once",2,4,arguments.length);Zf("Query.once",a,!1);A("Query.once",2,b,!1);var d=ni("Query.once",arguments[2],arguments[3]),e=this,f=!0;this.Fb(a,c,function(b){e.hc(a,c);d.cancel&&d.cancel.call(d.Ma,b)})};
+g.Ie=function(a){Q("Query.limit() being deprecated. Please use Query.limitToFirst() or Query.limitToLast() instead.");x("Query.limit",1,1,arguments.length);if(!ga(a)||Math.floor(a)!==a||0>=a)throw Error("Query.limit: First argument must be a positive integer.");if(this.o.ja)throw Error("Query.limit: Limit was already set (by another call to limit, limitToFirst, orlimitToLast.");var b=this.o.Ie(a);li(b);return new Y(this.k,this.path,b,this.kc)};
+g.Je=function(a){x("Query.limitToFirst",1,1,arguments.length);if(!ga(a)||Math.floor(a)!==a||0>=a)throw Error("Query.limitToFirst: First argument must be a positive integer.");if(this.o.ja)throw Error("Query.limitToFirst: Limit was already set (by another call to limit, limitToFirst, or limitToLast).");return new Y(this.k,this.path,this.o.Je(a),this.kc)};
+g.Ke=function(a){x("Query.limitToLast",1,1,arguments.length);if(!ga(a)||Math.floor(a)!==a||0>=a)throw Error("Query.limitToLast: First argument must be a positive integer.");if(this.o.ja)throw Error("Query.limitToLast: Limit was already set (by another call to limit, limitToFirst, or limitToLast).");return new Y(this.k,this.path,this.o.Ke(a),this.kc)};
+g.Cg=function(a){x("Query.orderByChild",1,1,arguments.length);if("$key"===a)throw Error('Query.orderByChild: "$key" is invalid.  Use Query.orderByKey() instead.');if("$priority"===a)throw Error('Query.orderByChild: "$priority" is invalid.  Use Query.orderByPriority() instead.');if("$value"===a)throw Error('Query.orderByChild: "$value" is invalid.  Use Query.orderByValue() instead.');$f("Query.orderByChild",1,a,!1);mi(this,"Query.orderByChild");var b=be(this.o,new Sd(a));ki(b);return new Y(this.k,
+this.path,b,!0)};g.Dg=function(){x("Query.orderByKey",0,0,arguments.length);mi(this,"Query.orderByKey");var a=be(this.o,Od);ki(a);return new Y(this.k,this.path,a,!0)};g.Eg=function(){x("Query.orderByPriority",0,0,arguments.length);mi(this,"Query.orderByPriority");var a=be(this.o,N);ki(a);return new Y(this.k,this.path,a,!0)};g.Fg=function(){x("Query.orderByValue",0,0,arguments.length);mi(this,"Query.orderByValue");var a=be(this.o,Yd);ki(a);return new Y(this.k,this.path,a,!0)};
+g.ae=function(a,b){x("Query.startAt",0,2,arguments.length);Vf("Query.startAt",a,this.path,!0);$f("Query.startAt",2,b,!0);var c=this.o.ae(a,b);li(c);ki(c);if(this.o.ma)throw Error("Query.startAt: Starting point was already set (by another call to startAt or equalTo).");n(a)||(b=a=null);return new Y(this.k,this.path,c,this.kc)};
+g.td=function(a,b){x("Query.endAt",0,2,arguments.length);Vf("Query.endAt",a,this.path,!0);$f("Query.endAt",2,b,!0);var c=this.o.td(a,b);li(c);ki(c);if(this.o.pa)throw Error("Query.endAt: Ending point was already set (by another call to endAt or equalTo).");return new Y(this.k,this.path,c,this.kc)};
+g.ig=function(a,b){x("Query.equalTo",1,2,arguments.length);Vf("Query.equalTo",a,this.path,!1);$f("Query.equalTo",2,b,!0);if(this.o.ma)throw Error("Query.equalTo: Starting point was already set (by another call to endAt or equalTo).");if(this.o.pa)throw Error("Query.equalTo: Ending point was already set (by another call to endAt or equalTo).");return this.ae(a,b).td(a,b)};
+g.toString=function(){x("Query.toString",0,0,arguments.length);for(var a=this.path,b="",c=a.Z;c<a.n.length;c++)""!==a.n[c]&&(b+="/"+encodeURIComponent(String(a.n[c])));return this.k.toString()+(b||"/")};g.va=function(){var a=Vc(ce(this.o));return"{}"===a?"default":a};
+function ni(a,b,c){var d={cancel:null,Ma:null};if(b&&c)d.cancel=b,A(a,3,d.cancel,!0),d.Ma=c,mb(a,4,d.Ma);else if(b)if("object"===typeof b&&null!==b)d.Ma=b;else if("function"===typeof b)d.cancel=b;else throw Error(z(a,3,!0)+" must either be a cancel callback or a context object.");return d}Y.prototype.ref=Y.prototype.mc;Y.prototype.on=Y.prototype.Fb;Y.prototype.off=Y.prototype.hc;Y.prototype.once=Y.prototype.Bg;Y.prototype.limit=Y.prototype.Ie;Y.prototype.limitToFirst=Y.prototype.Je;
+Y.prototype.limitToLast=Y.prototype.Ke;Y.prototype.orderByChild=Y.prototype.Cg;Y.prototype.orderByKey=Y.prototype.Dg;Y.prototype.orderByPriority=Y.prototype.Eg;Y.prototype.orderByValue=Y.prototype.Fg;Y.prototype.startAt=Y.prototype.ae;Y.prototype.endAt=Y.prototype.td;Y.prototype.equalTo=Y.prototype.ig;Y.prototype.toString=Y.prototype.toString;var Z={};Z.vc=Ch;Z.DataConnection=Z.vc;Ch.prototype.Pg=function(a,b){this.Fa("q",{p:a},b)};Z.vc.prototype.simpleListen=Z.vc.prototype.Pg;Ch.prototype.hg=function(a,b){this.Fa("echo",{d:a},b)};Z.vc.prototype.echo=Z.vc.prototype.hg;Ch.prototype.interrupt=Ch.prototype.zb;Z.Tf=qh;Z.RealTimeConnection=Z.Tf;qh.prototype.sendRequest=qh.prototype.Fa;qh.prototype.close=qh.prototype.close;
+Z.pg=function(a){var b=Ch.prototype.put;Ch.prototype.put=function(c,d,e,f){n(f)&&(f=a());b.call(this,c,d,e,f)};return function(){Ch.prototype.put=b}};Z.hijackHash=Z.pg;Z.Sf=Dc;Z.ConnectionTarget=Z.Sf;Z.va=function(a){return a.va()};Z.queryIdentifier=Z.va;Z.rg=function(a){return a.k.Sa.$};Z.listens=Z.rg;Z.we=function(a){a.we()};Z.forceRestClient=Z.we;function U(a,b){var c,d,e;if(a instanceof Qh)c=a,d=b;else{x("new Firebase",1,2,arguments.length);d=Qc(arguments[0]);c=d.Rg;"firebase"===d.domain&&Pc(d.host+" is no longer supported. Please use <YOUR FIREBASE>.firebaseio.com instead");c&&"undefined"!=c||Pc("Cannot parse Firebase url. Please use https://<YOUR FIREBASE>.firebaseio.com");d.lb||"undefined"!==typeof window&&window.location&&window.location.protocol&&-1!==window.location.protocol.indexOf("https:")&&Q("Insecure Firebase access from a secure page. Please use https in calls to new Firebase().");
+c=new Dc(d.host,d.lb,c,"ws"===d.scheme||"wss"===d.scheme);d=new L(d.$c);e=d.toString();var f;!(f=!p(c.host)||0===c.host.length||!Tf(c.Db))&&(f=0!==e.length)&&(e&&(e=e.replace(/^\/*\.info(\/|$)/,"/")),f=!(p(e)&&0!==e.length&&!Rf.test(e)));if(f)throw Error(z("new Firebase",1,!1)+'must be a valid firebase URL and the path can\'t contain ".", "#", "$", "[", or "]".');if(b)if(b instanceof W)e=b;else if(p(b))e=W.vb(),c.Od=b;else throw Error("Expected a valid Firebase.Context for second argument to new Firebase()");
+else e=W.vb();f=c.toString();var h=w(e.oc,f);h||(h=new Qh(c,e.Qf),e.oc[f]=h);c=h}Y.call(this,c,d,$d,!1)}ma(U,Y);var oi=U,pi=["Firebase"],qi=aa;pi[0]in qi||!qi.execScript||qi.execScript("var "+pi[0]);for(var ri;pi.length&&(ri=pi.shift());)!pi.length&&n(oi)?qi[ri]=oi:qi=qi[ri]?qi[ri]:qi[ri]={};U.goOffline=function(){x("Firebase.goOffline",0,0,arguments.length);W.vb().zb()};U.goOnline=function(){x("Firebase.goOnline",0,0,arguments.length);W.vb().rc()};
+function Mc(a,b){K(!b||!0===a||!1===a,"Can't turn on custom loggers persistently.");!0===a?("undefined"!==typeof console&&("function"===typeof console.log?Bb=q(console.log,console):"object"===typeof console.log&&(Bb=function(a){console.log(a)})),b&&P.set("logging_enabled",!0)):a?Bb=a:(Bb=null,P.remove("logging_enabled"))}U.enableLogging=Mc;U.ServerValue={TIMESTAMP:{".sv":"timestamp"}};U.SDK_VERSION=hb;U.INTERNAL=V;U.Context=W;U.TEST_ACCESS=Z;
+U.prototype.name=function(){Q("Firebase.name() being deprecated. Please use Firebase.key() instead.");x("Firebase.name",0,0,arguments.length);return this.key()};U.prototype.name=U.prototype.name;U.prototype.key=function(){x("Firebase.key",0,0,arguments.length);return this.path.e()?null:uc(this.path)};U.prototype.key=U.prototype.key;
+U.prototype.u=function(a){x("Firebase.child",1,1,arguments.length);if(ga(a))a=String(a);else if(!(a instanceof L))if(null===E(this.path)){var b=a;b&&(b=b.replace(/^\/*\.info(\/|$)/,"/"));ag("Firebase.child",b)}else ag("Firebase.child",a);return new U(this.k,this.path.u(a))};U.prototype.child=U.prototype.u;U.prototype.parent=function(){x("Firebase.parent",0,0,arguments.length);var a=this.path.parent();return null===a?null:new U(this.k,a)};U.prototype.parent=U.prototype.parent;
+U.prototype.root=function(){x("Firebase.ref",0,0,arguments.length);for(var a=this;null!==a.parent();)a=a.parent();return a};U.prototype.root=U.prototype.root;U.prototype.set=function(a,b){x("Firebase.set",1,2,arguments.length);bg("Firebase.set",this.path);Vf("Firebase.set",a,this.path,!1);A("Firebase.set",2,b,!0);this.k.Kb(this.path,a,null,b||null)};U.prototype.set=U.prototype.set;
+U.prototype.update=function(a,b){x("Firebase.update",1,2,arguments.length);bg("Firebase.update",this.path);if(ea(a)){for(var c={},d=0;d<a.length;++d)c[""+d]=a[d];a=c;Q("Passing an Array to Firebase.update() is deprecated. Use set() if you want to overwrite the existing data, or an Object with integer keys if you really do want to only update some of the children.")}Xf("Firebase.update",a,this.path);A("Firebase.update",2,b,!0);this.k.update(this.path,a,b||null)};U.prototype.update=U.prototype.update;
+U.prototype.Kb=function(a,b,c){x("Firebase.setWithPriority",2,3,arguments.length);bg("Firebase.setWithPriority",this.path);Vf("Firebase.setWithPriority",a,this.path,!1);Yf("Firebase.setWithPriority",2,b);A("Firebase.setWithPriority",3,c,!0);if(".length"===this.key()||".keys"===this.key())throw"Firebase.setWithPriority failed: "+this.key()+" is a read-only object.";this.k.Kb(this.path,a,b,c||null)};U.prototype.setWithPriority=U.prototype.Kb;
+U.prototype.remove=function(a){x("Firebase.remove",0,1,arguments.length);bg("Firebase.remove",this.path);A("Firebase.remove",1,a,!0);this.set(null,a)};U.prototype.remove=U.prototype.remove;
+U.prototype.transaction=function(a,b,c){x("Firebase.transaction",1,3,arguments.length);bg("Firebase.transaction",this.path);A("Firebase.transaction",1,a,!1);A("Firebase.transaction",2,b,!0);if(n(c)&&"boolean"!=typeof c)throw Error(z("Firebase.transaction",3,!0)+"must be a boolean.");if(".length"===this.key()||".keys"===this.key())throw"Firebase.transaction failed: "+this.key()+" is a read-only object.";"undefined"===typeof c&&(c=!0);bi(this.k,this.path,a,b||null,c)};U.prototype.transaction=U.prototype.transaction;
+U.prototype.Mg=function(a,b){x("Firebase.setPriority",1,2,arguments.length);bg("Firebase.setPriority",this.path);Yf("Firebase.setPriority",1,a);A("Firebase.setPriority",2,b,!0);this.k.Kb(this.path.u(".priority"),a,null,b)};U.prototype.setPriority=U.prototype.Mg;
+U.prototype.push=function(a,b){x("Firebase.push",0,2,arguments.length);bg("Firebase.push",this.path);Vf("Firebase.push",a,this.path,!0);A("Firebase.push",2,b,!0);var c=Sh(this.k),c=Nf(c),c=this.u(c);"undefined"!==typeof a&&null!==a&&c.set(a,b);return c};U.prototype.push=U.prototype.push;U.prototype.ib=function(){bg("Firebase.onDisconnect",this.path);return new X(this.k,this.path)};U.prototype.onDisconnect=U.prototype.ib;
+U.prototype.N=function(a,b,c){Q("FirebaseRef.auth() being deprecated. Please use FirebaseRef.authWithCustomToken() instead.");x("Firebase.auth",1,3,arguments.length);cg("Firebase.auth",a);A("Firebase.auth",2,b,!0);A("Firebase.auth",3,b,!0);Qg(this.k.N,a,{},{remember:"none"},b,c)};U.prototype.auth=U.prototype.N;U.prototype.he=function(a){x("Firebase.unauth",0,1,arguments.length);A("Firebase.unauth",1,a,!0);Rg(this.k.N,a)};U.prototype.unauth=U.prototype.he;
+U.prototype.ye=function(){x("Firebase.getAuth",0,0,arguments.length);return this.k.N.ye()};U.prototype.getAuth=U.prototype.ye;U.prototype.vg=function(a,b){x("Firebase.onAuth",1,2,arguments.length);A("Firebase.onAuth",1,a,!1);mb("Firebase.onAuth",2,b);this.k.N.Fb("auth_status",a,b)};U.prototype.onAuth=U.prototype.vg;U.prototype.ug=function(a,b){x("Firebase.offAuth",1,2,arguments.length);A("Firebase.offAuth",1,a,!1);mb("Firebase.offAuth",2,b);this.k.N.hc("auth_status",a,b)};U.prototype.offAuth=U.prototype.ug;
+U.prototype.Xf=function(a,b,c){x("Firebase.authWithCustomToken",2,3,arguments.length);cg("Firebase.authWithCustomToken",a);A("Firebase.authWithCustomToken",2,b,!1);fg("Firebase.authWithCustomToken",3,c,!0);Qg(this.k.N,a,{},c||{},b)};U.prototype.authWithCustomToken=U.prototype.Xf;U.prototype.Yf=function(a,b,c){x("Firebase.authWithOAuthPopup",2,3,arguments.length);eg("Firebase.authWithOAuthPopup",a);A("Firebase.authWithOAuthPopup",2,b,!1);fg("Firebase.authWithOAuthPopup",3,c,!0);Vg(this.k.N,a,c,b)};
+U.prototype.authWithOAuthPopup=U.prototype.Yf;U.prototype.Zf=function(a,b,c){x("Firebase.authWithOAuthRedirect",2,3,arguments.length);eg("Firebase.authWithOAuthRedirect",a);A("Firebase.authWithOAuthRedirect",2,b,!1);fg("Firebase.authWithOAuthRedirect",3,c,!0);var d=this.k.N;Tg(d);var e=[Cg],f=ng(c);"anonymous"===a||"firebase"===a?R(b,Eg("TRANSPORT_UNAVAILABLE")):(P.set("redirect_client_options",f.od),Ug(d,e,"/auth/"+a,f,b))};U.prototype.authWithOAuthRedirect=U.prototype.Zf;
+U.prototype.$f=function(a,b,c,d){x("Firebase.authWithOAuthToken",3,4,arguments.length);eg("Firebase.authWithOAuthToken",a);A("Firebase.authWithOAuthToken",3,c,!1);fg("Firebase.authWithOAuthToken",4,d,!0);p(b)?(dg("Firebase.authWithOAuthToken",2,b),Sg(this.k.N,a+"/token",{access_token:b},d,c)):(fg("Firebase.authWithOAuthToken",2,b,!1),Sg(this.k.N,a+"/token",b,d,c))};U.prototype.authWithOAuthToken=U.prototype.$f;
+U.prototype.Wf=function(a,b){x("Firebase.authAnonymously",1,2,arguments.length);A("Firebase.authAnonymously",1,a,!1);fg("Firebase.authAnonymously",2,b,!0);Sg(this.k.N,"anonymous",{},b,a)};U.prototype.authAnonymously=U.prototype.Wf;
+U.prototype.ag=function(a,b,c){x("Firebase.authWithPassword",2,3,arguments.length);fg("Firebase.authWithPassword",1,a,!1);gg("Firebase.authWithPassword",a,"email");gg("Firebase.authWithPassword",a,"password");A("Firebase.authWithPassword",2,b,!1);fg("Firebase.authWithPassword",3,c,!0);Sg(this.k.N,"password",a,c,b)};U.prototype.authWithPassword=U.prototype.ag;
+U.prototype.te=function(a,b){x("Firebase.createUser",2,2,arguments.length);fg("Firebase.createUser",1,a,!1);gg("Firebase.createUser",a,"email");gg("Firebase.createUser",a,"password");A("Firebase.createUser",2,b,!1);this.k.N.te(a,b)};U.prototype.createUser=U.prototype.te;U.prototype.Ue=function(a,b){x("Firebase.removeUser",2,2,arguments.length);fg("Firebase.removeUser",1,a,!1);gg("Firebase.removeUser",a,"email");gg("Firebase.removeUser",a,"password");A("Firebase.removeUser",2,b,!1);this.k.N.Ue(a,b)};
+U.prototype.removeUser=U.prototype.Ue;U.prototype.qe=function(a,b){x("Firebase.changePassword",2,2,arguments.length);fg("Firebase.changePassword",1,a,!1);gg("Firebase.changePassword",a,"email");gg("Firebase.changePassword",a,"oldPassword");gg("Firebase.changePassword",a,"newPassword");A("Firebase.changePassword",2,b,!1);this.k.N.qe(a,b)};U.prototype.changePassword=U.prototype.qe;
+U.prototype.pe=function(a,b){x("Firebase.changeEmail",2,2,arguments.length);fg("Firebase.changeEmail",1,a,!1);gg("Firebase.changeEmail",a,"oldEmail");gg("Firebase.changeEmail",a,"newEmail");gg("Firebase.changeEmail",a,"password");A("Firebase.changeEmail",2,b,!1);this.k.N.pe(a,b)};U.prototype.changeEmail=U.prototype.pe;
+U.prototype.We=function(a,b){x("Firebase.resetPassword",2,2,arguments.length);fg("Firebase.resetPassword",1,a,!1);gg("Firebase.resetPassword",a,"email");A("Firebase.resetPassword",2,b,!1);this.k.N.We(a,b)};U.prototype.resetPassword=U.prototype.We;})();
+
+;
+
+/*!
+ * AngularFire is the officially supported AngularJS binding for Firebase. Firebase
+ * is a full backend so you don't need servers to build your Angular app. AngularFire
+ * provides you with the $firebase service which allows you to easily keep your $scope
+ * variables in sync with your Firebase backend.
+ *
+ * AngularFire 1.1.2
+ * https://github.com/firebase/angularfire/
+ * Date: 06/25/2015
+ * License: MIT
+ */
+(function(exports) {
+  "use strict";
+
+// Define the `firebase` module under which all AngularFire
+// services will live.
+  angular.module("firebase", [])
+    //todo use $window
+    .value("Firebase", exports.Firebase);
+
+})(window);
+(function() {
+  'use strict';
+  /**
+   * Creates and maintains a synchronized list of data. This is a pseudo-read-only array. One should
+   * not call splice(), push(), pop(), et al directly on this array, but should instead use the
+   * $remove and $add methods.
+   *
+   * It is acceptable to .sort() this array, but it is important to use this in conjunction with
+   * $watch(), so that it will be re-sorted any time the server data changes. Examples of this are
+   * included in the $watch documentation.
+   *
+   * Internally, the $firebase object depends on this class to provide several $$ (i.e. protected)
+   * methods, which it invokes to notify the array whenever a change has been made at the server:
+   *    $$added - called whenever a child_added event occurs
+   *    $$updated - called whenever a child_changed event occurs
+   *    $$moved - called whenever a child_moved event occurs
+   *    $$removed - called whenever a child_removed event occurs
+   *    $$error - called when listeners are canceled due to a security error
+   *    $$process - called immediately after $$added/$$updated/$$moved/$$removed
+   *                (assuming that these methods do not abort by returning false or null)
+   *                to splice/manipulate the array and invoke $$notify
+   *
+   * Additionally, these methods may be of interest to devs extending this class:
+   *    $$notify - triggers notifications to any $watch listeners, called by $$process
+   *    $$getKey - determines how to look up a record's key (returns $id by default)
+   *
+   * Instead of directly modifying this class, one should generally use the $extend
+   * method to add or change how methods behave. $extend modifies the prototype of
+   * the array class by returning a clone of $firebaseArray.
+   *
+   * <pre><code>
+   * var ExtendedArray = $firebaseArray.$extend({
+   *    // add a new method to the prototype
+   *    foo: function() { return 'bar'; },
+   *
+   *    // change how records are created
+   *    $$added: function(snap, prevChild) {
+   *       return new Widget(snap, prevChild);
+   *    },
+   *
+   *    // change how records are updated
+   *    $$updated: function(snap) {
+   *      return this.$getRecord(snap.key()).update(snap);
+   *    }
+   * });
+   *
+   * var list = new ExtendedArray(ref);
+   * </code></pre>
+   */
+  angular.module('firebase').factory('$firebaseArray', ["$log", "$firebaseUtils", "$q",
+    function($log, $firebaseUtils, $q) {
+      /**
+       * This constructor should probably never be called manually. It is used internally by
+       * <code>$firebase.$asArray()</code>.
+       *
+       * @param {Firebase} ref
+       * @returns {Array}
+       * @constructor
+       */
+      function FirebaseArray(ref) {
+        if( !(this instanceof FirebaseArray) ) {
+          return new FirebaseArray(ref);
+        }
+        var self = this;
+        this._observers = [];
+        this.$list = [];
+        this._ref = ref;
+        this._sync = new ArraySyncManager(this);
+
+        $firebaseUtils.assertValidRef(ref, 'Must pass a valid Firebase reference ' +
+        'to $firebaseArray (not a string or URL)');
+
+        // indexCache is a weak hashmap (a lazy list) of keys to array indices,
+        // items are not guaranteed to stay up to date in this list (since the data
+        // array can be manually edited without calling the $ methods) and it should
+        // always be used with skepticism regarding whether it is accurate
+        // (see $indexFor() below for proper usage)
+        this._indexCache = {};
+
+        // Array.isArray will not work on objects which extend the Array class.
+        // So instead of extending the Array class, we just return an actual array.
+        // However, it's still possible to extend FirebaseArray and have the public methods
+        // appear on the array object. We do this by iterating the prototype and binding
+        // any method that is not prefixed with an underscore onto the final array.
+        $firebaseUtils.getPublicMethods(self, function(fn, key) {
+          self.$list[key] = fn.bind(self);
+        });
+
+        this._sync.init(this.$list);
+
+        return this.$list;
+      }
+
+      FirebaseArray.prototype = {
+        /**
+         * Create a new record with a unique ID and add it to the end of the array.
+         * This should be used instead of Array.prototype.push, since those changes will not be
+         * synchronized with the server.
+         *
+         * Any value, including a primitive, can be added in this way. Note that when the record
+         * is created, the primitive value would be stored in $value (records are always objects
+         * by default).
+         *
+         * Returns a future which is resolved when the data has successfully saved to the server.
+         * The resolve callback will be passed a Firebase ref representing the new data element.
+         *
+         * @param data
+         * @returns a promise resolved after data is added
+         */
+        $add: function(data) {
+          this._assertNotDestroyed('$add');
+          var def = $firebaseUtils.defer();
+          var ref = this.$ref().ref().push();
+          ref.set($firebaseUtils.toJSON(data), $firebaseUtils.makeNodeResolver(def));
+          return def.promise.then(function() {
+            return ref;
+          });
+        },
+
+        /**
+         * Pass either an item in the array or the index of an item and it will be saved back
+         * to Firebase. While the array is read-only and its structure should not be changed,
+         * it is okay to modify properties on the objects it contains and then save those back
+         * individually.
+         *
+         * Returns a future which is resolved when the data has successfully saved to the server.
+         * The resolve callback will be passed a Firebase ref representing the saved element.
+         * If passed an invalid index or an object which is not a record in this array,
+         * the promise will be rejected.
+         *
+         * @param {int|object} indexOrItem
+         * @returns a promise resolved after data is saved
+         */
+        $save: function(indexOrItem) {
+          this._assertNotDestroyed('$save');
+          var self = this;
+          var item = self._resolveItem(indexOrItem);
+          var key = self.$keyAt(item);
+          if( key !== null ) {
+            var ref = self.$ref().ref().child(key);
+            var data = $firebaseUtils.toJSON(item);
+            return $firebaseUtils.doSet(ref, data).then(function() {
+              self.$$notify('child_changed', key);
+              return ref;
+            });
+          }
+          else {
+            return $firebaseUtils.reject('Invalid record; could determine key for '+indexOrItem);
+          }
+        },
+
+        /**
+         * Pass either an existing item in this array or the index of that item and it will
+         * be removed both locally and in Firebase. This should be used in place of
+         * Array.prototype.splice for removing items out of the array, as calling splice
+         * will not update the value on the server.
+         *
+         * Returns a future which is resolved when the data has successfully removed from the
+         * server. The resolve callback will be passed a Firebase ref representing the deleted
+         * element. If passed an invalid index or an object which is not a record in this array,
+         * the promise will be rejected.
+         *
+         * @param {int|object} indexOrItem
+         * @returns a promise which resolves after data is removed
+         */
+        $remove: function(indexOrItem) {
+          this._assertNotDestroyed('$remove');
+          var key = this.$keyAt(indexOrItem);
+          if( key !== null ) {
+            var ref = this.$ref().ref().child(key);
+            return $firebaseUtils.doRemove(ref).then(function() {
+              return ref;
+            });
+          }
+          else {
+            return $firebaseUtils.reject('Invalid record; could not determine key for '+indexOrItem);
+          }
+        },
+
+        /**
+         * Given an item in this array or the index of an item in the array, this returns the
+         * Firebase key (record.$id) for that record. If passed an invalid key or an item which
+         * does not exist in this array, it will return null.
+         *
+         * @param {int|object} indexOrItem
+         * @returns {null|string}
+         */
+        $keyAt: function(indexOrItem) {
+          var item = this._resolveItem(indexOrItem);
+          return this.$$getKey(item);
+        },
+
+        /**
+         * The inverse of $keyAt, this method takes a Firebase key (record.$id) and returns the
+         * index in the array where that record is stored. If the record is not in the array,
+         * this method returns -1.
+         *
+         * @param {String} key
+         * @returns {int} -1 if not found
+         */
+        $indexFor: function(key) {
+          var self = this;
+          var cache = self._indexCache;
+          // evaluate whether our key is cached and, if so, whether it is up to date
+          if( !cache.hasOwnProperty(key) || self.$keyAt(cache[key]) !== key ) {
+            // update the hashmap
+            var pos = self.$list.findIndex(function(rec) { return self.$$getKey(rec) === key; });
+            if( pos !== -1 ) {
+              cache[key] = pos;
+            }
+          }
+          return cache.hasOwnProperty(key)? cache[key] : -1;
+        },
+
+        /**
+         * The loaded method is invoked after the initial batch of data arrives from the server.
+         * When this resolves, all data which existed prior to calling $asArray() is now cached
+         * locally in the array.
+         *
+         * As a shortcut is also possible to pass resolve/reject methods directly into this
+         * method just as they would be passed to .then()
+         *
+         * @param {Function} [resolve]
+         * @param {Function} [reject]
+         * @returns a promise
+         */
+        $loaded: function(resolve, reject) {
+          var promise = this._sync.ready();
+          if( arguments.length ) {
+            // allow this method to be called just like .then
+            // by passing any arguments on to .then
+            promise = promise.then.call(promise, resolve, reject);
+          }
+          return promise;
+        },
+
+        /**
+         * @returns {Firebase} the original Firebase ref used to create this object.
+         */
+        $ref: function() { return this._ref; },
+
+        /**
+         * Listeners passed into this method are notified whenever a new change (add, updated,
+         * move, remove) is received from the server. Each invocation is sent an object
+         * containing <code>{ type: 'child_added|child_updated|child_moved|child_removed',
+         * key: 'key_of_item_affected'}</code>
+         *
+         * Additionally, added and moved events receive a prevChild parameter, containing the
+         * key of the item before this one in the array.
+         *
+         * This method returns a function which can be invoked to stop observing events.
+         *
+         * @param {Function} cb
+         * @param {Object} [context]
+         * @returns {Function} used to stop observing
+         */
+        $watch: function(cb, context) {
+          var list = this._observers;
+          list.push([cb, context]);
+          // an off function for cancelling the listener
+          return function() {
+            var i = list.findIndex(function(parts) {
+              return parts[0] === cb && parts[1] === context;
+            });
+            if( i > -1 ) {
+              list.splice(i, 1);
+            }
+          };
+        },
+
+        /**
+         * Informs $firebase to stop sending events and clears memory being used
+         * by this array (delete's its local content).
+         */
+        $destroy: function(err) {
+          if( !this._isDestroyed ) {
+            this._isDestroyed = true;
+            this._sync.destroy(err);
+            this.$list.length = 0;
+          }
+        },
+
+        /**
+         * Returns the record for a given Firebase key (record.$id). If the record is not found
+         * then returns null.
+         *
+         * @param {string} key
+         * @returns {Object|null} a record in this array
+         */
+        $getRecord: function(key) {
+          var i = this.$indexFor(key);
+          return i > -1? this.$list[i] : null;
+        },
+
+        /**
+         * Called to inform the array when a new item has been added at the server.
+         * This method should return the record (an object) that will be passed into $$process
+         * along with the add event. Alternately, the record will be skipped if this method returns
+         * a falsey value.
+         *
+         * @param {object} snap a Firebase snapshot
+         * @param {string} prevChild
+         * @return {object} the record to be inserted into the array
+         * @protected
+         */
+        $$added: function(snap/*, prevChild*/) {
+          // check to make sure record does not exist
+          var i = this.$indexFor($firebaseUtils.getKey(snap));
+          if( i === -1 ) {
+            // parse data and create record
+            var rec = snap.val();
+            if( !angular.isObject(rec) ) {
+              rec = { $value: rec };
+            }
+            rec.$id = $firebaseUtils.getKey(snap);
+            rec.$priority = snap.getPriority();
+            $firebaseUtils.applyDefaults(rec, this.$$defaults);
+
+            return rec;
+          }
+          return false;
+        },
+
+        /**
+         * Called whenever an item is removed at the server.
+         * This method does not physically remove the objects, but instead
+         * returns a boolean indicating whether it should be removed (and
+         * taking any other desired actions before the remove completes).
+         *
+         * @param {object} snap a Firebase snapshot
+         * @return {boolean} true if item should be removed
+         * @protected
+         */
+        $$removed: function(snap) {
+          return this.$indexFor($firebaseUtils.getKey(snap)) > -1;
+        },
+
+        /**
+         * Called whenever an item is changed at the server.
+         * This method should apply the changes, including changes to data
+         * and to $priority, and then return true if any changes were made.
+         *
+         * If this method returns false, then $$process will not be invoked,
+         * which means that $$notify will not take place and no $watch events
+         * will be triggered.
+         *
+         * @param {object} snap a Firebase snapshot
+         * @return {boolean} true if any data changed
+         * @protected
+         */
+        $$updated: function(snap) {
+          var changed = false;
+          var rec = this.$getRecord($firebaseUtils.getKey(snap));
+          if( angular.isObject(rec) ) {
+            // apply changes to the record
+            changed = $firebaseUtils.updateRec(rec, snap);
+            $firebaseUtils.applyDefaults(rec, this.$$defaults);
+          }
+          return changed;
+        },
+
+        /**
+         * Called whenever an item changes order (moves) on the server.
+         * This method should set $priority to the updated value and return true if
+         * the record should actually be moved. It should not actually apply the move
+         * operation.
+         *
+         * If this method returns false, then the record will not be moved in the array
+         * and no $watch listeners will be notified. (When true, $$process is invoked
+         * which invokes $$notify)
+         *
+         * @param {object} snap a Firebase snapshot
+         * @param {string} prevChild
+         * @protected
+         */
+        $$moved: function(snap/*, prevChild*/) {
+          var rec = this.$getRecord($firebaseUtils.getKey(snap));
+          if( angular.isObject(rec) ) {
+            rec.$priority = snap.getPriority();
+            return true;
+          }
+          return false;
+        },
+
+        /**
+         * Called whenever a security error or other problem causes the listeners to become
+         * invalid. This is generally an unrecoverable error.
+         *
+         * @param {Object} err which will have a `code` property and possibly a `message`
+         * @protected
+         */
+        $$error: function(err) {
+          $log.error(err);
+          this.$destroy(err);
+        },
+
+        /**
+         * Returns ID for a given record
+         * @param {object} rec
+         * @returns {string||null}
+         * @protected
+         */
+        $$getKey: function(rec) {
+          return angular.isObject(rec)? rec.$id : null;
+        },
+
+        /**
+         * Handles placement of recs in the array, sending notifications,
+         * and other internals. Called by the synchronization process
+         * after $$added, $$updated, $$moved, and $$removed return a truthy value.
+         *
+         * @param {string} event one of child_added, child_removed, child_moved, or child_changed
+         * @param {object} rec
+         * @param {string} [prevChild]
+         * @protected
+         */
+        $$process: function(event, rec, prevChild) {
+          var key = this.$$getKey(rec);
+          var changed = false;
+          var curPos;
+          switch(event) {
+            case 'child_added':
+              curPos = this.$indexFor(key);
+              break;
+            case 'child_moved':
+              curPos = this.$indexFor(key);
+              this._spliceOut(key);
+              break;
+            case 'child_removed':
+              // remove record from the array
+              changed = this._spliceOut(key) !== null;
+              break;
+            case 'child_changed':
+              changed = true;
+              break;
+            default:
+              throw new Error('Invalid event type: ' + event);
+          }
+          if( angular.isDefined(curPos) ) {
+            // add it to the array
+            changed = this._addAfter(rec, prevChild) !== curPos;
+          }
+          if( changed ) {
+            // send notifications to anybody monitoring $watch
+            this.$$notify(event, key, prevChild);
+          }
+          return changed;
+        },
+
+        /**
+         * Used to trigger notifications for listeners registered using $watch. This method is
+         * typically invoked internally by the $$process method.
+         *
+         * @param {string} event
+         * @param {string} key
+         * @param {string} [prevChild]
+         * @protected
+         */
+        $$notify: function(event, key, prevChild) {
+          var eventData = {event: event, key: key};
+          if( angular.isDefined(prevChild) ) {
+            eventData.prevChild = prevChild;
+          }
+          angular.forEach(this._observers, function(parts) {
+            parts[0].call(parts[1], eventData);
+          });
+        },
+
+        /**
+         * Used to insert a new record into the array at a specific position. If prevChild is
+         * null, is inserted first, if prevChild is not found, it is inserted last, otherwise,
+         * it goes immediately after prevChild.
+         *
+         * @param {object} rec
+         * @param {string|null} prevChild
+         * @private
+         */
+        _addAfter: function(rec, prevChild) {
+          var i;
+          if( prevChild === null ) {
+            i = 0;
+          }
+          else {
+            i = this.$indexFor(prevChild)+1;
+            if( i === 0 ) { i = this.$list.length; }
+          }
+          this.$list.splice(i, 0, rec);
+          this._indexCache[this.$$getKey(rec)] = i;
+          return i;
+        },
+
+        /**
+         * Removes a record from the array by calling splice. If the item is found
+         * this method returns it. Otherwise, this method returns null.
+         *
+         * @param {string} key
+         * @returns {object|null}
+         * @private
+         */
+        _spliceOut: function(key) {
+          var i = this.$indexFor(key);
+          if( i > -1 ) {
+            delete this._indexCache[key];
+            return this.$list.splice(i, 1)[0];
+          }
+          return null;
+        },
+
+        /**
+         * Resolves a variable which may contain an integer or an item that exists in this array.
+         * Returns the item or null if it does not exist.
+         *
+         * @param indexOrItem
+         * @returns {*}
+         * @private
+         */
+        _resolveItem: function(indexOrItem) {
+          var list = this.$list;
+          if( angular.isNumber(indexOrItem) && indexOrItem >= 0 && list.length >= indexOrItem ) {
+            return list[indexOrItem];
+          }
+          else if( angular.isObject(indexOrItem) ) {
+            // it must be an item in this array; it's not sufficient for it just to have
+            // a $id or even a $id that is in the array, it must be an actual record
+            // the fastest way to determine this is to use $getRecord (to avoid iterating all recs)
+            // and compare the two
+            var key = this.$$getKey(indexOrItem);
+            var rec = this.$getRecord(key);
+            return rec === indexOrItem? rec : null;
+          }
+          return null;
+        },
+
+        /**
+         * Throws an error if $destroy has been called. Should be used for any function
+         * which tries to write data back to $firebase.
+         * @param {string} method
+         * @private
+         */
+        _assertNotDestroyed: function(method) {
+          if( this._isDestroyed ) {
+            throw new Error('Cannot call ' + method + ' method on a destroyed $firebaseArray object');
+          }
+        }
+      };
+
+      /**
+       * This method allows FirebaseArray to be inherited by child classes. Methods passed into this
+       * function will be added onto the array's prototype. They can override existing methods as
+       * well.
+       *
+       * In addition to passing additional methods, it is also possible to pass in a class function.
+       * The prototype on that class function will be preserved, and it will inherit from
+       * FirebaseArray. It's also possible to do both, passing a class to inherit and additional
+       * methods to add onto the prototype.
+       *
+       *  <pre><code>
+       * var ExtendedArray = $firebaseArray.$extend({
+       *    // add a method onto the prototype that sums all items in the array
+       *    getSum: function() {
+       *       var ct = 0;
+       *       angular.forEach(this.$list, function(rec) { ct += rec.x; });
+        *      return ct;
+       *    }
+       * });
+       *
+       * // use our new factory in place of $firebaseArray
+       * var list = new ExtendedArray(ref);
+       * </code></pre>
+       *
+       * @param {Function} [ChildClass] a child class which should inherit FirebaseArray
+       * @param {Object} [methods] a list of functions to add onto the prototype
+       * @returns {Function} a child class suitable for use with $firebase (this will be ChildClass if provided)
+       * @static
+       */
+      FirebaseArray.$extend = function(ChildClass, methods) {
+        if( arguments.length === 1 && angular.isObject(ChildClass) ) {
+          methods = ChildClass;
+          ChildClass = function(ref) {
+            if( !(this instanceof ChildClass) ) {
+              return new ChildClass(ref);
+            }
+            FirebaseArray.apply(this, arguments);
+            return this.$list;
+          };
+        }
+        return $firebaseUtils.inherit(ChildClass, FirebaseArray, methods);
+      };
+
+      function ArraySyncManager(firebaseArray) {
+        function destroy(err) {
+          if( !sync.isDestroyed ) {
+            sync.isDestroyed = true;
+            var ref = firebaseArray.$ref();
+            ref.off('child_added', created);
+            ref.off('child_moved', moved);
+            ref.off('child_changed', updated);
+            ref.off('child_removed', removed);
+            firebaseArray = null;
+            initComplete(err||'destroyed');
+          }
+        }
+
+        function init($list) {
+          var ref = firebaseArray.$ref();
+
+          // listen for changes at the Firebase instance
+          ref.on('child_added', created, error);
+          ref.on('child_moved', moved, error);
+          ref.on('child_changed', updated, error);
+          ref.on('child_removed', removed, error);
+
+          // determine when initial load is completed
+          ref.once('value', function(snap) {
+            if (angular.isArray(snap.val())) {
+              $log.warn('Storing data using array indices in Firebase can result in unexpected behavior. See https://www.firebase.com/docs/web/guide/understanding-data.html#section-arrays-in-firebase for more information.');
+            }
+
+            initComplete(null, $list);
+          }, initComplete);
+        }
+
+        // call initComplete(), do not call this directly
+        function _initComplete(err, result) {
+          if( !isResolved ) {
+            isResolved = true;
+            if( err ) { def.reject(err); }
+            else { def.resolve(result); }
+          }
+        }
+
+        var def     = $firebaseUtils.defer();
+        var created = function(snap, prevChild) {
+          waitForResolution(firebaseArray.$$added(snap, prevChild), function(rec) {
+            firebaseArray.$$process('child_added', rec, prevChild);
+          });
+        };
+        var updated = function(snap) {
+          var rec = firebaseArray.$getRecord($firebaseUtils.getKey(snap));
+          if( rec ) {
+            waitForResolution(firebaseArray.$$updated(snap), function() {
+              firebaseArray.$$process('child_changed', rec);
+            });
+          }
+        };
+        var moved   = function(snap, prevChild) {
+          var rec = firebaseArray.$getRecord($firebaseUtils.getKey(snap));
+          if( rec ) {
+            waitForResolution(firebaseArray.$$moved(snap, prevChild), function() {
+              firebaseArray.$$process('child_moved', rec, prevChild);
+            });
+          }
+        };
+        var removed = function(snap) {
+          var rec = firebaseArray.$getRecord($firebaseUtils.getKey(snap));
+          if( rec ) {
+            waitForResolution(firebaseArray.$$removed(snap), function() {
+               firebaseArray.$$process('child_removed', rec);
+            });
+          }
+        };
+
+        function waitForResolution(maybePromise, callback) {
+          var promise = $q.when(maybePromise);
+          promise.then(function(result){
+            if (result) {
+              callback(result);
+            }
+          });
+          if (!isResolved) {
+            resolutionPromises.push(promise);
+          }
+        }
+
+        var resolutionPromises = [];
+        var isResolved = false;
+        var error   = $firebaseUtils.batch(function(err) {
+          _initComplete(err);
+          if( firebaseArray ) {
+            firebaseArray.$$error(err);
+          }
+        });
+        var initComplete = $firebaseUtils.batch(_initComplete);
+
+        var sync = {
+          destroy: destroy,
+          isDestroyed: false,
+          init: init,
+          ready: function() { return def.promise.then(function(result){
+            return $q.all(resolutionPromises).then(function(){
+              return result;
+            });
+          }); }
+        };
+
+        return sync;
+      }
+
+      return FirebaseArray;
+    }
+  ]);
+
+  /** @deprecated */
+  angular.module('firebase').factory('$FirebaseArray', ['$log', '$firebaseArray',
+    function($log, $firebaseArray) {
+      return function() {
+        $log.warn('$FirebaseArray has been renamed. Use $firebaseArray instead.');
+        return $firebaseArray.apply(null, arguments);
+      };
+    }
+  ]);
+})();
+
+(function() {
+  'use strict';
+  var FirebaseAuth;
+
+  // Define a service which provides user authentication and management.
+  angular.module('firebase').factory('$firebaseAuth', [
+    '$q', '$firebaseUtils', function($q, $firebaseUtils) {
+      /**
+       * This factory returns an object allowing you to manage the client's authentication state.
+       *
+       * @param {Firebase} ref A Firebase reference to authenticate.
+       * @return {object} An object containing methods for authenticating clients, retrieving
+       * authentication state, and managing users.
+       */
+      return function(ref) {
+        var auth = new FirebaseAuth($q, $firebaseUtils, ref);
+        return auth.construct();
+      };
+    }
+  ]);
+
+  FirebaseAuth = function($q, $firebaseUtils, ref) {
+    this._q = $q;
+    this._utils = $firebaseUtils;
+    if (typeof ref === 'string') {
+      throw new Error('Please provide a Firebase reference instead of a URL when creating a `$firebaseAuth` object.');
+    }
+    this._ref = ref;
+    this._initialAuthResolver = this._initAuthResolver();
+  };
+
+  FirebaseAuth.prototype = {
+    construct: function() {
+      this._object = {
+        // Authentication methods
+        $authWithCustomToken: this.authWithCustomToken.bind(this),
+        $authAnonymously: this.authAnonymously.bind(this),
+        $authWithPassword: this.authWithPassword.bind(this),
+        $authWithOAuthPopup: this.authWithOAuthPopup.bind(this),
+        $authWithOAuthRedirect: this.authWithOAuthRedirect.bind(this),
+        $authWithOAuthToken: this.authWithOAuthToken.bind(this),
+        $unauth: this.unauth.bind(this),
+
+        // Authentication state methods
+        $onAuth: this.onAuth.bind(this),
+        $getAuth: this.getAuth.bind(this),
+        $requireAuth: this.requireAuth.bind(this),
+        $waitForAuth: this.waitForAuth.bind(this),
+
+        // User management methods
+        $createUser: this.createUser.bind(this),
+        $changePassword: this.changePassword.bind(this),
+        $changeEmail: this.changeEmail.bind(this),
+        $removeUser: this.removeUser.bind(this),
+        $resetPassword: this.resetPassword.bind(this)
+      };
+
+      return this._object;
+    },
+
+
+    /********************/
+    /*  Authentication  */
+    /********************/
+
+    /**
+     * Authenticates the Firebase reference with a custom authentication token.
+     *
+     * @param {string} authToken An authentication token or a Firebase Secret. A Firebase Secret
+     * should only be used for authenticating a server process and provides full read / write
+     * access to the entire Firebase.
+     * @param {Object} [options] An object containing optional client arguments, such as configuring
+     * session persistence.
+     * @return {Promise<Object>} A promise fulfilled with an object containing authentication data.
+     */
+    authWithCustomToken: function(authToken, options) {
+      var deferred = this._q.defer();
+
+      try {
+        this._ref.authWithCustomToken(authToken, this._utils.makeNodeResolver(deferred), options);
+      } catch (error) {
+        deferred.reject(error);
+      }
+
+      return deferred.promise;
+    },
+
+    /**
+     * Authenticates the Firebase reference anonymously.
+     *
+     * @param {Object} [options] An object containing optional client arguments, such as configuring
+     * session persistence.
+     * @return {Promise<Object>} A promise fulfilled with an object containing authentication data.
+     */
+    authAnonymously: function(options) {
+      var deferred = this._q.defer();
+
+      try {
+        this._ref.authAnonymously(this._utils.makeNodeResolver(deferred), options);
+      } catch (error) {
+        deferred.reject(error);
+      }
+
+      return deferred.promise;
+    },
+
+    /**
+     * Authenticates the Firebase reference with an email/password user.
+     *
+     * @param {Object} credentials An object containing email and password attributes corresponding
+     * to the user account.
+     * @param {Object} [options] An object containing optional client arguments, such as configuring
+     * session persistence.
+     * @return {Promise<Object>} A promise fulfilled with an object containing authentication data.
+     */
+    authWithPassword: function(credentials, options) {
+      var deferred = this._q.defer();
+
+      try {
+        this._ref.authWithPassword(credentials, this._utils.makeNodeResolver(deferred), options);
+      } catch (error) {
+        deferred.reject(error);
+      }
+
+      return deferred.promise;
+    },
+
+    /**
+     * Authenticates the Firebase reference with the OAuth popup flow.
+     *
+     * @param {string} provider The unique string identifying the OAuth provider to authenticate
+     * with, e.g. google.
+     * @param {Object} [options] An object containing optional client arguments, such as configuring
+     * session persistence.
+     * @return {Promise<Object>} A promise fulfilled with an object containing authentication data.
+     */
+    authWithOAuthPopup: function(provider, options) {
+      var deferred = this._q.defer();
+
+      try {
+        this._ref.authWithOAuthPopup(provider, this._utils.makeNodeResolver(deferred), options);
+      } catch (error) {
+        deferred.reject(error);
+      }
+
+      return deferred.promise;
+    },
+
+    /**
+     * Authenticates the Firebase reference with the OAuth redirect flow.
+     *
+     * @param {string} provider The unique string identifying the OAuth provider to authenticate
+     * with, e.g. google.
+     * @param {Object} [options] An object containing optional client arguments, such as configuring
+     * session persistence.
+     * @return {Promise<Object>} A promise fulfilled with an object containing authentication data.
+     */
+    authWithOAuthRedirect: function(provider, options) {
+      var deferred = this._q.defer();
+
+      try {
+        this._ref.authWithOAuthRedirect(provider, this._utils.makeNodeResolver(deferred), options);
+      } catch (error) {
+        deferred.reject(error);
+      }
+
+      return deferred.promise;
+    },
+
+    /**
+     * Authenticates the Firebase reference with an OAuth token.
+     *
+     * @param {string} provider The unique string identifying the OAuth provider to authenticate
+     * with, e.g. google.
+     * @param {string|Object} credentials Either a string, such as an OAuth 2.0 access token, or an
+     * Object of key / value pairs, such as a set of OAuth 1.0a credentials.
+     * @param {Object} [options] An object containing optional client arguments, such as configuring
+     * session persistence.
+     * @return {Promise<Object>} A promise fulfilled with an object containing authentication data.
+     */
+    authWithOAuthToken: function(provider, credentials, options) {
+      var deferred = this._q.defer();
+
+      try {
+        this._ref.authWithOAuthToken(provider, credentials, this._utils.makeNodeResolver(deferred), options);
+      } catch (error) {
+        deferred.reject(error);
+      }
+
+      return deferred.promise;
+    },
+
+    /**
+     * Unauthenticates the Firebase reference.
+     */
+    unauth: function() {
+      if (this.getAuth() !== null) {
+        this._ref.unauth();
+      }
+    },
+
+
+    /**************************/
+    /*  Authentication State  */
+    /**************************/
+    /**
+     * Asynchronously fires the provided callback with the current authentication data every time
+     * the authentication data changes. It also fires as soon as the authentication data is
+     * retrieved from the server.
+     *
+     * @param {function} callback A callback that fires when the client's authenticate state
+     * changes. If authenticated, the callback will be passed an object containing authentication
+     * data according to the provider used to authenticate. Otherwise, it will be passed null.
+     * @param {string} [context] If provided, this object will be used as this when calling your
+     * callback.
+     * @return {function} A function which can be used to deregister the provided callback.
+     */
+    onAuth: function(callback, context) {
+      var self = this;
+
+      var fn = this._utils.debounce(callback, context, 0);
+      this._ref.onAuth(fn);
+
+      // Return a method to detach the `onAuth()` callback.
+      return function() {
+        self._ref.offAuth(fn);
+      };
+    },
+
+    /**
+     * Synchronously retrieves the current authentication data.
+     *
+     * @return {Object} The client's authentication data.
+     */
+    getAuth: function() {
+      return this._ref.getAuth();
+    },
+
+    /**
+     * Helper onAuth() callback method for the two router-related methods.
+     *
+     * @param {boolean} rejectIfAuthDataIsNull Determines if the returned promise should be
+     * resolved or rejected upon an unauthenticated client.
+     * @return {Promise<Object>} A promise fulfilled with the client's authentication state or
+     * rejected if the client is unauthenticated and rejectIfAuthDataIsNull is true.
+     */
+    _routerMethodOnAuthPromise: function(rejectIfAuthDataIsNull) {
+      var ref = this._ref, utils = this._utils;
+      // wait for the initial auth state to resolve; on page load we have to request auth state
+      // asynchronously so we don't want to resolve router methods or flash the wrong state
+      return this._initialAuthResolver.then(function() {
+        // auth state may change in the future so rather than depend on the initially resolved state
+        // we also check the auth data (synchronously) if a new promise is requested, ensuring we resolve
+        // to the current auth state and not a stale/initial state
+        var authData = ref.getAuth(), res = null;
+        if (rejectIfAuthDataIsNull && authData === null) {
+          res = utils.reject("AUTH_REQUIRED");
+        }
+        else {
+          res = utils.resolve(authData);
+        }
+        return res;
+      });
+    },
+
+    /**
+     * Helper that returns a promise which resolves when the initial auth state has been
+     * fetched from the Firebase server. This never rejects and resolves to undefined.
+     *
+     * @return {Promise<Object>} A promise fulfilled when the server returns initial auth state.
+     */
+    _initAuthResolver: function() {
+      var ref = this._ref;
+      return this._utils.promise(function(resolve) {
+        function callback() {
+          // Turn off this onAuth() callback since we just needed to get the authentication data once.
+          ref.offAuth(callback);
+          resolve();
+        }
+        ref.onAuth(callback);
+      });
+    },
+
+    /**
+     * Utility method which can be used in a route's resolve() method to require that a route has
+     * a logged in client.
+     *
+     * @returns {Promise<Object>} A promise fulfilled with the client's current authentication
+     * state or rejected if the client is not authenticated.
+     */
+    requireAuth: function() {
+      return this._routerMethodOnAuthPromise(true);
+    },
+
+    /**
+     * Utility method which can be used in a route's resolve() method to grab the current
+     * authentication data.
+     *
+     * @returns {Promise<Object|null>} A promise fulfilled with the client's current authentication
+     * state, which will be null if the client is not authenticated.
+     */
+    waitForAuth: function() {
+      return this._routerMethodOnAuthPromise(false);
+    },
+
+
+    /*********************/
+    /*  User Management  */
+    /*********************/
+    /**
+     * Creates a new email/password user. Note that this function only creates the user, if you
+     * wish to log in as the newly created user, call $authWithPassword() after the promise for
+     * this method has been resolved.
+     *
+     * @param {Object} credentials An object containing the email and password of the user to create.
+     * @return {Promise<Object>} A promise fulfilled with the user object, which contains the
+     * uid of the created user.
+     */
+    createUser: function(credentials) {
+      var deferred = this._q.defer();
+
+      // Throw an error if they are trying to pass in separate string arguments
+      if (typeof credentials === "string") {
+        throw new Error("$createUser() expects an object containing 'email' and 'password', but got a string.");
+      }
+
+      try {
+        this._ref.createUser(credentials, this._utils.makeNodeResolver(deferred));
+      } catch (error) {
+        deferred.reject(error);
+      }
+
+      return deferred.promise;
+    },
+
+    /**
+     * Changes the password for an email/password user.
+     *
+     * @param {Object} credentials An object containing the email, old password, and new password of
+     * the user whose password is to change.
+     * @return {Promise<>} An empty promise fulfilled once the password change is complete.
+     */
+    changePassword: function(credentials) {
+      var deferred = this._q.defer();
+
+      // Throw an error if they are trying to pass in separate string arguments
+      if (typeof credentials === "string") {
+        throw new Error("$changePassword() expects an object containing 'email', 'oldPassword', and 'newPassword', but got a string.");
+      }
+
+      try {
+        this._ref.changePassword(credentials, this._utils.makeNodeResolver(deferred));
+      } catch (error) {
+        deferred.reject(error);
+      }
+
+      return deferred.promise;
+    },
+
+    /**
+     * Changes the email for an email/password user.
+     *
+     * @param {Object} credentials An object containing the old email, new email, and password of
+     * the user whose email is to change.
+     * @return {Promise<>} An empty promise fulfilled once the email change is complete.
+     */
+    changeEmail: function(credentials) {
+      var deferred = this._q.defer();
+
+      if (typeof this._ref.changeEmail !== 'function') {
+        throw new Error("$firebaseAuth.$changeEmail() requires Firebase version 2.1.0 or greater.");
+      } else if (typeof credentials === 'string') {
+        throw new Error("$changeEmail() expects an object containing 'oldEmail', 'newEmail', and 'password', but got a string.");
+      }
+
+      try {
+        this._ref.changeEmail(credentials, this._utils.makeNodeResolver(deferred));
+      } catch (error) {
+        deferred.reject(error);
+      }
+
+      return deferred.promise;
+    },
+
+    /**
+     * Removes an email/password user.
+     *
+     * @param {Object} credentials An object containing the email and password of the user to remove.
+     * @return {Promise<>} An empty promise fulfilled once the user is removed.
+     */
+    removeUser: function(credentials) {
+      var deferred = this._q.defer();
+
+      // Throw an error if they are trying to pass in separate string arguments
+      if (typeof credentials === "string") {
+        throw new Error("$removeUser() expects an object containing 'email' and 'password', but got a string.");
+      }
+
+      try {
+        this._ref.removeUser(credentials, this._utils.makeNodeResolver(deferred));
+      } catch (error) {
+        deferred.reject(error);
+      }
+
+      return deferred.promise;
+    },
+
+
+    /**
+     * Sends a password reset email to an email/password user.
+     *
+     * @param {Object} credentials An object containing the email of the user to send a reset
+     * password email to.
+     * @return {Promise<>} An empty promise fulfilled once the reset password email is sent.
+     */
+    resetPassword: function(credentials) {
+      var deferred = this._q.defer();
+
+      // Throw an error if they are trying to pass in a string argument
+      if (typeof credentials === "string") {
+        throw new Error("$resetPassword() expects an object containing 'email', but got a string.");
+      }
+
+      try {
+        this._ref.resetPassword(credentials, this._utils.makeNodeResolver(deferred));
+      } catch (error) {
+        deferred.reject(error);
+      }
+
+      return deferred.promise;
+    }
+  };
+})();
+
+(function() {
+  'use strict';
+  /**
+   * Creates and maintains a synchronized object, with 2-way bindings between Angular and Firebase.
+   *
+   * Implementations of this class are contracted to provide the following internal methods,
+   * which are used by the synchronization process and 3-way bindings:
+   *    $$updated - called whenever a change occurs (a value event from Firebase)
+   *    $$error - called when listeners are canceled due to a security error
+   *    $$notify - called to update $watch listeners and trigger updates to 3-way bindings
+   *    $ref - called to obtain the underlying Firebase reference
+   *
+   * Instead of directly modifying this class, one should generally use the $extend
+   * method to add or change how methods behave:
+   *
+   * <pre><code>
+   * var ExtendedObject = $firebaseObject.$extend({
+   *    // add a new method to the prototype
+   *    foo: function() { return 'bar'; },
+   * });
+   *
+   * var obj = new ExtendedObject(ref);
+   * </code></pre>
+   */
+  angular.module('firebase').factory('$firebaseObject', [
+    '$parse', '$firebaseUtils', '$log',
+    function($parse, $firebaseUtils, $log) {
+      /**
+       * Creates a synchronized object with 2-way bindings between Angular and Firebase.
+       *
+       * @param {Firebase} ref
+       * @returns {FirebaseObject}
+       * @constructor
+       */
+      function FirebaseObject(ref) {
+        if( !(this instanceof FirebaseObject) ) {
+          return new FirebaseObject(ref);
+        }
+        // These are private config props and functions used internally
+        // they are collected here to reduce clutter in console.log and forEach
+        this.$$conf = {
+          // synchronizes data to Firebase
+          sync: new ObjectSyncManager(this, ref),
+          // stores the Firebase ref
+          ref: ref,
+          // synchronizes $scope variables with this object
+          binding: new ThreeWayBinding(this),
+          // stores observers registered with $watch
+          listeners: []
+        };
+
+        // this bit of magic makes $$conf non-enumerable and non-configurable
+        // and non-writable (its properties are still writable but the ref cannot be replaced)
+        // we redundantly assign it above so the IDE can relax
+        Object.defineProperty(this, '$$conf', {
+          value: this.$$conf
+        });
+
+        this.$id = $firebaseUtils.getKey(ref.ref());
+        this.$priority = null;
+
+        $firebaseUtils.applyDefaults(this, this.$$defaults);
+
+        // start synchronizing data with Firebase
+        this.$$conf.sync.init();
+      }
+
+      FirebaseObject.prototype = {
+        /**
+         * Saves all data on the FirebaseObject back to Firebase.
+         * @returns a promise which will resolve after the save is completed.
+         */
+        $save: function () {
+          var self = this;
+          var ref = self.$ref();
+          var data = $firebaseUtils.toJSON(self);
+          return $firebaseUtils.doSet(ref, data).then(function() {
+            self.$$notify();
+            return self.$ref();
+          });
+        },
+
+        /**
+         * Removes all keys from the FirebaseObject and also removes
+         * the remote data from the server.
+         *
+         * @returns a promise which will resolve after the op completes
+         */
+        $remove: function() {
+          var self = this;
+          $firebaseUtils.trimKeys(self, {});
+          self.$value = null;
+          return $firebaseUtils.doRemove(self.$ref()).then(function() {
+            self.$$notify();
+            return self.$ref();
+          });
+        },
+
+        /**
+         * The loaded method is invoked after the initial batch of data arrives from the server.
+         * When this resolves, all data which existed prior to calling $asObject() is now cached
+         * locally in the object.
+         *
+         * As a shortcut is also possible to pass resolve/reject methods directly into this
+         * method just as they would be passed to .then()
+         *
+         * @param {Function} resolve
+         * @param {Function} reject
+         * @returns a promise which resolves after initial data is downloaded from Firebase
+         */
+        $loaded: function(resolve, reject) {
+          var promise = this.$$conf.sync.ready();
+          if (arguments.length) {
+            // allow this method to be called just like .then
+            // by passing any arguments on to .then
+            promise = promise.then.call(promise, resolve, reject);
+          }
+          return promise;
+        },
+
+        /**
+         * @returns {Firebase} the original Firebase instance used to create this object.
+         */
+        $ref: function () {
+          return this.$$conf.ref;
+        },
+
+        /**
+         * Creates a 3-way data sync between this object, the Firebase server, and a
+         * scope variable. This means that any changes made to the scope variable are
+         * pushed to Firebase, and vice versa.
+         *
+         * If scope emits a $destroy event, the binding is automatically severed. Otherwise,
+         * it is possible to unbind the scope variable by using the `unbind` function
+         * passed into the resolve method.
+         *
+         * Can only be bound to one scope variable at a time. If a second is attempted,
+         * the promise will be rejected with an error.
+         *
+         * @param {object} scope
+         * @param {string} varName
+         * @returns a promise which resolves to an unbind method after data is set in scope
+         */
+        $bindTo: function (scope, varName) {
+          var self = this;
+          return self.$loaded().then(function () {
+            return self.$$conf.binding.bindTo(scope, varName);
+          });
+        },
+
+        /**
+         * Listeners passed into this method are notified whenever a new change is received
+         * from the server. Each invocation is sent an object containing
+         * <code>{ type: 'value', key: 'my_firebase_id' }</code>
+         *
+         * This method returns an unbind function that can be used to detach the listener.
+         *
+         * @param {Function} cb
+         * @param {Object} [context]
+         * @returns {Function} invoke to stop observing events
+         */
+        $watch: function (cb, context) {
+          var list = this.$$conf.listeners;
+          list.push([cb, context]);
+          // an off function for cancelling the listener
+          return function () {
+            var i = list.findIndex(function (parts) {
+              return parts[0] === cb && parts[1] === context;
+            });
+            if (i > -1) {
+              list.splice(i, 1);
+            }
+          };
+        },
+
+        /**
+         * Informs $firebase to stop sending events and clears memory being used
+         * by this object (delete's its local content).
+         */
+        $destroy: function(err) {
+          var self = this;
+          if (!self.$isDestroyed) {
+            self.$isDestroyed = true;
+            self.$$conf.sync.destroy(err);
+            self.$$conf.binding.destroy();
+            $firebaseUtils.each(self, function (v, k) {
+              delete self[k];
+            });
+          }
+        },
+
+        /**
+         * Called by $firebase whenever an item is changed at the server.
+         * This method must exist on any objectFactory passed into $firebase.
+         *
+         * It should return true if any changes were made, otherwise `$$notify` will
+         * not be invoked.
+         *
+         * @param {object} snap a Firebase snapshot
+         * @return {boolean} true if any changes were made.
+         */
+        $$updated: function (snap) {
+          // applies new data to this object
+          var changed = $firebaseUtils.updateRec(this, snap);
+          // applies any defaults set using $$defaults
+          $firebaseUtils.applyDefaults(this, this.$$defaults);
+          // returning true here causes $$notify to be triggered
+          return changed;
+        },
+
+        /**
+         * Called whenever a security error or other problem causes the listeners to become
+         * invalid. This is generally an unrecoverable error.
+         * @param {Object} err which will have a `code` property and possibly a `message`
+         */
+        $$error: function (err) {
+          // prints an error to the console (via Angular's logger)
+          $log.error(err);
+          // frees memory and cancels any remaining listeners
+          this.$destroy(err);
+        },
+
+        /**
+         * Called internally by $bindTo when data is changed in $scope.
+         * Should apply updates to this record but should not call
+         * notify().
+         */
+        $$scopeUpdated: function(newData) {
+          // we use a one-directional loop to avoid feedback with 3-way bindings
+          // since set() is applied locally anyway, this is still performant
+          var def = $firebaseUtils.defer();
+          this.$ref().set($firebaseUtils.toJSON(newData), $firebaseUtils.makeNodeResolver(def));
+          return def.promise;
+        },
+
+        /**
+         * Updates any bound scope variables and
+         * notifies listeners registered with $watch
+         */
+        $$notify: function() {
+          var self = this, list = this.$$conf.listeners.slice();
+          // be sure to do this after setting up data and init state
+          angular.forEach(list, function (parts) {
+            parts[0].call(parts[1], {event: 'value', key: self.$id});
+          });
+        },
+
+        /**
+         * Overrides how Angular.forEach iterates records on this object so that only
+         * fields stored in Firebase are part of the iteration. To include meta fields like
+         * $id and $priority in the iteration, utilize for(key in obj) instead.
+         */
+        forEach: function(iterator, context) {
+          return $firebaseUtils.each(this, iterator, context);
+        }
+      };
+
+      /**
+       * This method allows FirebaseObject to be copied into a new factory. Methods passed into this
+       * function will be added onto the object's prototype. They can override existing methods as
+       * well.
+       *
+       * In addition to passing additional methods, it is also possible to pass in a class function.
+       * The prototype on that class function will be preserved, and it will inherit from
+       * FirebaseObject. It's also possible to do both, passing a class to inherit and additional
+       * methods to add onto the prototype.
+       *
+       * Once a factory is obtained by this method, it can be passed into $firebase as the
+       * `objectFactory` parameter:
+       *
+       * <pre><code>
+       * var MyFactory = $firebaseObject.$extend({
+       *    // add a method onto the prototype that prints a greeting
+       *    getGreeting: function() {
+       *       return 'Hello ' + this.first_name + ' ' + this.last_name + '!';
+       *    }
+       * });
+       *
+       * // use our new factory in place of $firebaseObject
+       * var obj = $firebase(ref, {objectFactory: MyFactory}).$asObject();
+       * </code></pre>
+       *
+       * @param {Function} [ChildClass] a child class which should inherit FirebaseObject
+       * @param {Object} [methods] a list of functions to add onto the prototype
+       * @returns {Function} a new factory suitable for use with $firebase
+       */
+      FirebaseObject.$extend = function(ChildClass, methods) {
+        if( arguments.length === 1 && angular.isObject(ChildClass) ) {
+          methods = ChildClass;
+          ChildClass = function(ref) {
+            if( !(this instanceof ChildClass) ) {
+              return new ChildClass(ref);
+            }
+            FirebaseObject.apply(this, arguments);
+          };
+        }
+        return $firebaseUtils.inherit(ChildClass, FirebaseObject, methods);
+      };
+
+      /**
+       * Creates a three-way data binding on a scope variable.
+       *
+       * @param {FirebaseObject} rec
+       * @returns {*}
+       * @constructor
+       */
+      function ThreeWayBinding(rec) {
+        this.subs = [];
+        this.scope = null;
+        this.key = null;
+        this.rec = rec;
+      }
+
+      ThreeWayBinding.prototype = {
+        assertNotBound: function(varName) {
+          if( this.scope ) {
+            var msg = 'Cannot bind to ' + varName + ' because this instance is already bound to ' +
+              this.key + '; one binding per instance ' +
+              '(call unbind method or create another FirebaseObject instance)';
+            $log.error(msg);
+            return $firebaseUtils.reject(msg);
+          }
+        },
+
+        bindTo: function(scope, varName) {
+          function _bind(self) {
+            var sending = false;
+            var parsed = $parse(varName);
+            var rec = self.rec;
+            self.scope = scope;
+            self.varName = varName;
+
+            function equals(scopeValue) {
+              return angular.equals(scopeValue, rec) &&
+                scopeValue.$priority === rec.$priority &&
+                scopeValue.$value === rec.$value;
+            }
+
+            function setScope(rec) {
+              parsed.assign(scope, $firebaseUtils.scopeData(rec));
+            }
+
+            var send = $firebaseUtils.debounce(function(val) {
+              var scopeData = $firebaseUtils.scopeData(val);
+              rec.$$scopeUpdated(scopeData)
+                ['finally'](function() {
+                  sending = false;
+                  if(!scopeData.hasOwnProperty('$value')){
+                    delete rec.$value;
+                    delete parsed(scope).$value;
+                  }
+                }
+              );
+            }, 50, 500);
+
+            var scopeUpdated = function(newVal) {
+              newVal = newVal[0];
+              if( !equals(newVal) ) {
+                sending = true;
+                send(newVal);
+              }
+            };
+
+            var recUpdated = function() {
+              if( !sending && !equals(parsed(scope)) ) {
+                setScope(rec);
+              }
+            };
+
+            // $watch will not check any vars prefixed with $, so we
+            // manually check $priority and $value using this method
+            function watchExp(){
+              var obj = parsed(scope);
+              return [obj, obj.$priority, obj.$value];
+            }
+
+            setScope(rec);
+            self.subs.push(scope.$on('$destroy', self.unbind.bind(self)));
+
+            // monitor scope for any changes
+            self.subs.push(scope.$watch(watchExp, scopeUpdated, true));
+
+            // monitor the object for changes
+            self.subs.push(rec.$watch(recUpdated));
+
+            return self.unbind.bind(self);
+          }
+
+          return this.assertNotBound(varName) || _bind(this);
+        },
+
+        unbind: function() {
+          if( this.scope ) {
+            angular.forEach(this.subs, function(unbind) {
+              unbind();
+            });
+            this.subs = [];
+            this.scope = null;
+            this.key = null;
+          }
+        },
+
+        destroy: function() {
+          this.unbind();
+          this.rec = null;
+        }
+      };
+
+      function ObjectSyncManager(firebaseObject, ref) {
+        function destroy(err) {
+          if( !sync.isDestroyed ) {
+            sync.isDestroyed = true;
+            ref.off('value', applyUpdate);
+            firebaseObject = null;
+            initComplete(err||'destroyed');
+          }
+        }
+
+        function init() {
+          ref.on('value', applyUpdate, error);
+          ref.once('value', function(snap) {
+            if (angular.isArray(snap.val())) {
+              $log.warn('Storing data using array indices in Firebase can result in unexpected behavior. See https://www.firebase.com/docs/web/guide/understanding-data.html#section-arrays-in-firebase for more information. Also note that you probably wanted $firebaseArray and not $firebaseObject.');
+            }
+
+            initComplete(null);
+          }, initComplete);
+        }
+
+        // call initComplete(); do not call this directly
+        function _initComplete(err) {
+          if( !isResolved ) {
+            isResolved = true;
+            if( err ) { def.reject(err); }
+            else { def.resolve(firebaseObject); }
+          }
+        }
+
+        var isResolved = false;
+        var def = $firebaseUtils.defer();
+        var applyUpdate = $firebaseUtils.batch(function(snap) {
+          var changed = firebaseObject.$$updated(snap);
+          if( changed ) {
+            // notifies $watch listeners and
+            // updates $scope if bound to a variable
+            firebaseObject.$$notify();
+          }
+        });
+        var error = $firebaseUtils.batch(function(err) {
+          _initComplete(err);
+          if( firebaseObject ) {
+            firebaseObject.$$error(err);
+          }
+        });
+        var initComplete = $firebaseUtils.batch(_initComplete);
+
+        var sync = {
+          isDestroyed: false,
+          destroy: destroy,
+          init: init,
+          ready: function() { return def.promise; }
+        };
+        return sync;
+      }
+
+      return FirebaseObject;
+    }
+  ]);
+
+  /** @deprecated */
+  angular.module('firebase').factory('$FirebaseObject', ['$log', '$firebaseObject',
+    function($log, $firebaseObject) {
+      return function() {
+        $log.warn('$FirebaseObject has been renamed. Use $firebaseObject instead.');
+        return $firebaseObject.apply(null, arguments);
+      };
+    }
+  ]);
+})();
+
+(function() {
+  'use strict';
+
+  angular.module("firebase")
+
+    /** @deprecated */
+    .factory("$firebase", function() {
+      return function() {
+        throw new Error('$firebase has been removed. You may instantiate $firebaseArray and $firebaseObject ' +
+        'directly now. For simple write operations, just use the Firebase ref directly. ' +
+        'See the AngularFire 1.0.0 changelog for details: https://www.firebase.com/docs/web/libraries/angular/changelog.html');
+      };
+    });
+
+})();
+
+'use strict';
+
+// Shim Array.indexOf for IE compatibility.
+if (!Array.prototype.indexOf) {
+  Array.prototype.indexOf = function (searchElement, fromIndex) {
+    if (this === undefined || this === null) {
+      throw new TypeError("'this' is null or not defined");
+    }
+    // Hack to convert object.length to a UInt32
+    // jshint -W016
+    var length = this.length >>> 0;
+    fromIndex = +fromIndex || 0;
+    // jshint +W016
+
+    if (Math.abs(fromIndex) === Infinity) {
+      fromIndex = 0;
+    }
+
+    if (fromIndex < 0) {
+      fromIndex += length;
+      if (fromIndex < 0) {
+        fromIndex = 0;
+      }
+    }
+
+    for (;fromIndex < length; fromIndex++) {
+      if (this[fromIndex] === searchElement) {
+        return fromIndex;
+      }
+    }
+
+    return -1;
+  };
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
+if (!Function.prototype.bind) {
+  Function.prototype.bind = function (oThis) {
+    if (typeof this !== "function") {
+      // closest thing possible to the ECMAScript 5
+      // internal IsCallable function
+      throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
+    }
+
+    var aArgs = Array.prototype.slice.call(arguments, 1),
+      fToBind = this,
+      fNOP = function () {},
+      fBound = function () {
+        return fToBind.apply(this instanceof fNOP && oThis
+            ? this
+            : oThis,
+          aArgs.concat(Array.prototype.slice.call(arguments)));
+      };
+
+    fNOP.prototype = this.prototype;
+    fBound.prototype = new fNOP();
+
+    return fBound;
+  };
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex
+if (!Array.prototype.findIndex) {
+  Object.defineProperty(Array.prototype, 'findIndex', {
+    enumerable: false,
+    configurable: true,
+    writable: true,
+    value: function(predicate) {
+      if (this == null) {
+        throw new TypeError('Array.prototype.find called on null or undefined');
+      }
+      if (typeof predicate !== 'function') {
+        throw new TypeError('predicate must be a function');
+      }
+      var list = Object(this);
+      var length = list.length >>> 0;
+      var thisArg = arguments[1];
+      var value;
+
+      for (var i = 0; i < length; i++) {
+        if (i in list) {
+          value = list[i];
+          if (predicate.call(thisArg, value, i, list)) {
+            return i;
+          }
+        }
+      }
+      return -1;
+    }
+  });
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create
+if (typeof Object.create != 'function') {
+  (function () {
+    var F = function () {};
+    Object.create = function (o) {
+      if (arguments.length > 1) {
+        throw new Error('Second argument not supported');
+      }
+      if (o === null) {
+        throw new Error('Cannot set a null [[Prototype]]');
+      }
+      if (typeof o != 'object') {
+        throw new TypeError('Argument must be an object');
+      }
+      F.prototype = o;
+      return new F();
+    };
+  })();
+}
+
+// From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
+if (!Object.keys) {
+  Object.keys = (function () {
+    'use strict';
+    var hasOwnProperty = Object.prototype.hasOwnProperty,
+      hasDontEnumBug = !({toString: null}).propertyIsEnumerable('toString'),
+      dontEnums = [
+        'toString',
+        'toLocaleString',
+        'valueOf',
+        'hasOwnProperty',
+        'isPrototypeOf',
+        'propertyIsEnumerable',
+        'constructor'
+      ],
+      dontEnumsLength = dontEnums.length;
+
+    return function (obj) {
+      if (typeof obj !== 'object' && (typeof obj !== 'function' || obj === null)) {
+        throw new TypeError('Object.keys called on non-object');
+      }
+
+      var result = [], prop, i;
+
+      for (prop in obj) {
+        if (hasOwnProperty.call(obj, prop)) {
+          result.push(prop);
+        }
+      }
+
+      if (hasDontEnumBug) {
+        for (i = 0; i < dontEnumsLength; i++) {
+          if (hasOwnProperty.call(obj, dontEnums[i])) {
+            result.push(dontEnums[i]);
+          }
+        }
+      }
+      return result;
+    };
+  }());
+}
+
+// http://ejohn.org/blog/objectgetprototypeof/
+if ( typeof Object.getPrototypeOf !== "function" ) {
+  if ( typeof "test".__proto__ === "object" ) {
+    Object.getPrototypeOf = function(object){
+      return object.__proto__;
+    };
+  } else {
+    Object.getPrototypeOf = function(object){
+      // May break if the constructor has been tampered with
+      return object.constructor.prototype;
+    };
+  }
+}
+
+(function() {
+  'use strict';
+
+  angular.module('firebase')
+    .factory('$firebaseConfig', ["$firebaseArray", "$firebaseObject", "$injector",
+      function($firebaseArray, $firebaseObject, $injector) {
+        return function(configOpts) {
+          // make a copy we can modify
+          var opts = angular.extend({}, configOpts);
+          // look up factories if passed as string names
+          if( typeof opts.objectFactory === 'string' ) {
+            opts.objectFactory = $injector.get(opts.objectFactory);
+          }
+          if( typeof opts.arrayFactory === 'string' ) {
+            opts.arrayFactory = $injector.get(opts.arrayFactory);
+          }
+          // extend defaults and return
+          return angular.extend({
+            arrayFactory: $firebaseArray,
+            objectFactory: $firebaseObject
+          }, opts);
+        };
+      }
+    ])
+
+    .factory('$firebaseUtils', ["$q", "$timeout", "$rootScope",
+      function($q, $timeout, $rootScope) {
+
+        // ES6 style promises polyfill for angular 1.2.x
+        // Copied from angular 1.3.x implementation: https://github.com/angular/angular.js/blob/v1.3.5/src/ng/q.js#L539
+        function Q(resolver) {
+          if (!angular.isFunction(resolver)) {
+            throw new Error('missing resolver function');
+          }
+
+          var deferred = $q.defer();
+
+          function resolveFn(value) {
+            deferred.resolve(value);
+          }
+
+          function rejectFn(reason) {
+            deferred.reject(reason);
+          }
+
+          resolver(resolveFn, rejectFn);
+
+          return deferred.promise;
+        }
+
+        var utils = {
+          /**
+           * Returns a function which, each time it is invoked, will gather up the values until
+           * the next "tick" in the Angular compiler process. Then they are all run at the same
+           * time to avoid multiple cycles of the digest loop. Internally, this is done using $evalAsync()
+           *
+           * @param {Function} action
+           * @param {Object} [context]
+           * @returns {Function}
+           */
+          batch: function(action, context) {
+            return function() {
+              var args = Array.prototype.slice.call(arguments, 0);
+              utils.compile(function() {
+                action.apply(context, args);
+              });
+            };
+          },
+
+          /**
+           * A rudimentary debounce method
+           * @param {function} fn the function to debounce
+           * @param {object} [ctx] the `this` context to set in fn
+           * @param {int} wait number of milliseconds to pause before sending out after each invocation
+           * @param {int} [maxWait] max milliseconds to wait before sending out, defaults to wait * 10 or 100
+           */
+          debounce: function(fn, ctx, wait, maxWait) {
+            var start, cancelTimer, args, runScheduledForNextTick;
+            if( typeof(ctx) === 'number' ) {
+              maxWait = wait;
+              wait = ctx;
+              ctx = null;
+            }
+
+            if( typeof wait !== 'number' ) {
+              throw new Error('Must provide a valid integer for wait. Try 0 for a default');
+            }
+            if( typeof(fn) !== 'function' ) {
+              throw new Error('Must provide a valid function to debounce');
+            }
+            if( !maxWait ) { maxWait = wait*10 || 100; }
+
+            // clears the current wait timer and creates a new one
+            // however, if maxWait is exceeded, calls runNow() on the next tick.
+            function resetTimer() {
+              if( cancelTimer ) {
+                cancelTimer();
+                cancelTimer = null;
+              }
+              if( start && Date.now() - start > maxWait ) {
+                if(!runScheduledForNextTick){
+                  runScheduledForNextTick = true;
+                  utils.compile(runNow);
+                }
+              }
+              else {
+                if( !start ) { start = Date.now(); }
+                cancelTimer = utils.wait(runNow, wait);
+              }
+            }
+
+            // Clears the queue and invokes the debounced function with the most recent arguments
+            function runNow() {
+              cancelTimer = null;
+              start = null;
+              runScheduledForNextTick = false;
+              fn.apply(ctx, args);
+            }
+
+            function debounced() {
+              args = Array.prototype.slice.call(arguments, 0);
+              resetTimer();
+            }
+            debounced.running = function() {
+              return start > 0;
+            };
+
+            return debounced;
+          },
+
+          assertValidRef: function(ref, msg) {
+            if( !angular.isObject(ref) ||
+              typeof(ref.ref) !== 'function' ||
+              typeof(ref.ref().transaction) !== 'function' ) {
+              throw new Error(msg || 'Invalid Firebase reference');
+            }
+          },
+
+          // http://stackoverflow.com/questions/7509831/alternative-for-the-deprecated-proto
+          // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create
+          inherit: function(ChildClass, ParentClass, methods) {
+            var childMethods = ChildClass.prototype;
+            ChildClass.prototype = Object.create(ParentClass.prototype);
+            ChildClass.prototype.constructor = ChildClass; // restoring proper constructor for child class
+            angular.forEach(Object.keys(childMethods), function(k) {
+              ChildClass.prototype[k] = childMethods[k];
+            });
+            if( angular.isObject(methods) ) {
+              angular.extend(ChildClass.prototype, methods);
+            }
+            return ChildClass;
+          },
+
+          getPrototypeMethods: function(inst, iterator, context) {
+            var methods = {};
+            var objProto = Object.getPrototypeOf({});
+            var proto = angular.isFunction(inst) && angular.isObject(inst.prototype)?
+              inst.prototype : Object.getPrototypeOf(inst);
+            while(proto && proto !== objProto) {
+              for (var key in proto) {
+                // we only invoke each key once; if a super is overridden it's skipped here
+                if (proto.hasOwnProperty(key) && !methods.hasOwnProperty(key)) {
+                  methods[key] = true;
+                  iterator.call(context, proto[key], key, proto);
+                }
+              }
+              proto = Object.getPrototypeOf(proto);
+            }
+          },
+
+          getPublicMethods: function(inst, iterator, context) {
+            utils.getPrototypeMethods(inst, function(m, k) {
+              if( typeof(m) === 'function' && k.charAt(0) !== '_' ) {
+                iterator.call(context, m, k);
+              }
+            });
+          },
+
+          defer: $q.defer,
+
+          reject: $q.reject,
+
+          resolve: $q.when,
+
+          //TODO: Remove false branch and use only angular implementation when we drop angular 1.2.x support.
+          promise: angular.isFunction($q) ? $q : Q,
+
+          makeNodeResolver:function(deferred){
+            return function(err,result){
+              if(err === null){
+                if(arguments.length > 2){
+                  result = Array.prototype.slice.call(arguments,1);
+                }
+                deferred.resolve(result);
+              }
+              else {
+                deferred.reject(err);
+              }
+            };
+          },
+
+          wait: function(fn, wait) {
+            var to = $timeout(fn, wait||0);
+            return function() {
+              if( to ) {
+                $timeout.cancel(to);
+                to = null;
+              }
+            };
+          },
+
+          compile: function(fn) {
+            return $rootScope.$evalAsync(fn||function() {});
+          },
+
+          deepCopy: function(obj) {
+            if( !angular.isObject(obj) ) { return obj; }
+            var newCopy = angular.isArray(obj) ? obj.slice() : angular.extend({}, obj);
+            for (var key in newCopy) {
+              if (newCopy.hasOwnProperty(key)) {
+                if (angular.isObject(newCopy[key])) {
+                  newCopy[key] = utils.deepCopy(newCopy[key]);
+                }
+              }
+            }
+            return newCopy;
+          },
+
+          trimKeys: function(dest, source) {
+            utils.each(dest, function(v,k) {
+              if( !source.hasOwnProperty(k) ) {
+                delete dest[k];
+              }
+            });
+          },
+
+          scopeData: function(dataOrRec) {
+            var data = {
+              $id: dataOrRec.$id,
+              $priority: dataOrRec.$priority
+            };
+            var hasPublicProp = false;
+            utils.each(dataOrRec, function(v,k) {
+              hasPublicProp = true;
+              data[k] = utils.deepCopy(v);
+            });
+            if(!hasPublicProp && dataOrRec.hasOwnProperty('$value')){
+              data.$value = dataOrRec.$value;
+            }
+            return data;
+          },
+
+          updateRec: function(rec, snap) {
+            var data = snap.val();
+            var oldData = angular.extend({}, rec);
+
+            // deal with primitives
+            if( !angular.isObject(data) ) {
+              rec.$value = data;
+              data = {};
+            }
+            else {
+              delete rec.$value;
+            }
+
+            // apply changes: remove old keys, insert new data, set priority
+            utils.trimKeys(rec, data);
+            angular.extend(rec, data);
+            rec.$priority = snap.getPriority();
+
+            return !angular.equals(oldData, rec) ||
+              oldData.$value !== rec.$value ||
+              oldData.$priority !== rec.$priority;
+          },
+
+          applyDefaults: function(rec, defaults) {
+            if( angular.isObject(defaults) ) {
+              angular.forEach(defaults, function(v,k) {
+                if( !rec.hasOwnProperty(k) ) {
+                  rec[k] = v;
+                }
+              });
+            }
+            return rec;
+          },
+
+          dataKeys: function(obj) {
+            var out = [];
+            utils.each(obj, function(v,k) {
+              out.push(k);
+            });
+            return out;
+          },
+
+          each: function(obj, iterator, context) {
+            if(angular.isObject(obj)) {
+              for (var k in obj) {
+                if (obj.hasOwnProperty(k)) {
+                  var c = k.charAt(0);
+                  if( c !== '_' && c !== '$' && c !== '.' ) {
+                    iterator.call(context, obj[k], k, obj);
+                  }
+                }
+              }
+            }
+            else if(angular.isArray(obj)) {
+              for(var i = 0, len = obj.length; i < len; i++) {
+                iterator.call(context, obj[i], i, obj);
+              }
+            }
+            return obj;
+          },
+
+          /**
+           * A utility for retrieving a Firebase reference or DataSnapshot's
+           * key name. This is backwards-compatible with `name()` from Firebase
+           * 1.x.x and `key()` from Firebase 2.0.0+. Once support for Firebase
+           * 1.x.x is dropped in AngularFire, this helper can be removed.
+           */
+          getKey: function(refOrSnapshot) {
+            return (typeof refOrSnapshot.key === 'function') ? refOrSnapshot.key() : refOrSnapshot.name();
+          },
+
+          /**
+           * A utility for converting records to JSON objects
+           * which we can save into Firebase. It asserts valid
+           * keys and strips off any items prefixed with $.
+           *
+           * If the rec passed into this method has a toJSON()
+           * method, that will be used in place of the custom
+           * functionality here.
+           *
+           * @param rec
+           * @returns {*}
+           */
+          toJSON: function(rec) {
+            var dat;
+            if( !angular.isObject(rec) ) {
+              rec = {$value: rec};
+            }
+            if (angular.isFunction(rec.toJSON)) {
+              dat = rec.toJSON();
+            }
+            else {
+              dat = {};
+              utils.each(rec, function (v, k) {
+                dat[k] = stripDollarPrefixedKeys(v);
+              });
+            }
+            if( angular.isDefined(rec.$value) && Object.keys(dat).length === 0 && rec.$value !== null ) {
+              dat['.value'] = rec.$value;
+            }
+            if( angular.isDefined(rec.$priority) && Object.keys(dat).length > 0 && rec.$priority !== null ) {
+              dat['.priority'] = rec.$priority;
+            }
+            angular.forEach(dat, function(v,k) {
+              if (k.match(/[.$\[\]#\/]/) && k !== '.value' && k !== '.priority' ) {
+                throw new Error('Invalid key ' + k + ' (cannot contain .$[]#)');
+              }
+              else if( angular.isUndefined(v) ) {
+                throw new Error('Key '+k+' was undefined. Cannot pass undefined in JSON. Use null instead.');
+              }
+            });
+            return dat;
+          },
+
+          doSet: function(ref, data) {
+            var def = utils.defer();
+            if( angular.isFunction(ref.set) || !angular.isObject(data) ) {
+              // this is not a query, just do a flat set
+              ref.set(data, utils.makeNodeResolver(def));
+            }
+            else {
+              var dataCopy = angular.extend({}, data);
+              // this is a query, so we will replace all the elements
+              // of this query with the value provided, but not blow away
+              // the entire Firebase path
+              ref.once('value', function(snap) {
+                snap.forEach(function(ss) {
+                  if( !dataCopy.hasOwnProperty(utils.getKey(ss)) ) {
+                    dataCopy[utils.getKey(ss)] = null;
+                  }
+                });
+                ref.ref().update(dataCopy, utils.makeNodeResolver(def));
+              }, function(err) {
+                def.reject(err);
+              });
+            }
+            return def.promise;
+          },
+
+          doRemove: function(ref) {
+            var def = utils.defer();
+            if( angular.isFunction(ref.remove) ) {
+              // ref is not a query, just do a flat remove
+              ref.remove(utils.makeNodeResolver(def));
+            }
+            else {
+              // ref is a query so let's only remove the
+              // items in the query and not the entire path
+              ref.once('value', function(snap) {
+                var promises = [];
+                snap.forEach(function(ss) {
+                  var d = utils.defer();
+                  promises.push(d.promise);
+                  ss.ref().remove(utils.makeNodeResolver(def));
+                });
+                utils.allPromises(promises)
+                  .then(function() {
+                    def.resolve(ref);
+                  },
+                  function(err){
+                    def.reject(err);
+                  }
+                );
+              }, function(err) {
+                def.reject(err);
+              });
+            }
+            return def.promise;
+          },
+
+          /**
+           * AngularFire version number.
+           */
+          VERSION: '1.1.2',
+
+          allPromises: $q.all.bind($q)
+        };
+
+        return utils;
+      }
+    ]);
+
+    function stripDollarPrefixedKeys(data) {
+      if( !angular.isObject(data) ) { return data; }
+      var out = angular.isArray(data)? [] : {};
+      angular.forEach(data, function(v,k) {
+        if(typeof k !== 'string' || k.charAt(0) !== '$') {
+          out[k] = stripDollarPrefixedKeys(v);
+        }
+      });
+      return out;
+    }
+})();
