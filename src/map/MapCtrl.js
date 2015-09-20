@@ -29,7 +29,7 @@
 					lng: marker.latLng.lng,
 					message: marker.title,
 					icon: {
-						iconUrl: 'maps/images/campfire.svg',
+						iconUrl: 'images/campfire.svg',
 						iconSize: [30,30],
 						iconAnchor: [15,20]
 					}
