@@ -1,7 +1,51 @@
+html {
+  box-sizing: border-box;
+}
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
 body {
     padding:0;
     margin:0;
     font-family: 'PT Sans', sans-serif;
+}
+
+nav {
+    background-color: rgb(25,30,40);
+    position: relative;
+    height: 2.2rem;
+    color: #bbb;
+    padding: .5rem;
+
+    a {
+        color: #bbb;
+        text-decoration: none;
+    }
+
+    button {
+        position: absolute;
+        right: .5rem;
+        background-color: rgb(25,30,40);
+        border: 1px solid #bbb;
+        color: #bbb;
+        cursor: pointer;
+
+        &:active {
+            background-color: lighten(rgb(25,30,40), 10%);
+        }
+
+        .text {
+            vertical-align: middle;
+        }
+
+        i.gh-login {
+            content: url('images/GitHub-Mark-Light-32px.png') 20px 20px;
+            height: 0.9rem;
+            padding-right:0.2rem;
+            vertical-align: middle;
+        }
+    }
 }
 
 header {
@@ -103,7 +147,7 @@ ul {
 
 .angular-leaflet-map {
     position: absolute;
-    top:0;
+    top:2.2rem;
     bottom:0;
     width:100%;
 }

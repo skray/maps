@@ -41,8 +41,12 @@ var paths = {
 };
 
 // Clean
-gulp.task('clean-css', function() {
-  return del(['public/**/*.css']);
+gulp.task('clean-external-css', function() {
+  return del(['public/deps.css']);
+});
+
+gulp.task('clean-less-css', function() {
+  return del(['public/app.css']);
 });
 
 gulp.task('clean-internal-js', function() {
@@ -66,7 +70,7 @@ gulp.task('clean', function() {
 });
 
 // concat
-gulp.task('concat-css', ['clean-css'], function() {
+gulp.task('concat-css', ['clean-external-css'], function() {
     return gulp.src(paths.css)
       .pipe(concat('deps.css'))
       .pipe(gulp.dest('public'));
@@ -75,14 +79,16 @@ gulp.task('concat-css', ['clean-css'], function() {
 gulp.task('concat-internal-js', ['clean-internal-js'], function() {
     return gulp.src(paths.js.internal)
       .pipe(concat('internal.js'))
-      .pipe(gulp.dest('public'));
+      .pipe(gulp.dest('public'))
+      .pipe(connect.reload());
 });
 
 gulp.task('concat-external-js', ['clean-external-js'], function() {
     return gulp.src(paths.js.external)
       .pipe(replace(/module.exports = Firebase/g, ''))
       .pipe(concat('external.js'))
-      .pipe(gulp.dest('public'));
+      .pipe(gulp.dest('public'))
+      .pipe(connect.reload());
 });
 
 gulp.task('concat', ['concat-css', 'concat-external-js', 'concat-internal-js']);
@@ -115,7 +121,7 @@ gulp.task('connect', function(){
   });
 });
 
-gulp.task('less', ['clean-css'], function () {
+gulp.task('less', ['clean-less-css'], function () {
     return gulp.src(paths.less)
       .pipe(less({
         paths: [ path.join(__dirname, 'less', 'includes') ]
