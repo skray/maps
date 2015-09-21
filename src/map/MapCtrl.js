@@ -3,24 +3,32 @@
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
-	function MapCtrl($scope, $firebaseObject, leafletEvents) {
+	function MapCtrl($scope, leafletEvents, $routeParams, MapFactory) {
 		var vm = this;
 		angular.extend(vm, {
+			layers: {
+				baselayers: {
+					mapbox: {
+						name: 'base',
+						url: 'http://{s}.tiles.mapbox.com/v3/seankennethray.map-zjkq5g6o/{z}/{x}/{y}.png',
+						type: 'xyz',
+						layerOptions: {
+							attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a><br>'+
+						                 '<a href="https://thenounproject.com/search/?q=campfire&i=15120">“Campfire”</a> icon by Pavel N. from <a href="http://thenounproject.com">the Noun Project.</a><br>'+
+						                 'Campsite locations provided by <a href="https://www.google.com/maps/d/viewer?mid=zgLi8Vih7akA.kvuzH9irSVwg">Lewis and Clark Westbound Part 1</a>'
+		                }
+					}
+				}
+			},
 			tiles : {
 	    		url:'http://{s}.tiles.mapbox.com/v3/seankennethray.map-zjkq5g6o/{z}/{x}/{y}.png'
 	    	},
 		    center : {},
 		    lines :{},
-		    markers : {},
-		    events: {
-                markers: {
-                    enable: leafletEvents.getAvailableMarkerEvents(),
-                }
-            }
+		    markers : {}
 		});
 
-		var mapsRef = new Firebase("https://amber-inferno-2147.firebaseio.com/maps/-Jyp82TViVkgaFmeS9NI");
-		vm.map = $firebaseObject(mapsRef).$loaded().then(function mapLoaded(map) {
+		vm.map = MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
 			vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
 			vm.lines['line'] = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
 			map.markers.forEach(function eachMarker(marker, idx) {
