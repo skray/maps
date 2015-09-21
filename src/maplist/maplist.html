@@ -4,11 +4,10 @@
 </header>
 <ul id="maps">
     <li>
-        <a href="#/maps/lewisandclark">
-            <img src="https://raw.githubusercontent.com/skray/maps-api/master/maps/lewisandclarkthumbnail.png">
+        <a ng-repeat="map in vm.maps" href="#/maps/{{map.$id}}">
             <div>
-                <h1 class="name">Lewis and Clark</h1>
-                <p>A map of Lewis and Clark's Expedition</p>
+                <h1 class="name">{{map.name}}</h1>
+                <p>{{map.description}}</p>
             </div>
         </a>
     </li>
