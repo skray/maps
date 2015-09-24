@@ -3,7 +3,7 @@
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
-	function MapCtrl($scope, leafletEvents, $routeParams, MapFactory) {
+	function MapCtrl($scope, leafletEvents, $routeParams, MapFactory, leafletData) {
 		var vm = this;
 		angular.extend(vm, {
 			layers: {
@@ -18,19 +18,49 @@
 						                 'Campsite locations provided by <a href="https://www.google.com/maps/d/viewer?mid=zgLi8Vih7akA.kvuzH9irSVwg">Lewis and Clark Westbound Part 1</a>'
 		                }
 					}
-				}
+				},
+				overlays: {
+                    draw: {
+                        name: 'draw',
+                        type: 'group',
+                        visible: true,
+                        layerParams: {
+                            showOnSelector: false
+                        }
+                    }
+                }
 			},
 			tiles : {
 	    		url:'http://{s}.tiles.mapbox.com/v3/seankennethray.map-zjkq5g6o/{z}/{x}/{y}.png'
 	    	},
 		    center : {},
 		    lines :{},
-		    markers : {}
+		    markers : {},
+		    controls: {
+		    	
+		    }
+		});
+
+		// leafletData.getMap().then(function(map) {
+  //          leafletData.getLayers().then(function(layers) {
+  //             var drawnItems = layers.overlays.draw;
+  //             map.on('draw:created', function (e) {
+  //               var layer = e.layer;
+  //               drawnItems.addLayer(layer);
+  //               console.log(JSON.stringify(layer.toGeoJSON()));
+  //             });
+  //          });
+  //      });
+
+		$scope.$on('leafletDirectiveMap.draw:created', function(ngEvent, leafletEvent) {
+			console.log(leafletEvent);
+			leafletEvent.leafletObject.addLayer(leafletEvent.leafletEvent.layer);
+			console.log(JSON.stringify(leafletEvent.leafletEvent.layer.toGeoJSON()));
 		});
 
 		vm.map = MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
 			vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
-			vm.lines['line'] = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
+			vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
 			map.markers.forEach(function eachMarker(marker, idx) {
 				vm.markers[idx] = {
 					lat: marker.latLng.lat, 
@@ -43,7 +73,20 @@
 					}
 				};
 			});
+
+			
 		});
+
+		$scope.$on('logged-in', onLoggedIn);
+		$scope.$on('logged-out', onLoggedOut);
+
+		function onLoggedIn() {
+			vm.controls = {draw:{}};
+		}
+
+		function onLoggedOut() {
+			vm.controls = {};
+		}
 
 	}
 

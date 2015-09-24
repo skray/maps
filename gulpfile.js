@@ -5,7 +5,6 @@ var path = require('path');
 var del  = require('del');
 var gutil = require('gulp-util');
 var deploy = require('gulp-gh-pages');
-var sourcemaps = require('gulp-sourcemaps');
 var connect = require('gulp-connect');
 var postcss = require('gulp-postcss');
 var autoprefixer = require('autoprefixer');
@@ -35,7 +34,8 @@ var paths = {
         'node_modules/leaflet/dist/leaflet.js',
         'node_modules/angular-leaflet-directive/dist/angular-leaflet-directive.js',
         'node_modules/firebase/lib/firebase-web.js',
-        'node_modules/angularfire/dist/angularfire.js'
+        'node_modules/angularfire/dist/angularfire.js',
+        'node_modules/leaflet-draw/dist/leaflet.draw.js'
       ]
     }
 };
