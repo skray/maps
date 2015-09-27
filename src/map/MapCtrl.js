@@ -3,8 +3,9 @@
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
-	function MapCtrl($scope, leafletEvents, $routeParams, MapFactory, leafletData) {
+	function MapCtrl($scope, $routeParams, MapFactory) {
 		var vm = this;
+
 		angular.extend(vm, {
 			layers: {
 				baselayers: {
@@ -30,55 +31,40 @@
                     }
                 }
 			},
-			tiles : {
-	    		url:'http://{s}.tiles.mapbox.com/v3/seankennethray.map-zjkq5g6o/{z}/{x}/{y}.png'
-	    	},
 		    center : {},
 		    lines :{},
 		    markers : {},
-		    controls: {
-		    	
-		    }
+		    controls: {}
 		});
 
-		// leafletData.getMap().then(function(map) {
-  //          leafletData.getLayers().then(function(layers) {
-  //             var drawnItems = layers.overlays.draw;
-  //             map.on('draw:created', function (e) {
-  //               var layer = e.layer;
-  //               drawnItems.addLayer(layer);
-  //               console.log(JSON.stringify(layer.toGeoJSON()));
-  //             });
-  //          });
-  //      });
+		init();
 
-		$scope.$on('leafletDirectiveMap.draw:created', function(ngEvent, leafletEvent) {
-			console.log(leafletEvent);
-			leafletEvent.leafletObject.addLayer(leafletEvent.leafletEvent.layer);
-			console.log(JSON.stringify(leafletEvent.leafletEvent.layer.toGeoJSON()));
-		});
+		function init() {
+			$scope.$on('leafletDirectiveMap.draw:created', onDrawCreated);
+			$scope.$on('logged-in', onLoggedIn);
+			$scope.$on('logged-out', onLoggedOut);
 
-		vm.map = MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
-			vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
-			vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
-			map.markers.forEach(function eachMarker(marker, idx) {
-				vm.markers[idx] = {
-					lat: marker.latLng.lat, 
-					lng: marker.latLng.lng,
-					message: marker.title,
-					icon: {
-						iconUrl: 'images/campfire.svg',
-						iconSize: [30,30],
-						iconAnchor: [15,20]
-					}
-				};
+			vm.map = MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
+				vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
+				vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
+				map.markers.forEach(function eachMarker(marker, idx) {
+					vm.markers[idx] = {
+						lat: marker.latLng.lat, 
+						lng: marker.latLng.lng,
+						message: marker.title,
+						icon: {
+							iconUrl: 'images/campfire.svg',
+							iconSize: [30,30],
+							iconAnchor: [15,20]
+						}
+					};
+				});
 			});
+		}
 
-			
-		});
-
-		$scope.$on('logged-in', onLoggedIn);
-		$scope.$on('logged-out', onLoggedOut);
+		function onDrawCreated(ngEvent, leafletEvent) {
+			leafletEvent.leafletObject.addLayer(leafletEvent.leafletEvent.layer);
+		}
 
 		function onLoggedIn() {
 			vm.controls = {draw:{}};
