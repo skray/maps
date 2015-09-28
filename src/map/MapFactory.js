@@ -3,10 +3,10 @@
 	angular.module('maps')
 		.factory('MapFactory', MapFactory);
 
-	function MapFactory($firebaseObject, $window) {
+	function MapFactory($firebaseObject, FIREBASE_REF) {
 
 		function createMap(id) {
-			var ref = new $window.Firebase("https://amber-inferno-2147.firebaseio.com/maps/").child(id);
+			var ref = FIREBASE_REF.child('maps').child(id);
 			return new $firebaseObject(ref);
 		}
 

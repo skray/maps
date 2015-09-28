@@ -1,9 +1,14 @@
 (function(angular) {
 	angular
 		.module('maps', ['ngRoute', 'leaflet-directive', 'firebase'])
-		.config(configure);
+		.config(configure)
+		.constant('FIREBASE_REF', new Firebase("https://amber-inferno-2147.firebaseio.com"));
 
 	function configure($routeProvider, $locationProvider) {
+
+		/*
+		 * Routes
+		 */
 		$routeProvider
 			.when('/', {
 				templateUrl: 'maplist/maplist.html',
@@ -15,6 +20,7 @@
 				controller: 'MapCtrl',
 				controllerAs: 'vm'
 			});
+
 	}
 
 })(window.angular);
