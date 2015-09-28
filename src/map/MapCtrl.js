@@ -3,7 +3,7 @@
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
-	function MapCtrl($scope, leafletEvents, $routeParams, MapFactory) {
+	function MapCtrl($scope, $routeParams, MapFactory) {
 		var vm = this;
 		angular.extend(vm, {
 			layers: {
@@ -30,7 +30,7 @@
 
 		vm.map = MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
 			vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
-			vm.lines['line'] = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
+			vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
 			map.markers.forEach(function eachMarker(marker, idx) {
 				vm.markers[idx] = {
 					lat: marker.latLng.lat, 
