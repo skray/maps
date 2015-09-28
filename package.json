@@ -12,6 +12,7 @@
     "leaflet-draw": "^0.2.3"
   },
   "devDependencies": {
+    "angular-mocks": "^1.4.6",
     "autoprefixer": "^6.0.3",
     "brfs": "^1.4.1",
     "browserify": "^11.1.0",
@@ -29,7 +30,12 @@
     "gulp-replace": "^0.5.4",
     "gulp-sourcemaps": "^1.5.2",
     "gulp-util": "^3.0.6",
+    "jasmine-core": "^2.3.4",
     "jquery": "^2.1.4",
+    "karma": "^0.13.10",
+    "karma-chrome-launcher": "^0.2.0",
+    "karma-jasmine": "^0.3.6",
+    "karma-nyan-reporter": "^0.2.2",
     "vinyl-buffer": "1.0.0",
     "vinyl-source-stream": "^1.1.0",
     "watchify": "^3.4.0"

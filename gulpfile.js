@@ -26,7 +26,8 @@ var paths = {
     js: {
       internal: [
         'src/app.js',
-        'src/**/*.js'
+        'src/**/*.js',
+        '!**/*Spec.js'
       ],
       external: [
         'node_modules/angular/angular.js', 
