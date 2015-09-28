@@ -16,12 +16,17 @@
 		    authObj.$authWithOAuthPopup('github')
 		    	.then(function authSuccess(authData) {
 					user = authData.github.cachedUserProfile;
+					user.uid = authData.uid;
 					$rootScope.$broadcast('logged-in', user);
 			    });
 		}
 
 		function logout() {
 			authObj.$unauth();
+		}
+
+		function getUser() {
+			return user;
 		}
 
 		function onAuthChanged(updatedAuthData) {
@@ -33,6 +38,7 @@
 
 		this.login = login;
 		this.logout = logout;
+		this.getUser = getUser;
 	}
 
 })(window.angular);

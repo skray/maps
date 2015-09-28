@@ -3,7 +3,7 @@
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
-	function MapCtrl($scope, $routeParams, MapFactory) {
+	function MapCtrl($scope, $routeParams, MapFactory, AuthSvc) {
 		var vm = this;
 
 		angular.extend(vm, {
@@ -44,7 +44,8 @@
 			$scope.$on('logged-in', onLoggedIn);
 			$scope.$on('logged-out', onLoggedOut);
 
-			vm.map = MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
+			MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
+				vm.map = map;
 				vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
 				vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
 				map.markers.forEach(function eachMarker(marker, idx) {
@@ -59,6 +60,8 @@
 						}
 					};
 				});
+
+				onLoggedIn(null, AuthSvc.getUser());
 			});
 		}
 
@@ -66,8 +69,10 @@
 			leafletEvent.leafletObject.addLayer(leafletEvent.leafletEvent.layer);
 		}
 
-		function onLoggedIn() {
-			vm.controls = {draw:{}};
+		function onLoggedIn(evt, user) {
+			if(user && user.uid === vm.map.uid) {
+				vm.controls = {draw:{}};
+			}
 		}
 
 		function onLoggedOut() {
