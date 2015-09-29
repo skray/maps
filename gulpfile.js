@@ -125,7 +125,7 @@ gulp.task('connect', function(){
 gulp.task('less', ['clean-less-css'], function () {
     return gulp.src(paths.less)
       .pipe(less({
-        paths: [ path.join(__dirname, 'less', 'includes') ]
+        paths: [ path.join(__dirname, 'src') ]
       }))
       .on('error', function(err) { 
         gutil.log(gutil.colors.bgRed('Less Error'), err.message);
@@ -146,6 +146,6 @@ gulp.task('watch', function() {
 
 gulp.task('publish', ['deploy']);
 gulp.task('dev', ['connect', 'watch', 'build']);
-gulp.task('build', ['concat', 'less', 'copy'])
+gulp.task('build', ['concat', 'less', 'copy']);
 
 gulp.task('default', ['dev']);

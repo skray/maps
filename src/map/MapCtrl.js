@@ -6,6 +6,8 @@
 	function MapCtrl($scope, $routeParams, MapFactory, AuthSvc) {
 		var vm = this;
 
+		vm.toggleMetaEditor = toggleMetaEditor;
+
 		angular.extend(vm, {
 			layers: {
 				baselayers: {
@@ -77,6 +79,10 @@
 
 		function onLoggedOut() {
 			vm.controls = {};
+		}
+
+		function toggleMetaEditor() {
+			vm.map.editing = !vm.map.editing;
 		}
 
 	}

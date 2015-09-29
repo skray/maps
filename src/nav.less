@@ -1,0 +1,40 @@
+nav {
+    background-color: rgb(25,30,40);
+    position: relative;
+    height: 2.2rem;
+    color: #bbb;
+    padding: .5rem;
+
+    a {
+        color: #bbb;
+        text-decoration: none;
+    }
+
+    span.user {
+        float: right;
+        margin-left: 0.5rem;
+    }
+
+    button {
+        float: right;
+        background-color: rgb(25,30,40);
+        border: 1px solid #bbb;
+        color: #bbb;
+        cursor: pointer;
+
+        &:active {
+            background-color: lighten(rgb(25,30,40), 10%);
+        }
+
+        .text {
+            vertical-align: middle;
+        }
+
+        i.gh-login {
+            content: url('images/GitHub-Mark-Light-32px.png');
+            height: 0.9rem;
+            padding-right:0.2rem;
+            vertical-align: middle;
+        }
+    }
+}
