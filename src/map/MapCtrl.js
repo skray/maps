@@ -7,37 +7,35 @@
 		var vm = this;
 
 		vm.toggleMetaEditor = toggleMetaEditor;
-
-		angular.extend(vm, {
-			layers: {
-				baselayers: {
-					mapbox: {
-						name: 'base',
-						url: 'http://{s}.tiles.mapbox.com/v3/seankennethray.map-zjkq5g6o/{z}/{x}/{y}.png',
-						type: 'xyz',
-						layerOptions: {
-							attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a><br>'+
-						                 '<a href="https://thenounproject.com/search/?q=campfire&i=15120">“Campfire”</a> icon by Pavel N. from <a href="http://thenounproject.com">the Noun Project.</a><br>'+
-						                 'Campsite locations provided by <a href="https://www.google.com/maps/d/viewer?mid=zgLi8Vih7akA.kvuzH9irSVwg">Lewis and Clark Westbound Part 1</a>'
-		                }
-					}
-				},
-				overlays: {
-                    draw: {
-                        name: 'draw',
-                        type: 'group',
-                        visible: true,
-                        layerParams: {
-                            showOnSelector: false
-                        }
+		vm.flags = { editingMapMeta: true };
+        vm.layers = {
+			baselayers: {
+				mapbox: {
+					name: 'base',
+					url: 'http://{s}.tiles.mapbox.com/v3/seankennethray.map-zjkq5g6o/{z}/{x}/{y}.png',
+					type: 'xyz',
+					layerOptions: {
+						attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a><br>'+
+					                 '<a href="https://thenounproject.com/search/?q=campfire&i=15120">“Campfire”</a> icon by Pavel N. from <a href="http://thenounproject.com">the Noun Project.</a><br>'+
+					                 'Campsite locations provided by <a href="https://www.google.com/maps/d/viewer?mid=zgLi8Vih7akA.kvuzH9irSVwg">Lewis and Clark Westbound Part 1</a>'
+	                }
+				}
+			},
+			overlays: {
+                draw: {
+                    name: 'draw',
+                    type: 'group',
+                    visible: true,
+                    layerParams: {
+                        showOnSelector: false
                     }
                 }
-			},
-		    center : {},
-		    lines :{},
-		    markers : {},
-		    controls: {}
-		});
+            }
+		};
+		vm.center = {};
+		vm.lines = {};
+		vm.markers = {};
+		vm.controls = {};
 
 		init();
 
@@ -82,7 +80,7 @@
 		}
 
 		function toggleMetaEditor() {
-			vm.map.editing = !vm.map.editing;
+			vm.flags.editingMapMeta = !vm.flags.editingMapMeta;
 		}
 
 	}

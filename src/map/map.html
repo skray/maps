@@ -6,15 +6,29 @@
              controls="vm.controls">
      </leaflet>
 
-     <button id="meta-editor-toggle" 
-             ng-class="{active: vm.map.editing}"
-             ng-click="vm.toggleMetaEditor()">
-         Toggle
+     <button id="meta-editor-open" 
+             ng-click="vm.toggleMetaEditor()"
+             ng-hide="vm.flags.editingMapMeta">
+         <i class="fa fa-lg fa-angle-double-left"></i>
+         <i class="fa fa-lg fa-edit"></i>
      </button>
-     <div id="meta-editor" ng-class="{active: vm.map.editing}">
+     <div id="meta-editor" ng-class="{active: vm.flags.editingMapMeta}">
+        <h1>Edit Map</h1>
+        <button id="meta-editor-close" 
+                ng-click="vm.toggleMetaEditor()">
+            <i class="fa fa-2x fa-close"></i>
+        </button>
         <form>
-            <label>Name</label>
-            <input type="text" ng-model="vm.map.name">
+            <section>
+                <label>Name</label>
+                <input type="text" ng-model="vm.map.name"> 
+            </section>
+            <section>
+                <label>Description</label>
+                <textarea ng-model="vm.map.description"></textarea>
+            </section>
+            
+            <button ng-click="vm.map.$save()">Save</button>
         </form>
      </div>
 </div>

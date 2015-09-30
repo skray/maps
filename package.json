@@ -8,6 +8,7 @@
     "angular-simple-logger": "^0.0.1",
     "angularfire": "1.1.2",
     "firebase": "2.2.9",
+    "font-awesome": "^4.4.0",
     "leaflet": "^0.7.5",
     "leaflet-draw": "^0.2.3"
   },

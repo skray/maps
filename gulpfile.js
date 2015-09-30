@@ -17,6 +17,7 @@ var paths = {
       'node_modules/leaflet/dist/leaflet.css',
       'node_modules/leaflet-draw/dist/leaflet.draw.css'
     ],
+    fonts: 'node_modules/font-awesome/fonts/*',
     images: [
       'node_modules/leaflet/dist/images/**',
       'node_modules/leaflet-draw/dist/images/**',
@@ -66,6 +67,10 @@ gulp.task('clean-html', function() {
   return del('public/**/*.html');
 });
 
+gulp.task('clean-fonts', function() {
+  return del('public/fonts/*');
+});
+
 gulp.task('clean', function() {
   return del('public');
 });
@@ -106,7 +111,12 @@ gulp.task('copy-html', ['clean-html'], function() {
       .pipe(connect.reload());
 });
 
-gulp.task('copy', ['copy-images', 'copy-html']);
+gulp.task('copy-fonts', ['clean-fonts'], function() {
+    return gulp.src([paths.fonts])
+      .pipe(gulp.dest('public/fonts'));
+});
+
+gulp.task('copy', ['copy-images', 'copy-html', 'copy-fonts']);
 
 
 gulp.task('deploy', ['build'], function () {
@@ -125,7 +135,7 @@ gulp.task('connect', function(){
 gulp.task('less', ['clean-less-css'], function () {
     return gulp.src(paths.less)
       .pipe(less({
-        paths: [ path.join(__dirname, 'src') ]
+        paths: [ path.join(__dirname, 'src'), path.join(__dirname, 'node_modules/font-awesome/less') ]
       }))
       .on('error', function(err) { 
         gutil.log(gutil.colors.bgRed('Less Error'), err.message);
