@@ -5,12 +5,12 @@
              center="vm.center"
              controls="vm.controls">
      </leaflet>
-     <div id="center-overlay" ng-if="vm.flags.settingCenter">
+     <div id="center-overlay" ng-if="vm.flags.settingCenterAndZoom">
         <div class="explain">
             <section class="text">Drag the center of the map under the crosshairs</section>
             <section class="actions">
-                <button ng-click="vm.hideSetCenter()">Cancel</button>
-                <button ng-click="vm.setCenter()">Save</button>
+                <button ng-click="vm.hideSetCenterAndZoom()">Cancel</button>
+                <button ng-click="vm.setCenterAndZoom()">Save Center And Zoom</button>
             </section>
         </div>
         <div class="circle"></div>
@@ -39,7 +39,7 @@
                 <label>Description</label>
                 <textarea ng-model="vm.map.description"></textarea>
             </section>
-            <button ng-click="vm.showSetCenter()">Set Center</button>
+            <button ng-click="vm.showSetCenterAndZoom()">Set Center And Zoom</button>
             <button ng-click="vm.map.$save()">Save</button>
         </form>
      </div>

@@ -8,9 +8,9 @@
 		var vm = this;
 
 		vm.toggleMetaEditor = toggleMetaEditor;
-		vm.setCenter = setCenter;
-		vm.showSetCenter = showSetCenter;
-		vm.hideSetCenter = hideSetCenter;
+		vm.setCenterAndZoom = setCenterAndZoom;
+		vm.showSetCenterAndZoom = showSetCenterAndZoom;
+		vm.hideSetCenterAndZoom = hideSetCenterAndZoom;
 
 		vm.flags = { editingMapMeta: true };
         vm.layers = {
@@ -92,20 +92,22 @@
 			vm.flags.editingMapMeta = !vm.flags.editingMapMeta;
 		}
 
-		function setCenter() {
+		function setCenterAndZoom() {
 			var mapCenter = leafletMap.getCenter();
+			var zoom = leafletMap.getZoom();
 			vm.map.center = [mapCenter.lat, mapCenter.lng];
+			vm.map.zoom = zoom;
 			vm.map.$save();
-			hideSetCenter();
+			hideSetCenterAndZoom();
 		}
 
-		function showSetCenter() {
-			vm.flags.settingCenter = true;
+		function showSetCenterAndZoom() {
+			vm.flags.settingCenterAndZoom = true;
 			toggleMetaEditor();
 		}
 
-		function hideSetCenter() {
-			vm.flags.settingCenter = false;
+		function hideSetCenterAndZoom() {
+			vm.flags.settingCenterAndZoom = false;
 			toggleMetaEditor();
 		}
 
