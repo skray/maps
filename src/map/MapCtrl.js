@@ -12,7 +12,11 @@
 		vm.showSetCenterAndZoom = showSetCenterAndZoom;
 		vm.hideSetCenterAndZoom = hideSetCenterAndZoom;
 
-		vm.flags = { editingMapMeta: true };
+		vm.flags = { 
+			editingMapMeta: false,
+			settingCenterAndZoom: false,
+			canEdit: false
+		};
         vm.layers = {
 			baselayers: {
 				mapbox: {
@@ -81,6 +85,7 @@
 		function onLoggedIn(evt, user) {
 			if(user && user.uid === vm.map.uid) {
 				vm.controls = {draw:{}};
+				vm.flags.canEdit = true;
 			}
 		}
 

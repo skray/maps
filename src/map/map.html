@@ -20,11 +20,12 @@
 
      <button id="meta-editor-open" 
              ng-click="vm.toggleMetaEditor()"
-             ng-hide="vm.flags.editingMapMeta">
+             ng-hide="vm.flags.editingMapMeta"
+             ng-if="vm.flags.canEdit">
          <i class="fa fa-lg fa-angle-double-left"></i>
          <i class="fa fa-lg fa-edit"></i>
      </button>
-     <div id="meta-editor" ng-class="{active: vm.flags.editingMapMeta}">
+     <div id="meta-editor" ng-if="vm.flags.editingMapMeta">
         <h1>Edit Map</h1>
         <button id="meta-editor-close" 
                 ng-click="vm.toggleMetaEditor()">
