@@ -3,10 +3,15 @@
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
-	function MapCtrl($scope, $routeParams, MapFactory, AuthSvc) {
+	function MapCtrl($scope, $routeParams, MapFactory, AuthSvc, leafletData) {
+		var leafletMap;
 		var vm = this;
 
 		vm.toggleMetaEditor = toggleMetaEditor;
+		vm.setCenter = setCenter;
+		vm.showSetCenter = showSetCenter;
+		vm.hideSetCenter = hideSetCenter;
+
 		vm.flags = { editingMapMeta: true };
         vm.layers = {
 			baselayers: {
@@ -43,6 +48,10 @@
 			$scope.$on('leafletDirectiveMap.draw:created', onDrawCreated);
 			$scope.$on('logged-in', onLoggedIn);
 			$scope.$on('logged-out', onLoggedOut);
+
+			leafletData.getMap().then(function(map) {
+				leafletMap = map;
+			});
 
 			MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
 				vm.map = map;
@@ -81,6 +90,23 @@
 
 		function toggleMetaEditor() {
 			vm.flags.editingMapMeta = !vm.flags.editingMapMeta;
+		}
+
+		function setCenter() {
+			var mapCenter = leafletMap.getCenter();
+			vm.map.center = [mapCenter.lat, mapCenter.lng];
+			vm.map.$save();
+			hideSetCenter();
+		}
+
+		function showSetCenter() {
+			vm.flags.settingCenter = true;
+			toggleMetaEditor();
+		}
+
+		function hideSetCenter() {
+			vm.flags.settingCenter = false;
+			toggleMetaEditor();
 		}
 
 	}
