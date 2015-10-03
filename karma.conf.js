@@ -5,6 +5,7 @@ module.exports = function(config) {
 	    'node_modules/angular/angular.js', 
         'node_modules/angular-mocks/angular-mocks.js',
 	    'node_modules/angular-route/angular-route.js', 
+        'node_modules/angular-animate/angular-animate.js',
 	    'node_modules/angular-simple-logger/dist/index.js',
 	    'node_modules/leaflet/dist/leaflet.js',
 	    'node_modules/angular-leaflet-directive/dist/angular-leaflet-directive.js',
