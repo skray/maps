@@ -11,8 +11,14 @@
 	<nav ng-controller="NavCtrl as vm">
 	    <a href="#/">Maps</a>
         <span class="user">{{vm.user.login}}</span>
-        <button ng-if="!vm.flags.loggedIn" ng-click="vm.login()"><i class="gh-login"></i><span class="text">Log In</span></button>
-	    <button ng-if="vm.flags.loggedIn"  ng-click="vm.logout()"><i class="gh-login"></i><span class="text">Log Out</span></button>
+        <button ng-if="!vm.flags.loggedIn" ng-click="vm.login()">
+            <i class="fa fa-github"></i>
+            <span class="text">Log In</span>
+        </button>
+	    <button ng-if="vm.flags.loggedIn" ng-click="vm.logout()">
+            <i class="fa fa-github"></i>
+            <span class="text">Log Out</span>
+        </button>
 	</nav>
     <ng-view/>
     <script type="text/javascript" src="external.js"></script>

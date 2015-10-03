@@ -17,6 +17,7 @@ var paths = {
       'node_modules/leaflet/dist/leaflet.css',
       'node_modules/leaflet-draw/dist/leaflet.draw.css'
     ],
+    fonts: 'node_modules/font-awesome/fonts/*',
     images: [
       'node_modules/leaflet/dist/images/**',
       'node_modules/leaflet-draw/dist/images/**',
@@ -31,6 +32,7 @@ var paths = {
       external: [
         'node_modules/angular/angular.js', 
         'node_modules/angular-route/angular-route.js', 
+        'node_modules/angular-animate/angular-animate.js',
         'node_modules/angular-simple-logger/dist/index.js',
         'node_modules/leaflet/dist/leaflet.js',
         'node_modules/angular-leaflet-directive/dist/angular-leaflet-directive.js',
@@ -64,6 +66,10 @@ gulp.task('clean-images', function() {
 
 gulp.task('clean-html', function() {
   return del('public/**/*.html');
+});
+
+gulp.task('clean-fonts', function() {
+  return del('public/fonts/*');
 });
 
 gulp.task('clean', function() {
@@ -106,7 +112,12 @@ gulp.task('copy-html', ['clean-html'], function() {
       .pipe(connect.reload());
 });
 
-gulp.task('copy', ['copy-images', 'copy-html']);
+gulp.task('copy-fonts', ['clean-fonts'], function() {
+    return gulp.src([paths.fonts])
+      .pipe(gulp.dest('public/fonts'));
+});
+
+gulp.task('copy', ['copy-images', 'copy-html', 'copy-fonts']);
 
 
 gulp.task('deploy', ['build'], function () {
@@ -125,7 +136,7 @@ gulp.task('connect', function(){
 gulp.task('less', ['clean-less-css'], function () {
     return gulp.src(paths.less)
       .pipe(less({
-        paths: [ path.join(__dirname, 'less', 'includes') ]
+        paths: [ path.join(__dirname, 'src'), path.join(__dirname, 'node_modules/font-awesome/less') ]
       }))
       .on('error', function(err) { 
         gutil.log(gutil.colors.bgRed('Less Error'), err.message);
@@ -146,6 +157,6 @@ gulp.task('watch', function() {
 
 gulp.task('publish', ['deploy']);
 gulp.task('dev', ['connect', 'watch', 'build']);
-gulp.task('build', ['concat', 'less', 'copy'])
+gulp.task('build', ['concat', 'less', 'copy']);
 
 gulp.task('default', ['dev']);

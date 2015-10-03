@@ -1,0 +1,36 @@
+nav {
+    background-color: rgb(25,30,40);
+    position: relative;
+    height: 2.2rem;
+    color: #bbb;
+    padding: .5rem;
+
+    a {
+        color: #bbb;
+        text-decoration: none;
+    }
+
+    span.user {
+        float: right;
+        margin-left: 0.5rem;
+    }
+
+    button {
+        float: right;
+        background-color: rgb(25,30,40);
+        border: 1px solid #bbb;
+        color: #bbb;
+
+        &:active {
+            background-color: lighten(rgb(25,30,40), 10%);
+        }
+
+        i {
+            vertical-align: middle;
+        }
+
+        .text {
+            vertical-align: middle;
+        }
+    }
+}

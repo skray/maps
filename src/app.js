@@ -1,6 +1,6 @@
 (function(angular) {
 	angular
-		.module('maps', ['ngRoute', 'leaflet-directive', 'firebase'])
+		.module('maps', ['ngRoute', 'leaflet-directive', 'firebase', 'ngAnimate'])
 		.config(configure)
 		.constant('FIREBASE_REF', new Firebase('https://amber-inferno-2147.firebaseio.com'))
 		.run(run);
