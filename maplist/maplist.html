@@ -1,15 +1,17 @@
-<header>
-    <span class="title">Create and share interactive maps</span>
-    <span class="attribution">Abraham Ortelius [Public domain], <a href="https://commons.wikimedia.org/wiki/File%3AOrteliusWorldMap1570.jpg">via Wikimedia Commons</a></div>
-</header>
-<ul id="maps">
-    <li>
-        <a ng-repeat="map in vm.maps" href="#/maps/{{map.$id}}">
-            <div>
-                <h1 class="name">{{map.name}}</h1>
-                <p>{{map.description}}</p>
-            </div>
-        </a>
-    </li>
+<div class="maplist-container">
+    <header>
+        <span class="title">Create and share interactive maps</span>
+        <span class="attribution">Abraham Ortelius [Public domain], <a href="https://commons.wikimedia.org/wiki/File%3AOrteliusWorldMap1570.jpg">via Wikimedia Commons</a></span>
+    </header>
+    <ul id="maps">
+        <li>
+            <a ng-repeat="map in vm.maps" href="#/maps/{{map.$id}}">
+                <div>
+                    <h1 class="name">{{map.name}}</h1>
+                    <p>{{map.description}}</p>
+                </div>
+            </a>
+        </li>
 
-</ul>
+    </ul>
+</div>

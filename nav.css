@@ -1,0 +1,30 @@
+nav {
+  background-color: #191e28;
+  position: relative;
+  height: 2.2rem;
+  color: #bbb;
+  padding: .5rem;
+}
+nav a {
+  color: #bbb;
+  text-decoration: none;
+}
+nav span.user {
+  float: right;
+  margin-left: 0.5rem;
+}
+nav button {
+  float: right;
+  background-color: #191e28;
+  border: 1px solid #bbb;
+  color: #bbb;
+}
+nav button:active {
+  background-color: #2d3647;
+}
+nav button i {
+  vertical-align: middle;
+}
+nav button .text {
+  vertical-align: middle;
+}

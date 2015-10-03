@@ -1,0 +1,155 @@
+.map-container .angular-leaflet-map {
+  position: absolute;
+  top: 2.2rem;
+  bottom: 0;
+  width: 100%;
+}
+.map-container .angular-leaflet-map .leaflet-control-layers.leaflet-control {
+  display: none;
+}
+.map-container center-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  margin: auto;
+  background-color: rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+.map-container center-overlay .crosshair {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  margin: auto;
+}
+.map-container center-overlay .explain {
+  pointer-events: auto;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+          flex-direction: column;
+  -webkit-justify-content: center;
+          justify-content: center;
+  -webkit-align-items: center;
+          align-items: center;
+  position: absolute;
+  top: 3rem;
+  width: 50rem;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 10px;
+  font-size: 2rem;
+  padding: 1rem;
+  left: 0;
+  right: 0;
+  margin: auto;
+}
+.map-container center-overlay .circle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  margin: auto;
+  border: 2px solid white;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+.map-container center-overlay .vertical {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  margin: auto;
+  border: 1px solid white;
+  width: 80px;
+  height: 0;
+}
+.map-container center-overlay .horizontal {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  margin: auto;
+  border: 1px solid white;
+  width: 0;
+  height: 80px;
+}
+.map-container #meta-editor-open {
+  position: absolute;
+  right: 0;
+  top: 3rem;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-style: none;
+  border-bottom-left-radius: 5px;
+  border-top-left-radius: 5px;
+  padding: 0.7rem 0.5rem;
+}
+.map-container #meta-editor-open i + i {
+  margin-left: 0.2rem;
+}
+.map-container #meta-editor-open:hover {
+  background-color: rgba(255, 255, 255, 0.7);
+}
+.map-container #meta-editor-open:focus {
+  outline: none;
+}
+.map-container #meta-editor {
+  position: absolute;
+  right: 0;
+  left: 100%;
+  top: 2.2rem;
+  bottom: 0;
+  width: 50%;
+  left: 50%;
+  transition: all 250ms cubic-bezier(0.86, 0, 0.07, 1);
+  background-color: rgba(255, 255, 255, 0.7);
+}
+.map-container #meta-editor.ng-enter {
+  left: 100%;
+}
+.map-container #meta-editor.ng-enter.ng-enter-active {
+  left: 50%;
+}
+.map-container #meta-editor.ng-leave {
+  left: 50%;
+}
+.map-container #meta-editor.ng-leave.ng-leave-active {
+  left: 100%;
+}
+.map-container #meta-editor h1 {
+  font-size: 2.5rem;
+  margin-left: 2rem;
+}
+.map-container #meta-editor #meta-editor-close {
+  position: absolute;
+  right: 0;
+  border-style: none;
+  margin: 1rem;
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0);
+  top: 0;
+}
+.map-container #meta-editor #meta-editor-close:hover {
+  color: gray;
+}
+.map-container #meta-editor form {
+  margin: 0 2rem 2rem 2rem;
+}
+.map-container #meta-editor form input {
+  padding: .2rem .4rem;
+  display: block;
+  width: 100%;
+}
+.map-container #meta-editor form textarea {
+  padding: .2rem .4rem;
+  display: block;
+  width: 100%;
+  height: 5rem;
+}

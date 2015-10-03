@@ -1,0 +1,88 @@
+.maplist-container header {
+  font-size: 2rem;
+  background-color: #191e28;
+  height: 20rem;
+  position: relative;
+  background-image: url('images/OrteliusWorldMap1570_small_lowres.jpg');
+  -webkit-filter: grayscale(60%);
+          filter: grayscale(60%);
+  background-size: cover;
+  text-align: center;
+}
+.maplist-container header span {
+  color: #bbbbbb;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+.maplist-container header span a {
+  color: #bbbbbb;
+}
+.maplist-container header span.title {
+  top: 12rem;
+  position: relative;
+  padding: .1rem 1rem;
+}
+.maplist-container header span.attribution {
+  font-size: 1rem;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: .1rem .5rem;
+}
+.maplist-container ul {
+  list-style-type: none;
+  padding: 1rem;
+  margin: 0;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+          flex-wrap: wrap;
+}
+.maplist-container ul li {
+  -webkit-flex: 1;
+          flex: 1;
+  -webkit-flex-shrink: 0;
+          flex-shrink: 0;
+}
+.maplist-container ul li a {
+  display: -webkit-flex;
+  display: flex;
+  padding: 0;
+  text-decoration: none;
+  color: #000;
+  min-width: 20rem;
+  -webkit-flex-shrink: 0;
+          flex-shrink: 0;
+  transition: background-color 250ms;
+}
+.maplist-container ul li a img {
+  height: 6rem;
+  width: 3rem;
+  max-width: 12rem;
+  -webkit-flex: 1;
+          flex: 1;
+  -webkit-filter: grayscale(60%);
+          filter: grayscale(60%);
+  transition: -webkit-filter 250ms, filter 250ms;
+}
+.maplist-container ul li a div {
+  display: inline-block;
+  vertical-align: top;
+  -webkit-flex: 1;
+          flex: 1;
+  min-width: 15rem;
+  padding: 0 1rem;
+}
+.maplist-container ul li a div h1 {
+  margin: 0;
+  margin-bottom: 1rem;
+}
+.maplist-container ul li a:hover {
+  background-color: #ccc;
+  cursor: pointer;
+  transition: background-color 250ms;
+}
+.maplist-container ul li a:hover img {
+  -webkit-filter: grayscale(0);
+          filter: grayscale(0);
+  transition: -webkit-filter 250ms, filter 250ms;
+}
