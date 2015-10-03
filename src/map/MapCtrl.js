@@ -15,7 +15,7 @@
 		vm.saveLayer = saveLayer;
 
 		vm.flags = { 
-			editingMapMeta: true,
+			editingMapMeta: false,
 			settingCenterAndZoom: false,
 			canEdit: false
 		};
