@@ -90,7 +90,8 @@
 		}
 
 		function onLoggedOut() {
-			vm.controls = {};
+			// vm.controls = {};
+			console.log('Waiting for fix on control removal');
 		}
 
 		function toggleMetaEditor() {

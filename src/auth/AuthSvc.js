@@ -7,18 +7,14 @@
 
 		var authObj;
 		var user;
+	    
+		function setAuthHandler() {
+			authObj = $firebaseAuth(FIREBASE_REF);
+			authObj.$onAuth(onAuthChanged);
+		}
 
 		function login() {
-		    authObj = $firebaseAuth(FIREBASE_REF);
-
-		    authObj.$onAuth(onAuthChanged);
-
-		    authObj.$authWithOAuthPopup('github')
-		    	.then(function authSuccess(authData) {
-					user = authData.github.cachedUserProfile;
-					user.uid = authData.uid;
-					$rootScope.$broadcast('logged-in', user);
-			    });
+		    authObj.$authWithOAuthPopup('github');
 		}
 
 		function logout() {
@@ -30,12 +26,18 @@
 		}
 
 		function onAuthChanged(updatedAuthData) {
-	    	if(!updatedAuthData) {
+			if(updatedAuthData) {
+				user = updatedAuthData.github.cachedUserProfile;
+				user.uid = updatedAuthData.uid;
+				$rootScope.$broadcast('logged-in', user);
+			}
+	    	else {
 	    		user = null;
 	    		$rootScope.$broadcast('logged-out');
 	    	}
 	    }
 
+	    this.setAuthHandler = setAuthHandler;
 		this.login = login;
 		this.logout = logout;
 		this.getUser = getUser;
