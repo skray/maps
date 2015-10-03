@@ -42,6 +42,49 @@
             </section>
             <button ng-click="vm.showSetCenterAndZoom()">Set Center And Zoom</button>
             <button ng-click="vm.map.$save()">Save</button>
+
+            <h2>Layers <button ng-click="vm.addLayer()">Add layer</button></h2>
+
+            <section ng-if="vm.newLayer">
+                <section>
+                    <label>Name</label>
+                    <input type="text" ng-model="vm.newLayer.name">
+                </section>
+                <section>
+                    <label>Url</label>
+                    <input type="text" ng-model="vm.newLayer.url">
+                </section>
+                <section>
+                    <label>Type</label>
+                    <input type="text" ng-model="vm.newLayer.type">
+                </section>
+                <section>
+                    <label>Attribution</label>
+                    <input type="text" ng-model="vm.newLayer.layerOptions.attribution">
+                </section>
+                <button ng-click="vm.newLayer = null">Cancel</button>
+                <button ng-click="vm.saveLayer(vm.newLayer)">Save Layer</button>
+            </section>
+            
+            <section ng-repeat="layer in vm.map.layers">
+                <section>
+                    <label>Name</label>
+                    <input type="text" ng-model="layer.name">
+                </section>
+                <section>
+                    <label>Url</label>
+                    <input type="text" ng-model="layer.url">
+                </section>
+                <section>
+                    <label>Type</label>
+                    <input type="text" ng-model="layer.type">
+                </section>
+                <section>
+                    <label>Attribution</label>
+                    <input type="text" ng-model="layer.layerOptions.attribution">
+                </section>
+                <button ng-click="vm.saveLayer(layer)">Save Layer</button>
+            </section>
         </form>
      </div>
 </div>

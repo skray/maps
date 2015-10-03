@@ -11,25 +11,16 @@
 		vm.setCenterAndZoom = setCenterAndZoom;
 		vm.showSetCenterAndZoom = showSetCenterAndZoom;
 		vm.hideSetCenterAndZoom = hideSetCenterAndZoom;
+		vm.addLayer = addLayer;
+		vm.saveLayer = saveLayer;
 
 		vm.flags = { 
-			editingMapMeta: false,
+			editingMapMeta: true,
 			settingCenterAndZoom: false,
 			canEdit: false
 		};
         vm.layers = {
-			baselayers: {
-				mapbox: {
-					name: 'base',
-					url: 'http://{s}.tiles.mapbox.com/v3/seankennethray.map-zjkq5g6o/{z}/{x}/{y}.png',
-					type: 'xyz',
-					layerOptions: {
-						attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a><br>'+
-					                 '<a href="https://thenounproject.com/search/?q=campfire&i=15120">“Campfire”</a> icon by Pavel N. from <a href="http://thenounproject.com">the Noun Project.</a><br>'+
-					                 'Campsite locations provided by <a href="https://www.google.com/maps/d/viewer?mid=zgLi8Vih7akA.kvuzH9irSVwg">Lewis and Clark Westbound Part 1</a>'
-	                }
-				}
-			},
+			baselayers: {},
 			overlays: {
                 draw: {
                     name: 'draw',
@@ -41,6 +32,7 @@
                 }
             }
 		};
+		vm.newLayer = null;
 		vm.center = {};
 		vm.lines = {};
 		vm.markers = {};
@@ -59,6 +51,7 @@
 
 			MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
 				vm.map = map;
+				vm.layers.baselayers = map.layers;
 				vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
 				vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
 				map.markers.forEach(function eachMarker(marker, idx) {
@@ -115,6 +108,18 @@
 		function hideSetCenterAndZoom() {
 			vm.flags.settingCenterAndZoom = false;
 			toggleMetaEditor();
+		}
+
+		function addLayer() {
+			vm.newLayer = {};
+		}
+
+		function saveLayer(layer) {
+			if(!vm.map.layers) {
+				vm.map.layers = {};
+			}
+			vm.map.layers[layer.name] = layer;
+			vm.map.$save();
 		}
 
 	}
