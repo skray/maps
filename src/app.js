@@ -2,9 +2,10 @@
 	angular
 		.module('maps', ['ngRoute', 'leaflet-directive', 'firebase'])
 		.config(configure)
-		.constant('FIREBASE_REF', new Firebase("https://amber-inferno-2147.firebaseio.com"));
+		.constant('FIREBASE_REF', new Firebase('https://amber-inferno-2147.firebaseio.com'))
+		.run(run);
 
-	function configure($routeProvider, $locationProvider) {
+	function configure($routeProvider) {
 
 		/*
 		 * Routes
@@ -21,6 +22,10 @@
 				controllerAs: 'vm'
 			});
 
+	}
+
+	function run(AuthSvc) {
+		AuthSvc.setAuthHandler();
 	}
 
 })(window.angular);
