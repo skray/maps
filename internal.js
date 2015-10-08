@@ -94,7 +94,8 @@
 		vm.flags = { 
 			editingMapMeta: false,
 			settingCenterAndZoom: false,
-			canEdit: false
+			canEdit: false,
+			mapLoaded: false
 		};
         vm.layers = {
 			baselayers: {},
@@ -145,6 +146,7 @@
 				});
 
 				onLoggedIn(null, AuthSvc.getUser());
+				vm.flags.mapLoaded = true;
 			});
 		}
 

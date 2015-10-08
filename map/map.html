@@ -1,10 +1,13 @@
 <div class="map-container">
-    <leaflet layers="vm.layers" 
+
+    <leaflet ng-if="vm.flags.mapLoaded"
+             layers="vm.layers" 
              paths="vm.lines" 
              markers="vm.markers" 
              center="vm.center"
              controls="vm.controls">
-     </leaflet>
+    </leaflet>
+
      <div id="center-overlay" ng-if="vm.flags.settingCenterAndZoom">
         <div class="explain">
             <section class="text">Drag the center of the map under the crosshairs</section>
