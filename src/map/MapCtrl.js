@@ -3,7 +3,7 @@
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
-	function MapCtrl($scope, $routeParams, MapFactory, AuthSvc, leafletData) {
+	function MapCtrl($scope, $routeParams, MapFactory, AuthSvc, leafletData, MarkerControlFactory) {
 		var leafletMap;
 		var vm = this;
 
@@ -13,7 +13,7 @@
 		vm.hideSetCenterAndZoom = hideSetCenterAndZoom;
 		vm.addLayer = addLayer;
 		vm.saveLayer = saveLayer;
-
+		vm.defaults = { map: { editable: true } };
 		vm.flags = { 
 			editingMapMeta: false,
 			settingCenterAndZoom: false,
@@ -21,23 +21,15 @@
 			mapLoaded: false
 		};
         vm.layers = {
-			baselayers: {},
-			overlays: {
-                draw: {
-                    name: 'draw',
-                    type: 'group',
-                    visible: true,
-                    layerParams: {
-                        showOnSelector: false
-                    }
-                }
-            }
+			baselayers: {}
 		};
 		vm.newLayer = null;
 		vm.center = {};
 		vm.lines = {};
 		vm.markers = {};
-		vm.controls = {};
+		vm.controls = {
+			editable:  new MarkerControlFactory({scope: $scope})
+		};
 
 		init();
 
@@ -48,6 +40,8 @@
 
 			leafletData.getMap().then(function(map) {
 				leafletMap = map;
+				var polyline = L.polyline([[43.1, 1.2], [43.2, 1.3],[43.3, 1.2]]).addTo(leafletMap);
+				polyline.enableEdit();
 			});
 
 			MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
@@ -79,14 +73,13 @@
 
 		function onLoggedIn(evt, user) {
 			if(user && user.uid === vm.map.uid) {
-				vm.controls = {draw:{}};
 				vm.flags.canEdit = true;
 			}
 		}
 
 		function onLoggedOut() {
 			// vm.controls = {};
-			console.log('Waiting for fix on control removal');
+			vm.flags.canEdit = false;
 		}
 
 		function toggleMetaEditor() {
