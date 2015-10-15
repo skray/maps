@@ -1,7 +1,14 @@
 <div class="maps-controls">
     <div class="leaflet-control leaflet-bar">
-        <a href="" ng-click="vm.toggleMarkerSelector($event)" title="Add a new marker">⚫</a>
+        <a id="marker-control" href="" ng-click="vm.toggleMarkerSelector($event)" title="Add a new marker"></a>
     </div>
-    <div class="marker-selector" ng-if="vm.flags.showMarkerSelector">Markers</div>
-
+    <div class="marker-selector" ng-if="vm.flags.showMarkerSelector">
+        <h2>Select Marker</h2>
+        <ul class="markers">
+            <li ng-repeat="marker in vm.markers" ng-click="vm.setMarker(marker)" class="marker">
+                <img ng-src="{{marker.img}}"
+                     alt="{{marker.name}}" />
+            </li>
+        </ul>
+    </div>
 </div>

@@ -1,5 +1,5 @@
 (function(angular) {
-    
+
     angular.module('maps')
         .factory('MarkerControlFactory', MarkerControlFactory);
 
@@ -9,11 +9,11 @@
                 position: 'topleft'
             },
             onAdd: function(map) {
-                var el = angular.element('<div marker-control=""></div>');
+                var el = angular.element('<div marker-control="map"></div>');
 
                 this.options.scope.map = map;
                 $compile(el)(this.options.scope);
-                
+
                 return el[0];
             },
             type: 'custom'

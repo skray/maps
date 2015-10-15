@@ -1,5 +1,5 @@
 (function(angular) {
-	
+
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
@@ -14,7 +14,7 @@
 		vm.addLayer = addLayer;
 		vm.saveLayer = saveLayer;
 		vm.defaults = { map: { editable: true } };
-		vm.flags = { 
+		vm.flags = {
 			editingMapMeta: false,
 			settingCenterAndZoom: false,
 			canEdit: false,
@@ -28,7 +28,7 @@
 		vm.lines = {};
 		vm.markers = {};
 		vm.controls = {
-			editable:  new MarkerControlFactory({scope: $scope})
+			editable: new MarkerControlFactory({scope: $scope})
 		};
 
 		init();
@@ -40,8 +40,6 @@
 
 			leafletData.getMap().then(function(map) {
 				leafletMap = map;
-				var polyline = L.polyline([[43.1, 1.2], [43.2, 1.3],[43.3, 1.2]]).addTo(leafletMap);
-				polyline.enableEdit();
 			});
 
 			MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
@@ -51,7 +49,7 @@
 				vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
 				map.markers.forEach(function eachMarker(marker, idx) {
 					vm.markers[idx] = {
-						lat: marker.latLng.lat, 
+						lat: marker.latLng.lat,
 						lng: marker.latLng.lng,
 						message: marker.title,
 						icon: {

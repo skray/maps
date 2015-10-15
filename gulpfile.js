@@ -12,7 +12,7 @@ var replace = require('gulp-replace');
 var open = require('gulp-open');
 
 var paths = {
-    html: 'src/**/*.html', 
+    html: 'src/**/*.html',
     less: 'src/**/*.less',
     css: [
       'node_modules/leaflet/dist/leaflet.css',
@@ -31,8 +31,8 @@ var paths = {
         '!**/*Spec.js'
       ],
       external: [
-        'node_modules/angular/angular.js', 
-        'node_modules/angular-route/angular-route.js', 
+        'node_modules/angular/angular.js',
+        'node_modules/angular-route/angular-route.js',
         'node_modules/angular-animate/angular-animate.js',
         'node_modules/angular-simple-logger/dist/index.js',
         'node_modules/leaflet/dist/leaflet.js',
@@ -47,7 +47,7 @@ var paths = {
 // Open
 gulp.task('open-browser', function(){
   return gulp.src(__filename)
-  .pipe(open({uri: 'http://localhost:8000', app: 'google-chrome' }));
+  .pipe(open({uri: 'http://localhost:8000/', app: 'google-chrome' }));
 });
 
 // Clean
@@ -145,7 +145,7 @@ gulp.task('less', ['clean-less-css'], function () {
       .pipe(less({
         paths: [ path.join(__dirname, 'src'), path.join(__dirname, 'node_modules/font-awesome/less') ]
       }))
-      .on('error', function(err) { 
+      .on('error', function(err) {
         gutil.log(gutil.colors.bgRed('Less Error'), err.message);
         this.emit('end');
       })
