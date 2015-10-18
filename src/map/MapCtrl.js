@@ -3,7 +3,7 @@
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
-	function MapCtrl($scope, $routeParams, MapFactory, AuthSvc, leafletData, MarkerControlFactory) {
+	function MapCtrl($scope, $routeParams, MapFactory, MapMarkerFactory, AuthSvc, leafletData, MarkerControlFactory) {
 		var leafletMap;
 		var vm = this;
 
@@ -34,12 +34,20 @@
 		init();
 
 		function init() {
-			$scope.$on('leafletDirectiveMap.draw:created', onDrawCreated);
+			$scope.$on('leafletDirectiveMap.editable:created', onLayerCreated);
 			$scope.$on('logged-in', onLoggedIn);
 			$scope.$on('logged-out', onLoggedOut);
 
 			leafletData.getMap().then(function(map) {
 				leafletMap = map;
+                leafletMap.on('editable:drawing:commit', function(e){
+                    console.log(e)
+                    vm.mapMarkers.$add({
+                        latLng: e.layer.getLatLng(),
+                        title: 'woo'
+                    });
+                });
+
 			});
 
 			MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
@@ -47,26 +55,31 @@
 				vm.layers.baselayers = map.layers;
 				vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
 				vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
-				map.markers.forEach(function eachMarker(marker, idx) {
-					vm.markers[idx] = {
-						lat: marker.latLng.lat,
-						lng: marker.latLng.lng,
-						message: marker.title,
-						icon: {
-							iconUrl: 'images/campfire.svg',
-							iconSize: [30,30],
-							iconAnchor: [15,20]
-						}
-					};
-				});
+
+                MapMarkerFactory($routeParams.id).$loaded().then(function markersLoaded(markers) {
+                    vm.mapMarkers = markers;
+                    markers.forEach(function eachMarker(marker, idx) {
+    					vm.markers[idx] = {
+    						lat: marker.latLng.lat,
+    						lng: marker.latLng.lng,
+    						message: marker.title,
+    						icon: {
+    							iconUrl: 'images/campfire.svg',
+    							iconSize: [30,30],
+    							iconAnchor: [15,20]
+    						}
+    					};
+    				});
+                });
 
 				onLoggedIn(null, AuthSvc.getUser());
 				vm.flags.mapLoaded = true;
 			});
 		}
 
-		function onDrawCreated(ngEvent, leafletEvent) {
-			leafletEvent.leafletObject.addLayer(leafletEvent.leafletEvent.layer);
+		function onLayerCreated(ngEvent, leafletEvent) {
+            console.log(leafletEvent);
+			// leafletEvent.leafletObject.addLayer(leafletEvent.leafletEvent.layer);
 		}
 
 		function onLoggedIn(evt, user) {

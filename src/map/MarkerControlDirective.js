@@ -14,7 +14,6 @@
             controller: function markerControlController() {
                 var vm = this;
                 vm.markers = markers;
-                console.log(markers);
                 vm.flags = {
                     showMarkerSelector: false
                 };
