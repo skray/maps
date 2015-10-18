@@ -11,7 +11,7 @@ module.exports = function(config) {
 	    'node_modules/angular-leaflet-directive/dist/angular-leaflet-directive.js',
 	    'node_modules/firebase/lib/firebase-web.js',
 	    'node_modules/angularfire/dist/angularfire.js',
-	    'node_modules/leaflet-draw/dist/leaflet.draw.js',
+        'node_modules/leaflet-editable/src/Leaflet.Editable.js',
         'src/app.js',
 	    'src/**/*.js'
     ],

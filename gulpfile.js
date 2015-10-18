@@ -9,9 +9,10 @@ var connect = require('gulp-connect');
 var postcss = require('gulp-postcss');
 var autoprefixer = require('autoprefixer');
 var replace = require('gulp-replace');
+var open = require('gulp-open');
 
 var paths = {
-    html: 'src/**/*.html', 
+    html: 'src/**/*.html',
     less: 'src/**/*.less',
     css: [
       'node_modules/leaflet/dist/leaflet.css',
@@ -30,18 +31,24 @@ var paths = {
         '!**/*Spec.js'
       ],
       external: [
-        'node_modules/angular/angular.js', 
-        'node_modules/angular-route/angular-route.js', 
+        'node_modules/angular/angular.js',
+        'node_modules/angular-route/angular-route.js',
         'node_modules/angular-animate/angular-animate.js',
         'node_modules/angular-simple-logger/dist/index.js',
         'node_modules/leaflet/dist/leaflet.js',
         'node_modules/angular-leaflet-directive/dist/angular-leaflet-directive.js',
         'node_modules/firebase/lib/firebase-web.js',
         'node_modules/angularfire/dist/angularfire.js',
-        'node_modules/leaflet-draw/dist/leaflet.draw.js'
+        'node_modules/leaflet-editable/src/Leaflet.Editable.js'
       ]
     }
 };
+
+// Open
+gulp.task('open-browser', function(){
+  return gulp.src(__filename)
+  .pipe(open({uri: 'http://localhost:8000/', app: 'google-chrome' }));
+});
 
 // Clean
 gulp.task('clean-external-css', function() {
@@ -138,7 +145,7 @@ gulp.task('less', ['clean-less-css'], function () {
       .pipe(less({
         paths: [ path.join(__dirname, 'src'), path.join(__dirname, 'node_modules/font-awesome/less') ]
       }))
-      .on('error', function(err) { 
+      .on('error', function(err) {
         gutil.log(gutil.colors.bgRed('Less Error'), err.message);
         this.emit('end');
       })
@@ -156,7 +163,7 @@ gulp.task('watch', function() {
 
 
 gulp.task('publish', ['deploy']);
-gulp.task('dev', ['connect', 'watch', 'build']);
+gulp.task('dev', ['connect', 'watch', 'build', 'open-browser']);
 gulp.task('build', ['concat', 'less', 'copy']);
 
 gulp.task('default', ['dev']);
