@@ -1,0 +1,53 @@
+.leaflet-control-layers.leaflet-control {
+    display: none;
+}
+
+.maps-controls {
+
+    position: relative;
+    // display: inline-block;
+
+    #marker-control {
+        background-image: url(images/marker-icon.png);
+        background-size: 55% 75%;
+    }
+
+    .marker-selector {
+        pointer-events: auto;
+        position: absolute;
+        padding: 0 1rem 1rem 1rem;
+        left: 37px;
+        top: 72px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-top-right-radius: 5px;
+        border-bottom-right-radius: 5px;
+        border-bottom-left-radius: 5px;
+        width: 30rem;
+
+        h2 {
+            text-align: center;
+        }
+
+        ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            padding: 0;
+
+            .marker {
+                padding: .35rem 1rem;
+                cursor: pointer;
+
+                &:hover {
+                    background-color: lightgray;
+                }
+
+                img {
+                    width: 3.5rem;
+                }
+            }
+        }
+
+
+    }
+}

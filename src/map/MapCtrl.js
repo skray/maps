@@ -3,7 +3,7 @@
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
-	function MapCtrl($scope, $routeParams, MapFactory, MapMarkerFactory, AuthSvc, leafletData, MarkerControlFactory) {
+	function MapCtrl($scope, $routeParams, MapFactory, MarkerFactory, AuthSvc, leafletData, MarkerControlFactory) {
 		var leafletMap;
 		var vm = this;
 
@@ -34,7 +34,6 @@
 		init();
 
 		function init() {
-			$scope.$on('leafletDirectiveMap.editable:created', onLayerCreated);
 			$scope.$on('logged-in', onLoggedIn);
 			$scope.$on('logged-out', onLoggedOut);
 
@@ -56,7 +55,7 @@
 				vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
 				vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
 
-                MapMarkerFactory($routeParams.id).$loaded().then(function markersLoaded(markers) {
+                MarkerFactory($routeParams.id).$loaded().then(function markersLoaded(markers) {
                     vm.mapMarkers = markers;
                     markers.forEach(function eachMarker(marker, idx) {
     					vm.markers[idx] = {
@@ -75,11 +74,6 @@
 				onLoggedIn(null, AuthSvc.getUser());
 				vm.flags.mapLoaded = true;
 			});
-		}
-
-		function onLayerCreated(ngEvent, leafletEvent) {
-            console.log(leafletEvent);
-			// leafletEvent.leafletObject.addLayer(leafletEvent.leafletEvent.layer);
 		}
 
 		function onLoggedIn(evt, user) {
