@@ -9,7 +9,9 @@ describe('MapCtrl', function() {
 			line: {},
 			markers: [],
 			uid: '1234'
-		};
+		},
+        mockMarkerControl = {},
+        MarkerControlFactory;
 
 	beforeEach(module('maps'));
 
@@ -24,6 +26,9 @@ describe('MapCtrl', function() {
 			}
 		});
 
+        MarkerControlFactory = jasmine.createSpy('MarkerControlFactory')
+        MarkerControlFactory.and.returnValue(mockMarkerControl);
+
 		AuthSvc = _AuthSvc_;
 		spyOn(AuthSvc, 'getUser').and.returnValue({uid: '1234'});
 
@@ -31,7 +36,8 @@ describe('MapCtrl', function() {
 			$scope: scope,
 			$routeParams: _$routeParams_,
 			MapFactory: MapFactory,
-			AuthSvc: AuthSvc
+			AuthSvc: AuthSvc,
+            MarkerControlFactory: MarkerControlFactory
 		});
 	}));
 
@@ -43,7 +49,7 @@ describe('MapCtrl', function() {
 
 		it('allows an already logged in owner to edit the map', function checkAuth() {
 			scope.$apply();
-			expect(scope.vm.controls).toEqual({draw:{}});
+			expect(scope.vm.controls).toEqual({editable: mockMarkerControl});
 		});
 
 		it('should not set the mapLoaded flag until the map loads', function waitForMapLoad() {
@@ -53,30 +59,31 @@ describe('MapCtrl', function() {
 		});
 
 	});
-	
+
 	describe('on logged in', function onLoggedIn() {
-	    
-	    it('set the controls and show edit if user is valid', function showIfValid() {
-	        
-	        var user = { uid: 1 };
+
+        var user;
+
+        beforeEach(function() {
+            user = { uid: 1 };
 	        scope.vm.map = { uid: 1 };
+            scope.vm.controls = {};
+        });
 
-	        scope.$emit('logged-in', user);
+	    it('set the controls and show edit if user is valid', function showIfValid() {
+            scope.$emit('logged-in', user);
 
-	        expect(scope.vm.controls.draw).toBeDefined();
+	        expect(scope.vm.controls).toEqual({editable: mockMarkerControl});
 	        expect(scope.vm.flags.canEdit).toBe(true);
-	    
 	    });
 
 	    it('should not show editing stuff if user is not valid', function notValid() {
-	        
 	        scope.$emit('logged-in', null);
 
-	        expect(scope.vm.controls.draw).not.toBeDefined();
+	        expect(scope.vm.controls.editable).not.toBeDefined();
 	        expect(scope.vm.flags.canEdit).toBe(false);
-	    
 	    });
-	
+
 	});
 
 });

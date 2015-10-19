@@ -1,16 +1,16 @@
 (function(angular) {
 
 	angular.module('maps')
-		.factory('MapMarkerFactory', MapMarkerFactory);
+		.factory('MarkerFactory', MarkerFactory);
 
-	function MapMarkerFactory($firebaseArray, FIREBASE_REF) {
+	function MarkerFactory($firebaseArray, FIREBASE_REF) {
 
-		function loadMapMarkers(id) {
+		function loadMarkers(id) {
 			var ref = FIREBASE_REF.child('maps').child(id).child('markers');
 			return new $firebaseArray(ref);
 		}
 
-		return loadMapMarkers;
+		return loadMarkers;
 	}
 
 })(window.angular);

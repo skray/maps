@@ -3,7 +3,7 @@
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
-	function MapCtrl($scope, $routeParams, MapFactory, MapMarkerFactory, AuthSvc, leafletData, MarkerControlFactory) {
+	function MapCtrl($scope, $routeParams, MapFactory, MarkerFactory, AuthSvc, leafletData, MarkerControlFactory) {
 		var leafletMap;
 		var vm = this;
 
@@ -27,21 +27,17 @@
 		vm.center = {};
 		vm.lines = {};
 		vm.markers = {};
-		vm.controls = {
-			editable: new MarkerControlFactory({scope: $scope})
-		};
+		vm.controls = {};
 
 		init();
 
 		function init() {
-			$scope.$on('leafletDirectiveMap.editable:created', onLayerCreated);
 			$scope.$on('logged-in', onLoggedIn);
 			$scope.$on('logged-out', onLoggedOut);
 
 			leafletData.getMap().then(function(map) {
 				leafletMap = map;
                 leafletMap.on('editable:drawing:commit', function(e){
-                    console.log(e)
                     vm.mapMarkers.$add({
                         latLng: e.layer.getLatLng(),
                         title: 'woo'
@@ -56,7 +52,7 @@
 				vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
 				vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
 
-                MapMarkerFactory($routeParams.id).$loaded().then(function markersLoaded(markers) {
+                MarkerFactory($routeParams.id).$loaded().then(function markersLoaded(markers) {
                     vm.mapMarkers = markers;
                     markers.forEach(function eachMarker(marker, idx) {
     					vm.markers[idx] = {
@@ -77,14 +73,10 @@
 			});
 		}
 
-		function onLayerCreated(ngEvent, leafletEvent) {
-            console.log(leafletEvent);
-			// leafletEvent.leafletObject.addLayer(leafletEvent.leafletEvent.layer);
-		}
-
 		function onLoggedIn(evt, user) {
 			if(user && user.uid === vm.map.uid) {
 				vm.flags.canEdit = true;
+                vm.controls.editable = new MarkerControlFactory({scope: $scope});
 			}
 		}
 

@@ -8,7 +8,7 @@
         return {
             replace: true,
             scope: {map: '=markerControl'},
-            templateUrl:'map/markercontrol.html',
+            templateUrl:'map/marker/markercontrol.html',
             controllerAs: 'vm',
             bindToController: true,
             controller: function markerControlController() {
