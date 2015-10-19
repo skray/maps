@@ -4,11 +4,19 @@
     </div>
     <div class="marker-selector" ng-if="vm.flags.showMarkerSelector">
         <h2>Select Marker</h2>
+        <button type="file"
+                ngf-select="vm.uploadIcon($file, $invalidFiles)"
+                accept="image/*"
+                ngf-max-height="1000"
+                ngf-max-size="1MB">
+                Upload Icon
+        </button>
         <ul class="markers">
             <li ng-repeat="marker in vm.markers" ng-click="vm.setMarker(marker)" class="marker">
                 <img ng-src="{{marker.img}}"
                      alt="{{marker.name}}" />
             </li>
+            <img ng-src="{{vm.imgSrc}}" />
         </ul>
     </div>
 </div>

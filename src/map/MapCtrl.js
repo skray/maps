@@ -13,6 +13,7 @@
 		vm.hideSetCenterAndZoom = hideSetCenterAndZoom;
 		vm.addLayer = addLayer;
 		vm.saveLayer = saveLayer;
+
 		vm.defaults = { map: { editable: true } };
 		vm.flags = {
 			editingMapMeta: false,
