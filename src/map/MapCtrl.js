@@ -27,9 +27,7 @@
 		vm.center = {};
 		vm.lines = {};
 		vm.markers = {};
-		vm.controls = {
-			editable: new MarkerControlFactory({scope: $scope})
-		};
+		vm.controls = {};
 
 		init();
 
@@ -40,7 +38,6 @@
 			leafletData.getMap().then(function(map) {
 				leafletMap = map;
                 leafletMap.on('editable:drawing:commit', function(e){
-                    console.log(e)
                     vm.mapMarkers.$add({
                         latLng: e.layer.getLatLng(),
                         title: 'woo'
@@ -79,6 +76,7 @@
 		function onLoggedIn(evt, user) {
 			if(user && user.uid === vm.map.uid) {
 				vm.flags.canEdit = true;
+                vm.controls.editable = new MarkerControlFactory({scope: $scope});
 			}
 		}
 
