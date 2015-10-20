@@ -3,7 +3,7 @@
 	angular.module('maps')
 		.controller('MapCtrl', MapCtrl);
 
-	function MapCtrl($scope, $routeParams, MapFactory, MarkerFactory, AuthSvc, leafletData, MarkerControlFactory) {
+	function MapCtrl($scope, $routeParams, MapFactory, MarkerFactory, AuthSvc, leafletData, MarkerControlFactory, $q) {
 		var leafletMap;
 		var vm = this;
 
@@ -47,31 +47,33 @@
 
 			});
 
-			MapFactory($routeParams.id).$loaded().then(function mapLoaded(map) {
-				vm.map = map;
-				vm.layers.baselayers = map.layers;
-				vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
-				vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
+            $q.all([MapFactory($routeParams.id).$loaded(), MarkerFactory($routeParams.id).$loaded()])
+                .then(function allLoaded(results) {
+                    var map = results[0];
+                    var markers = results[1];
 
-                MarkerFactory($routeParams.id).$loaded().then(function markersLoaded(markers) {
+                    vm.map = map;
+    				vm.layers.baselayers = map.layers;
+    				vm.center = {lat: map.center[0], lng:map.center[1], zoom:map.zoom};
+    				vm.lines.line = {type: 'polyline', latlngs: map.line, weight: 3, opacity: 0.5};
+
                     vm.mapMarkers = markers;
                     markers.forEach(function eachMarker(marker, idx) {
-    					vm.markers[idx] = {
-    						lat: marker.latLng.lat,
-    						lng: marker.latLng.lng,
-    						message: marker.title,
-    						icon: {
-    							iconUrl: 'images/campfire.svg',
-    							iconSize: [30,30],
-    							iconAnchor: [15,20]
-    						}
-    					};
-    				});
-                });
+                        vm.markers[idx] = {
+                            lat: marker.latLng.lat,
+                            lng: marker.latLng.lng,
+                            message: marker.title,
+                            icon: {
+                                iconUrl: 'images/campfire.svg',
+                                iconSize: [30,30],
+                                iconAnchor: [15,20]
+                            }
+                        };
+                    });
 
-				onLoggedIn(null, AuthSvc.getUser());
-				vm.flags.mapLoaded = true;
-			});
+                    onLoggedIn(null, AuthSvc.getUser());
+                    vm.flags.mapLoaded = true;
+                });
 		}
 
 		function onLoggedIn(evt, user) {

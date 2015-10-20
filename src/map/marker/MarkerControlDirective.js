@@ -3,30 +3,42 @@
     angular.module('maps')
         .directive('markerControl', markerControl);
 
-    function markerControl(markers) {
+    function markerControl(MarkerTypeFactory) {
 
         return {
             replace: true,
-            scope: {map: '=markerControl'},
+            scope: { markerTypes: '=markerControl', map:"=" },
             templateUrl:'map/marker/markercontrol.html',
             controllerAs: 'vm',
             bindToController: true,
-            controller: function markerControlController() {
+            controller: function markerControlController($scope) {
                 var vm = this;
-                vm.markers = markers;
+
                 vm.flags = {
-                    showMarkerSelector: false
+                    showMarkerSelector: false,
+                    fileDragging: false
                 };
 
                 vm.toggleMarkerSelector = toggleMarkerSelector;
-                vm.setMarker = setMarker;
+                vm.setMarkerType = setMarkerType;
                 vm.uploadIcon = uploadIcon;
+
+                init();
+
+                function init() {
+                    $scope.$on('drag-over-file-start', function fileDragStart() {
+                        vm.flags.fileDragging = true;
+                    });
+                    $scope.$on('drag-over-file-end', function fileDragEnd() {
+                        vm.flags.fileDragging = false;
+                    });
+                }
 
                 function toggleMarkerSelector($event) {
                     vm.flags.showMarkerSelector = !vm.flags.showMarkerSelector;
                 }
 
-                function setMarker(markerInfo) {
+                function setMarkerType(markerInfo) {
                     var marker = vm.map.editTools.startMarker();
                     marker.setIcon(L.icon({iconUrl:markerInfo.img}));
                 }
@@ -42,10 +54,12 @@
                             var base64data = reader.result;
                             console.log(base64data);
                             vm.imgSrc = base64data;
-                        };    
+                            vm.markerTypes.$add({img:base64data});
+                        };
                     }
 
                 }
+
             }
         };
 
