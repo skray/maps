@@ -23,24 +23,14 @@
                 vm.setMarkerType = setMarkerType;
                 vm.uploadIcon = uploadIcon;
 
-                init();
-
-                function init() {
-                    $scope.$on('drag-over-file-start', function fileDragStart() {
-                        vm.flags.fileDragging = true;
-                    });
-                    $scope.$on('drag-over-file-end', function fileDragEnd() {
-                        vm.flags.fileDragging = false;
-                    });
-                }
-
-                function toggleMarkerSelector($event) {
+                function toggleMarkerSelector() {
                     vm.flags.showMarkerSelector = !vm.flags.showMarkerSelector;
                 }
 
                 function setMarkerType(markerInfo) {
                     var marker = vm.map.editTools.startMarker();
                     marker.setIcon(L.icon({iconUrl:markerInfo.img}));
+                    toggleMarkerSelector();
                 }
 
                 function uploadIcon(icon, erroredIcons) {
@@ -52,8 +42,6 @@
                         reader.readAsDataURL(icon);
                         reader.onloadend = function() {
                             var base64data = reader.result;
-                            console.log(base64data);
-                            vm.imgSrc = base64data;
                             vm.markerTypes.$add({img:base64data});
                         };
                     }

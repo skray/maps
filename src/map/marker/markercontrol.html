@@ -10,15 +10,15 @@
                     accept="image/*"
                     ngf-max-height="1000"
                     ngf-max-size="1MB">
-                    Upload Icon
+                    Select New Icon
             </button>
+            <span class="text">or drag new icon here</span>
         </div>
         <ul class="markers">
             <li ng-repeat="markerType in vm.markerTypes" ng-click="vm.setMarkerType(markerType)" class="marker">
                 <img ng-src="{{markerType.img}}"
                      alt="{{markerType.name}}" />
             </li>
-            <img ng-src="{{vm.imgSrc}}" />
         </ul>
     </div>
 </div>

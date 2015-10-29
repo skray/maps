@@ -6,10 +6,10 @@
 
 /* global styling */
 html {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
 *, *:before, *:after {
-  box-sizing: inherit;
+    box-sizing: inherit;
 }
 
 body {
@@ -24,6 +24,14 @@ input, textarea, keygen, select, button {
 
 button {
     cursor: pointer;
+    background-color: #3C3C3C;
+    border: 1px solid gray;
+    padding: .5rem;
+    color: white;
+}
+
+.dragging * {
+    pointer-events: none;
 }
 
 /* internal less */
