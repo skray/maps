@@ -1,4 +1,4 @@
-# maps - An adventure with leaflet.js
+# maps - An adventure with leaflet.js [![Build Status](https://travis-ci.org/skray/maps.svg?branch=master)](https://travis-ci.org/skray/maps)
 
 This is a tool I am slowly building to both learn about web mapping tools, and to create a platform to make maps I am interested in.
 
