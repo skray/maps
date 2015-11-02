@@ -48,6 +48,6 @@
     "watchify": "^3.4.0"
   },
   "scripts": {
-    "test": "./node_modules/karma/bin/karma start --single-run --browsers PhantomJS --reporters progress"
+    "test": "./node_modules/gulp/bin/gulp.js html2js; ./node_modules/karma/bin/karma start --single-run --browsers PhantomJS --reporters progress"
   }
 }
