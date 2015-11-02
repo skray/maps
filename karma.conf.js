@@ -13,6 +13,7 @@ module.exports = function(config) {
 	    'node_modules/angularfire/dist/angularfire.js',
         'node_modules/leaflet-editable/src/Leaflet.Editable.js',
         'node_modules/ng-file-upload/dist/ng-file-upload.js',
+        'public/tpls.js',
         'src/app.js',
 	    'src/**/*.js'
     ],
