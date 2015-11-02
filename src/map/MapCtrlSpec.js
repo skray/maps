@@ -2,6 +2,7 @@ describe('MapCtrl', function() {
 
 	var scope,
 	    MapFactory,
+        MarkerFactory,
 	    AuthSvc,
 	    mockMapResponse = {
 			center: ['one','two'],
@@ -10,6 +11,12 @@ describe('MapCtrl', function() {
 			markers: [],
 			uid: '1234'
 		},
+        mockMarkerResponse = [
+            {
+                latLng: {lat: 1, lng: 1},
+                title: 'title'
+            }
+        ],
         mockMarkerControl = {},
         MarkerControlFactory;
 
@@ -20,9 +27,15 @@ describe('MapCtrl', function() {
 		_$routeParams_.id = 1;
 
 		MapFactory = jasmine.createSpy('MapFactory');
+        MarkerFactory = jasmine.createSpy('MarkerFactory');
 		MapFactory.and.returnValue({
 			$loaded: function() {
 				return $q.when(mockMapResponse);
+			}
+		});
+		MarkerFactory.and.returnValue({
+			$loaded: function() {
+				return $q.when(mockMarkerResponse);
 			}
 		});
 
@@ -36,6 +49,7 @@ describe('MapCtrl', function() {
 			$scope: scope,
 			$routeParams: _$routeParams_,
 			MapFactory: MapFactory,
+			MarkerFactory: MarkerFactory,
 			AuthSvc: AuthSvc,
             MarkerControlFactory: MarkerControlFactory
 		});
