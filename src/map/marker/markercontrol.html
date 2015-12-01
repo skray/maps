@@ -4,7 +4,7 @@
     </div>
     <div class="marker-selector" ng-if="vm.flags.showMarkerSelector" ngf-drop="vm.uploadIcon($file, $invalidFiles)">
         <h2>Select Marker</h2>
-        <div class="upload" ng-class="{waiting: vm.flags.fileDragging}">
+        <div class="upload">
             <button type="file"
                     ngf-select="vm.uploadIcon($file, $invalidFiles)"
                     accept="image/*"

@@ -16,12 +16,11 @@
 
     }
 
-    function markerControlCtrl($scope) {
+    function markerControlCtrl($scope, $window) {
         var vm = this;
 
         vm.flags = {
-            showMarkerSelector: false,
-            fileDragging: false
+            showMarkerSelector: false
         };
 
         vm.toggleMarkerSelector = toggleMarkerSelector;
@@ -42,7 +41,7 @@
             console.log(erroredIcons);
 
             if(icon) {
-                var reader = new window.FileReader();
+                var reader = new $window.FileReader();
                 reader.readAsDataURL(icon);
                 reader.onloadend = function() {
                     var base64data = reader.result;
