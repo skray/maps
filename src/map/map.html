@@ -92,5 +92,5 @@
         </form>
      </div>
     <button id="marker-info-hide" ng-if="vm.flags.editingMarkerInfo" ng-click="vm.hideMarkerInfo()">HIDE</button>
-    <marker-info ng-if="vm.flags.editingMarkerInfo"></marker-info>
+    <marker-info marker="vm.activeMarker" ng-if="vm.flags.editingMarkerInfo"></marker-info>
 </div>

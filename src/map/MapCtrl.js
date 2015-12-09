@@ -38,9 +38,9 @@
 		function init() {
 			$scope.$on('logged-in', onLoggedIn);
 			$scope.$on('logged-out', onLoggedOut);
-            $scope.$on('leafletDirectiveMarker.click', function(e, args) {
-                console.log(e);
-                console.log(args);
+            $scope.$on('leafletDirectiveMarker.click', function(ngEvt, leafletEvt) {
+                console.log(leafletEvt.model.marker);
+                vm.activeMarker = leafletEvt.model.marker;
                 showMarkerInfo();
             });
 
@@ -68,6 +68,7 @@
                     vm.mapMarkers = markers;
                     markers.forEach(function eachMarker(marker, idx) {
                         vm.markers[idx] = {
+                            marker: marker,
                             lat: marker.latLng.lat,
                             lng: marker.latLng.lng,
                             icon: {
@@ -76,8 +77,6 @@
                                 iconAnchor: [15,20]
                             }
                         };
-
-                        vm.markers[idx]
                     });
 
                     onLoggedIn(null, AuthSvc.getUser());
