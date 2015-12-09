@@ -149,7 +149,7 @@ gulp.task('connect', function(){
 
 // less
 gulp.task('less', ['clean-less-css'], function () {
-    return gulp.src(paths.less)
+    return gulp.src('src/app.less')
       .pipe(less({
         paths: [ path.join(__dirname, 'src'), path.join(__dirname, 'node_modules/font-awesome/less') ]
       }))

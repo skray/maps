@@ -8,6 +8,8 @@
 		var vm = this;
 
 		vm.toggleMetaEditor = toggleMetaEditor;
+        vm.showMarkerInfo = showMarkerInfo;
+        vm.hideMarkerInfo = hideMarkerInfo;
 		vm.setCenterAndZoom = setCenterAndZoom;
 		vm.showSetCenterAndZoom = showSetCenterAndZoom;
 		vm.hideSetCenterAndZoom = hideSetCenterAndZoom;
@@ -17,6 +19,7 @@
 		vm.defaults = { map: { editable: true } };
 		vm.flags = {
 			editingMapMeta: false,
+            editingMarkerInfo: false,
 			settingCenterAndZoom: false,
 			canEdit: false,
 			mapLoaded: false
@@ -35,6 +38,11 @@
 		function init() {
 			$scope.$on('logged-in', onLoggedIn);
 			$scope.$on('logged-out', onLoggedOut);
+            $scope.$on('leafletDirectiveMarker.click', function(e, args) {
+                console.log(e);
+                console.log(args);
+                showMarkerInfo();
+            });
 
 			leafletData.getMap().then(function(map) {
 				leafletMap = map;
@@ -62,13 +70,14 @@
                         vm.markers[idx] = {
                             lat: marker.latLng.lat,
                             lng: marker.latLng.lng,
-                            message: marker.title,
                             icon: {
                                 iconUrl: 'images/campfire.svg',
                                 iconSize: [30,30],
                                 iconAnchor: [15,20]
                             }
                         };
+
+                        vm.markers[idx]
                     });
 
                     onLoggedIn(null, AuthSvc.getUser());
@@ -122,6 +131,14 @@
 			vm.map.layers[layer.name] = layer;
 			vm.map.$save();
 		}
+
+        function showMarkerInfo() {
+            vm.flags.editingMarkerInfo = true;
+        }
+
+        function hideMarkerInfo() {
+            vm.flags.editingMarkerInfo = false;
+        }
 
 	}
 

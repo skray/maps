@@ -2,7 +2,7 @@
 
     .angular-leaflet-map {
         position: absolute;
-        top:2.2rem;
+        top: @nav-height;
         bottom:0;
         width:100%;
     }
@@ -95,8 +95,7 @@
     #meta-editor {
         position: absolute;
         right: 0;
-        left: 100%;
-        top:2.2rem;
+        top: @nav-height;
         bottom: 0;
         width: 50%;
         left: 50%;
@@ -156,6 +155,12 @@
                 height: 5rem;
             }
         }
+    }
+
+    #marker-info-hide {
+        position: absolute;
+        bottom: 25%;
+        right: 0;
     }
 
 }
