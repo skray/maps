@@ -1,53 +1,24 @@
 {
   "name": "maps",
   "version": "0.0.1",
+  "scripts": {
+    "tsc": "tsc",
+    "tsc:w": "tsc -w",
+    "lite": "lite-server",
+    "start": "concurrent \"npm run tsc:w\" \"npm run lite\" "
+  },
   "dependencies": {
-    "angular": "^1.4",
-    "angular-animate": "^1.4.7",
-    "angular-leaflet-directive": "tombatossals/angular-leaflet-directive",
-    "angular-route": "^1.4",
-    "angular-simple-logger": "^0.0.1",
-    "angularfire": "1.1.2",
-    "firebase": "2.2.9",
-    "font-awesome": "^4.4.0",
-    "gulp-open": "^1.0.0",
-    "leaflet": "^0.7.5",
-    "leaflet-editable": "^0.6.2",
-    "ng-file-upload": "^9.0.13"
+    "angular2": "2.0.0-beta.3",
+    "systemjs": "0.19.6",
+    "es6-promise": "^3.0.2",
+    "es6-shim": "^0.33.3",
+    "reflect-metadata": "0.1.2",
+    "rxjs": "5.0.0-beta.0",
+    "zone.js": "0.5.11"
   },
   "devDependencies": {
-    "angular-mocks": "^1.4.6",
-    "autoprefixer": "^6.0.3",
-    "brfs": "^1.4.1",
-    "browserify": "^11.1.0",
-    "connect-livereload": "^0.5.3",
-    "connect-modrewrite": "^0.8.2",
-    "del": "^2.0.2",
-    "express": "^4.13.3",
-    "factor-bundle": "^2.5.0",
-    "gulp": "^3.9.0",
-    "gulp-concat": "^2.6.0",
-    "gulp-connect": "^2.2.0",
-    "gulp-gh-pages": "^0.5.2",
-    "gulp-less": "^3.0.3",
-    "gulp-ng-html2js": "^0.2.0",
-    "gulp-postcss": "^6.0.0",
-    "gulp-replace": "^0.5.4",
-    "gulp-sourcemaps": "^1.5.2",
-    "gulp-util": "^3.0.6",
-    "jasmine-core": "^2.3.4",
-    "jquery": "^2.1.4",
-    "karma": "^0.13.10",
-    "karma-chrome-launcher": "^0.2.0",
-    "karma-jasmine": "^0.3.6",
-    "karma-nyan-reporter": "^0.2.2",
-    "karma-phantomjs-launcher": "^0.2.1",
-    "phantomjs": "^1.9.18",
-    "vinyl-buffer": "1.0.0",
-    "vinyl-source-stream": "^1.1.0",
-    "watchify": "^3.4.0"
-  },
-  "scripts": {
-    "test": "./node_modules/gulp/bin/gulp.js html2js; ./node_modules/karma/bin/karma start --single-run --browsers PhantomJS --reporters progress"
+    "concurrently": "^1.0.0",
+    "lite-server": "^2.0.1",
+    "typescript": "^1.7.5"
   }
 }
